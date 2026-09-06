@@ -1,24 +1,28 @@
 import PlaceExplorer from "@/components/PlaceExplorer";
+import { isIsoDate } from "@/lib/birthDay";
 import { defaultDateForPlace, getPlaceBySlug } from "@/lib/placeHistory";
+import { getPlaceHistoryCached } from "@/lib/sqliteReadCache";
 import { notFound } from "next/navigation";
-import { Suspense } from "react";
 
 export default async function CommunePage({
   params,
   searchParams
 }: {
   params: Promise<{ commune: string }>;
-  searchParams: Promise<{ date?: string }>;
+  searchParams: Promise<{ date?: string; histoire?: string }>;
 }) {
   const { commune } = await params;
   const query = await searchParams;
   const place = getPlaceBySlug(commune);
   if (!place) notFound();
   const date = query.date || defaultDateForPlace(commune);
+  const history = isIsoDate(date) ? await getPlaceHistoryCached(commune, date) : null;
   return (
-    <Suspense fallback={<p className="note loadingNote">Chargement des observations…</p>}>
-      <PlaceExplorer slug={commune} initialDate={date} />
-    </Suspense>
+    <PlaceExplorer
+      slug={commune}
+      initialDate={date}
+      initialHistory={history}
+      histoire={query.histoire === "naissance"}
+    />
   );
 }
-

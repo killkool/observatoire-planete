@@ -150,7 +150,7 @@ Source : sections 0 à 187 du prompt maître.
 | 135 | FINOPS | [ ] |
 | 136 | NE PAS STOCKER L'INUTILE | [ ] |
 | 137 | HOT/WARM/COLD DATA | [ ] |
-| 138 | CACHE | [ ] *partiel* (`unstable_cache` 1 h accueil/sitemap ; pas CDN) |
+| 138 | CACHE | [ ] *partiel* (`unstable_cache` 1 h accueil/sitemap/historique jour ; HTML initial = mesure ; pas CDN) |
 | 139 | PRECOMPUTATION | [ ] |
 | 140 | POSTGRES PARTITIONING | [ ] |
 | 141 | INDEXATION SPATIALE | [ ] |

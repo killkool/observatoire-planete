@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import dynamic from "next/dynamic";
@@ -67,6 +67,7 @@ type HistoryPayload = {
     altitudeM: number | null;
   }[];
   observation: {
+    originType?: string;
     originLabel: string;
     sourceId: string;
     tminDisplay: string;
@@ -75,6 +76,7 @@ type HistoryPayload = {
     precipDisplay: string;
     tmin: number | null;
     tmax: number | null;
+    precipitationMm?: number | null;
   } | null;
   era5: {
     originType: string;
@@ -274,16 +276,29 @@ type ChildhoodPayload = {
       };
 };
 
-export default function PlaceExplorer({ slug, initialDate }: { slug: string; initialDate: string }) {
+export default function PlaceExplorer({
+  slug,
+  initialDate,
+  initialHistory = null,
+  histoire = false
+}: {
+  slug: string;
+  initialDate: string;
+  initialHistory?: HistoryPayload | null;
+  histoire?: boolean;
+}) {
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const date = searchParams.get("date") || initialDate;
-  const [data, setData] = useState<HistoryPayload | null>(null);
+  const [date, setDate] = useState(initialDate);
+  const [data, setData] = useState<HistoryPayload | null>(() =>
+    initialHistory && initialHistory.date === initialDate ? initialHistory : null
+  );
   const [yearly, setYearly] = useState<YearlyPayload | null>(null);
   const [childhood, setChildhood] = useState<ChildhoodPayload | null>(null);
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(
+    () => !(initialHistory && initialHistory.date === initialDate)
+  );
   const [copied, setCopied] = useState(false);
   const [shareFallback, setShareFallback] = useState("");
   const [yearA, setYearA] = useState<number | null>(null);
@@ -296,11 +311,17 @@ export default function PlaceExplorer({ slug, initialDate }: { slug: string; ini
   const [monthYearA, setMonthYearA] = useState<number | null>(null);
   const [monthYearB, setMonthYearB] = useState<number | null>(null);
 
-  const histoire = searchParams.get("histoire") === "naissance";
+  const ready = Boolean(data && data.date === date);
+
+  useEffect(() => {
+    setDate(initialDate);
+  }, [initialDate]);
 
   function goToDate(next: string) {
-    const params = new URLSearchParams(searchParams.toString());
+    setDate(next);
+    const params = new URLSearchParams();
     params.set("date", next);
+    if (histoire) params.set("histoire", "naissance");
     router.replace(`${pathname}?${params.toString()}`, { scroll: false });
   }
 
@@ -330,6 +351,11 @@ export default function PlaceExplorer({ slug, initialDate }: { slug: string; ini
   }
 
   useEffect(() => {
+    if (initialHistory && initialHistory.date === date) {
+      setData(initialHistory);
+      setLoading(false);
+      return;
+    }
     const controller = new AbortController();
     setLoading(true);
     setError("");
@@ -337,7 +363,7 @@ export default function PlaceExplorer({ slug, initialDate }: { slug: string; ini
       .then(async (r) => {
         const j = await r.json();
         if (!r.ok) throw new Error(j.error || "Erreur");
-        return j;
+        return j as HistoryPayload;
       })
       .then(setData)
       .catch((e) => {
@@ -345,7 +371,7 @@ export default function PlaceExplorer({ slug, initialDate }: { slug: string; ini
       })
       .finally(() => setLoading(false));
     return () => controller.abort();
-  }, [slug, date]);
+  }, [slug, date, initialHistory]);
 
   const insee = data?.place?.insee_code;
   useEffect(() => {
@@ -559,7 +585,7 @@ export default function PlaceExplorer({ slug, initialDate }: { slug: string; ini
       </section>
 
       {error && <div className="error">{error}</div>}
-      {loading && <p className="note loadingNote">Chargement des observations…</p>}
+      {loading && !ready && <p className="note loadingNote">Chargement des observations…</p>}
 
       {histoire && place && data && (
         <section className="panel birthPanel">

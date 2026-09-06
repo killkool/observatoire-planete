@@ -2,13 +2,13 @@ import type { Metadata } from "next";
 import JsonLd from "@/components/JsonLd";
 import PlaceExplorer from "@/components/PlaceExplorer";
 import { isIsoDate } from "@/lib/birthDay";
-import { defaultDateForPlace, getPlaceByPath, getPlaceDayObservation } from "@/lib/placeHistory";
+import { defaultDateForPlace, getPlaceByPath } from "@/lib/placeHistory";
 import { communePath, departmentLabel } from "@/lib/placeUrl";
 import { frenchLanguageAlternates, seoFactsForPlace } from "@/lib/seoContent";
 import { communeJsonLd } from "@/lib/seoJsonLd";
 import { shareCardPath } from "@/lib/shareCard";
+import { getPlaceHistoryCached } from "@/lib/sqliteReadCache";
 import { notFound } from "next/navigation";
-import { Suspense } from "react";
 
 type CommuneParams = { region: string; department: string; commune: string };
 
@@ -17,7 +17,7 @@ export async function generateMetadata({
   searchParams
 }: {
   params: Promise<CommuneParams>;
-  searchParams: Promise<{ date?: string }>;
+  searchParams: Promise<{ date?: string; histoire?: string }>;
 }): Promise<Metadata> {
   const { region, department, commune } = await params;
   const query = await searchParams;
@@ -58,7 +58,7 @@ export default async function CommunePage({
   searchParams
 }: {
   params: Promise<CommuneParams>;
-  searchParams: Promise<{ date?: string }>;
+  searchParams: Promise<{ date?: string; histoire?: string }>;
 }) {
   const { region, department, commune } = await params;
   const query = await searchParams;
@@ -68,7 +68,18 @@ export default async function CommunePage({
   const path = communePath(place);
   const title = `${place.name} — histoire météo | Observatoire Planète`;
   const description = `Températures, pluie et records observés à ${place.name} (${departmentLabel(place.department_slug)}). La station et la source sont indiquées. Ce n’est pas une prévision.`;
-  const day = isIsoDate(date) ? getPlaceDayObservation(commune, date) : null;
+  const history = isIsoDate(date) ? await getPlaceHistoryCached(commune, date) : null;
+  const observed =
+    history?.observation?.originType === "OBSERVED" && history.preferredStation
+      ? {
+          originType: history.observation.originType,
+          date,
+          tmin: history.observation.tmin,
+          tmax: history.observation.tmax,
+          precipitationMm: history.observation.precipitationMm,
+          station: { id: history.preferredStation.id, name: history.preferredStation.name }
+        }
+      : null;
   return (
     <>
       <JsonLd
@@ -77,21 +88,15 @@ export default async function CommunePage({
           path,
           title,
           description,
-          observation: day
-            ? {
-                originType: day.originType,
-                date,
-                tmin: day.tmin,
-                tmax: day.tmax,
-                precipitationMm: day.precipitationMm,
-                station: { id: day.station.id, name: day.station.name }
-              }
-            : null
+          observation: observed
         })}
       />
-      <Suspense fallback={<p className="note loadingNote">Chargement des observations…</p>}>
-        <PlaceExplorer slug={commune} initialDate={date} />
-      </Suspense>
+      <PlaceExplorer
+        slug={commune}
+        initialDate={date}
+        initialHistory={history}
+        histoire={query.histoire === "naissance"}
+      />
     </>
   );
 }
