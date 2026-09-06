@@ -1,0 +1,10 @@
+---
+description: Règles produit Observatoire Planète — licences, sources, honnêteté scientifique
+alwaysApply: true
+---
+
+Lire `AGENTS.md`, `skills/00-track-development/SKILL.md`, `docs/STATUS.md` et `docs/ROADMAP.md` avant d’implémenter. Mettre à jour STATUS + ROADMAP dans le même lot que le code.
+
+Ne jamais inventer donnée, licence, API ou quota. E-OBS interdit. Réanalyse ≠ observation.
+Pas de connecteur hors `APPROVED_COMMERCIAL`. Skills dans `skills/`.
+Vertical slice : Isère → Météo-France → Grenoble (date réelle) → provenance → confiance. ERA5 point : pas encore ingéré.

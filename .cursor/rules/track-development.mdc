@@ -1,0 +1,16 @@
+---
+description: Obligatoire à chaque prompt — lire le skill de suivi et mettre à jour STATUS/ROADMAP
+alwaysApply: true
+---
+
+# Suivi de développement — chaque prompt
+
+Lire `skills/00-track-development/SKILL.md` **avant de coder** et **avant de terminer**.
+
+Tout changement (code, UI, pipeline, doc produit, licence) doit mettre à jour, dans le même lot :
+
+1. `docs/STATUS.md`
+2. `docs/ROADMAP.md` (cases `[x]` seulement avec preuve)
+3. `DATA_CHANGELOG.md` si ingestion, version de source, ou extrait de données
+
+Une case n’est pas cochée parce que le fichier existe. ERA5 / NOAA / océan / prévision : non faits tant que la base est vide. E-OBS interdit.

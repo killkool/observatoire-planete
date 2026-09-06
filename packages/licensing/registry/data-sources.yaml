@@ -1,0 +1,338 @@
+#source-registry
+# Audit Phase 0 — 2026-09-06
+# Une source ENABLED exige legal_status APPROVED_COMMERCIAL en contexte commercial.
+
+sources:
+  - source_id: meteo-france.climatologie.quotidienne.bulk
+    provider: Meteo-France
+    dataset: Donnees climatologiques de base - quotidiennes
+    product_id: "6569b51ae64326786e4e8e1a"
+    version: null
+    origin_type: OBSERVED
+    source_dependency_group: direct_station
+    temporal_resolution: daily
+    spatial_resolution: station
+    access_mode: bulk
+    update_frequency: "annual pre-1950; monthly 1950 to Y-2; daily last 2 years"
+    legal_status: APPROVED_COMMERCIAL
+    enabled: true
+    coverage_notes: "France metro + overseas stations since opening; climatological QC"
+    terms_url: "https://www.data.gouv.fr/datasets/donnees-climatologiques-de-base-quotidiennes"
+    license:
+      license_name: Licence Ouverte / Open Licence
+      license_version: "2.0"
+      commercial_use_allowed: true
+      redistribution_allowed: true
+      derivative_work_allowed: true
+      attribution_required: true
+      share_alike: false
+      storage_allowed: true
+      cache_allowed: true
+      api_resale_allowed: false
+      logo_usage_allowed: false
+      license_url: "https://www.etalab.gouv.fr/licence-ouverte-open-licence/"
+      reviewed_at: "2026-09-06"
+      reviewed_by: "phase-0-engineering-audit"
+      attribution_text: "Source : Meteo-France"
+      notes: "Confluence Open Data: no fee, Licence Ouverte, credit Meteo-France. Prefer bulk over API."
+
+  - source_id: meteo-france.climatologie.horaire.bulk
+    provider: Meteo-France
+    dataset: Donnees climatologiques de base - horaires
+    product_id: "6569b4473bedf2e7abad3b72"
+    origin_type: OBSERVED
+    source_dependency_group: direct_station
+    temporal_resolution: hourly
+    access_mode: bulk
+    legal_status: APPROVED_COMMERCIAL
+    enabled: false
+    license:
+      license_name: Licence Ouverte / Open Licence
+      license_version: "2.0"
+      commercial_use_allowed: true
+      redistribution_allowed: true
+      derivative_work_allowed: true
+      attribution_required: true
+      share_alike: false
+      storage_allowed: true
+      cache_allowed: true
+      api_resale_allowed: false
+      logo_usage_allowed: false
+      license_url: "https://www.etalab.gouv.fr/licence-ouverte-open-licence/"
+      reviewed_at: "2026-09-06"
+      reviewed_by: "phase-0-engineering-audit"
+      attribution_text: "Source : Meteo-France"
+
+  - source_id: meteo-france.lsh
+    provider: Meteo-France
+    dataset: Longues Series Homogeneisees
+    origin_type: HOMOGENIZED
+    source_dependency_group: direct_station
+    temporal_resolution: monthly
+    access_mode: bulk
+    legal_status: APPROVED_COMMERCIAL
+    enabled: false
+    terms_url: "https://www.data.gouv.fr/datasets/donnees-changement-climatique-lsh-longues-series-homogeneisees"
+    license:
+      license_name: Licence Ouverte / Open Licence
+      license_version: "2.0"
+      commercial_use_allowed: true
+      attribution_required: true
+      logo_usage_allowed: false
+      reviewed_at: "2026-09-06"
+      reviewed_by: "phase-0-engineering-audit"
+
+  - source_id: meteo-france.sim-safran-isba
+    provider: Meteo-France
+    dataset: SIM SAFRAN-ISBA
+    origin_type: MODEL
+    source_dependency_group: model
+    spatial_resolution: "~8km / 0.072deg"
+    legal_status: APPROVED_COMMERCIAL
+    enabled: false
+    notes: "Never label as station observation."
+    license:
+      license_name: Licence Ouverte / Open Licence
+      license_version: "2.0"
+      commercial_use_allowed: true
+      attribution_required: true
+      reviewed_at: "2026-09-06"
+      reviewed_by: "phase-0-engineering-audit"
+
+  - source_id: meteo-france.climatologie.api
+    provider: Meteo-France
+    dataset: DPClimatologie API
+    origin_type: OBSERVED
+    access_mode: api
+    legal_status: APPROVED_COMMERCIAL
+    enabled: false
+    notes: "Data reuse LO2.0 plus API ToS/CPU. Not the MVP ingestion path."
+    terms_url: "https://portail-api.meteofrance.fr/web/DonneesPubliquesClimatologie/license"
+    license:
+      license_name: API licence + Licence Ouverte 2.0
+      commercial_use_allowed: true
+      attribution_required: true
+      api_resale_allowed: false
+      reviewed_at: "2026-09-06"
+      reviewed_by: "phase-0-engineering-audit"
+
+  - source_id: copernicus.c3s.era5.single-levels-hourly
+    provider: Copernicus C3S / ECMWF
+    dataset: ERA5 hourly data on single levels from 1940 to present
+    product_id: reanalysis-era5-single-levels
+    origin_type: REANALYSIS
+    source_dependency_group: reanalysis_assimilated
+    temporal_resolution: hourly
+    spatial_resolution: "0.25deg atmosphere, 0.5deg waves"
+    coverage_start: "1940-01-01"
+    access_mode: api
+    legal_status: APPROVED_COMMERCIAL
+    enabled: false
+    notes: "Enable only after point-extraction pipeline exists. Never call it a station. ERA5T vs final."
+    terms_url: "https://cds.climate.copernicus.eu/datasets/reanalysis-era5-single-levels"
+    license:
+      license_name: Creative Commons Attribution
+      license_version: "4.0"
+      commercial_use_allowed: true
+      redistribution_allowed: true
+      derivative_work_allowed: true
+      attribution_required: true
+      share_alike: false
+      storage_allowed: true
+      cache_allowed: true
+      api_resale_allowed: false
+      logo_usage_allowed: false
+      license_url: "https://creativecommons.org/licenses/by/4.0/"
+      reviewed_at: "2026-09-06"
+      reviewed_by: "phase-0-engineering-audit"
+      attribution_text: "Contains modified Copernicus Climate Change Service information. ERA5 DOI 10.24381/cds.adbb2d47. CC-BY-4.0. Neither the European Commission nor ECMWF is responsible for any use that may be made of the Copernicus information or data it contains."
+
+  - source_id: copernicus.c3s.era5-land.hourly
+    provider: Copernicus C3S / ECMWF
+    dataset: ERA5-Land hourly data from 1950 to present
+    product_id: reanalysis-era5-land
+    origin_type: REANALYSIS
+    source_dependency_group: land_surface_forced
+    temporal_resolution: hourly
+    spatial_resolution: "0.1deg"
+    coverage_start: "1950-01-01"
+    legal_status: APPROVED_COMMERCIAL
+    enabled: false
+    notes: "Does not replace a local station. Land only."
+    terms_url: "https://cds.climate.copernicus.eu/datasets/reanalysis-era5-land"
+    license:
+      license_name: Creative Commons Attribution
+      license_version: "4.0"
+      commercial_use_allowed: true
+      attribution_required: true
+      reviewed_at: "2026-09-06"
+      reviewed_by: "phase-0-engineering-audit"
+
+  - source_id: noaa.ncei.ghcn-daily
+    provider: NOAA NCEI
+    dataset: GHCN Daily
+    origin_type: OBSERVED
+    source_dependency_group: international_station_aggregation
+    temporal_resolution: daily
+    access_mode: bulk
+    legal_status: APPROVED_COMMERCIAL
+    enabled: false
+    terms_url: "https://registry.opendata.aws/noaa-ghcn/"
+    license:
+      license_name: CC0 1.0 Universal
+      license_version: "1.0"
+      commercial_use_allowed: true
+      redistribution_allowed: true
+      derivative_work_allowed: true
+      attribution_required: false
+      share_alike: false
+      storage_allowed: true
+      cache_allowed: true
+      api_resale_allowed: true
+      logo_usage_allowed: false
+      license_url: "https://creativecommons.org/publicdomain/zero/1.0/"
+      reviewed_at: "2026-09-06"
+      reviewed_by: "phase-0-engineering-audit"
+      notes: "NODD/AWS states CC0. NOAA requests attribution and forbids implying endorsement."
+
+  - source_id: noaa.ncei.ghcnh
+    provider: NOAA NCEI
+    dataset: GHCN Hourly (GHCNh) / ISD successor channel
+    origin_type: OBSERVED
+    source_dependency_group: international_station_aggregation
+    temporal_resolution: hourly
+    legal_status: APPROVED_COMMERCIAL
+    enabled: false
+    notes: "Confirm exact access channel before ingest. Treat ISD and GHCNh as distinct datasets in catalog."
+    license:
+      license_name: CC0 1.0 Universal
+      license_version: "1.0"
+      commercial_use_allowed: true
+      attribution_required: false
+      logo_usage_allowed: false
+      reviewed_at: "2026-09-06"
+      reviewed_by: "phase-0-engineering-audit"
+
+  - source_id: noaa.ncei.oisst-v2.1-avhrr
+    provider: NOAA NCEI
+    dataset: OISST v2.1 AVHRR daily
+    origin_type: BLENDED
+    source_dependency_group: satellite
+    temporal_resolution: daily
+    spatial_resolution: "0.25deg"
+    legal_status: APPROVED_COMMERCIAL
+    enabled: false
+    notes: "SST analysis, not in-situ observation."
+    license:
+      license_name: US government / redistribution permitted (ERDDAP disclaimer)
+      commercial_use_allowed: true
+      redistribution_allowed: true
+      attribution_required: false
+      logo_usage_allowed: false
+      reviewed_at: "2026-09-06"
+      reviewed_by: "phase-0-engineering-audit"
+
+  - source_id: copernicus.marine.catalogue
+    provider: E.U. Copernicus Marine Service
+    dataset: CMEMS catalogue (one source_id per product to be added)
+    origin_type: MODEL
+    source_dependency_group: model
+    legal_status: APPROVED_COMMERCIAL
+    enabled: false
+    notes: "Placeholder. Activate per-product IDs with DOI. Third-party products on CMEMS remain REQUIRES_REVIEW."
+    terms_url: "https://marine.copernicus.eu/user-corner/service-commitments-and-licence"
+    license:
+      license_name: Licence to use the Copernicus Marine Service Products
+      commercial_use_allowed: true
+      redistribution_allowed: true
+      derivative_work_allowed: true
+      attribution_required: true
+      storage_allowed: true
+      cache_allowed: true
+      api_resale_allowed: false
+      logo_usage_allowed: false
+      reviewed_at: "2026-09-06"
+      reviewed_by: "phase-0-engineering-audit"
+      attribution_text: "Generated using E.U. Copernicus Marine Service Information; [DOI]"
+
+  - source_id: ecmwf.open-data.ifs
+    provider: ECMWF
+    dataset: Open Data IFS subset
+    origin_type: FORECAST
+    source_dependency_group: model
+    spatial_resolution: "0.25deg"
+    access_mode: bulk
+    legal_status: APPROVED_COMMERCIAL
+    enabled: false
+    notes: "Rolling archive ~12 runs. Full catalogue delivery may incur service charges (REQUIRES_REVIEW)."
+    terms_url: "https://www.ecmwf.int/en/forecasts/datasets/open-data"
+    license:
+      license_name: CC-BY-4.0 and ECMWF Terms of Use
+      license_version: "4.0"
+      commercial_use_allowed: true
+      redistribution_allowed: true
+      derivative_work_allowed: true
+      attribution_required: true
+      share_alike: false
+      storage_allowed: true
+      cache_allowed: true
+      api_resale_allowed: false
+      license_url: "https://creativecommons.org/licenses/by/4.0/"
+      reviewed_at: "2026-09-06"
+      reviewed_by: "phase-0-engineering-audit"
+
+  - source_id: ecmwf.open-data.aifs
+    provider: ECMWF
+    dataset: Open Data AIFS
+    origin_type: FORECAST
+    source_dependency_group: model
+    legal_status: APPROVED_COMMERCIAL
+    enabled: false
+    terms_url: "https://www.ecmwf.int/en/forecasts/datasets/aifs-machine-learning-data"
+    license:
+      license_name: CC-BY-4.0 and ECMWF Terms of Use
+      commercial_use_allowed: true
+      attribution_required: true
+      reviewed_at: "2026-09-06"
+      reviewed_by: "phase-0-engineering-audit"
+
+  - source_id: ecad.e-obs
+    provider: ECA&D / KNMI / C3S distribution
+    dataset: E-OBS
+    origin_type: INTERPOLATED
+    legal_status: DISABLED
+    enabled: false
+    notes: "Non-commercial research/education only. Forbidden in commercial product."
+    license:
+      license_name: E-OBS product licence / ECA&D data policy
+      commercial_use_allowed: false
+      license_url: "https://cds.climate.copernicus.eu/licences/licence-to-use-E-OBS-products"
+      reviewed_at: "2026-09-06"
+      reviewed_by: "phase-0-engineering-audit"
+
+  - source_id: ign.admin-express-cog
+    provider: IGN
+    dataset: ADMIN EXPRESS COG
+    origin_type: DERIVED
+    legal_status: APPROVED_COMMERCIAL
+    enabled: false
+    terms_url: "https://www.data.gouv.fr/datasets/admin-express-admin-express-cog-admin-express-cog-carto-admin-express-cog-carto-pe-admin-express-cog-carto-plus-pe"
+    license:
+      license_name: Licence Ouverte / Open Licence
+      license_version: "2.0"
+      commercial_use_allowed: true
+      attribution_required: true
+      reviewed_at: "2026-09-06"
+      reviewed_by: "phase-0-engineering-audit"
+      attribution_text: "IGN - ADMIN EXPRESS"
+
+rankings:
+  - country: FR
+    variable: air_temperature_max
+    period: historical_daily
+    order:
+      - meteo-france.climatologie.quotidienne.bulk
+      - noaa.ncei.ghcn-daily
+      - copernicus.c3s.era5-land.hourly
+      - copernicus.c3s.era5.single-levels-hourly
+    notes: "Configurable example, not a global constant. GHCN must not double-count the same physical station."
