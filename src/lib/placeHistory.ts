@@ -2,7 +2,8 @@ import db from "./db";
 import { rankStationsForPlace } from "../../packages/source-engine/src/stationMatch";
 import { scoreConfidence } from "../../packages/confidence-engine/src/score";
 import { formatCelsius, formatMm, roundToPrecision } from "../../packages/weather-core/src/units";
-import { ORIGIN_LABEL_FR } from "../../packages/weather-core/src/origin";
+import { ORIGIN_LABEL_FR, ORIGIN_LABEL_PUBLIC_FR } from "../../packages/weather-core/src/origin";
+import { describeSameDayTmax, warmerThanPercent } from "../../packages/weather-core/src/sameDayStats";
 import { getSource } from "../../packages/licensing/src/gate";
 
 export type PlaceRow = {
@@ -16,14 +17,61 @@ export type PlaceRow = {
   timezone: string;
   region_slug: string;
   department_slug: string;
+  postal_codes: string | null;
+  population: number | null;
 };
 
 export function getPlaceBySlug(slug: string): PlaceRow | undefined {
   return db.prepare(`SELECT * FROM places WHERE slug = ?`).get(slug) as PlaceRow | undefined;
 }
 
+export function getPlaceByPath(regionSlug: string, departmentSlug: string, communeSlug: string): PlaceRow | undefined {
+  return db.prepare(
+    `SELECT * FROM places WHERE region_slug = ? AND department_slug = ? AND slug = ?`
+  ).get(regionSlug, departmentSlug, communeSlug) as PlaceRow | undefined;
+}
+
 export function listPlaces(): PlaceRow[] {
   return db.prepare(`SELECT * FROM places ORDER BY name`).all() as PlaceRow[];
+}
+
+export function listFeaturedPlaces(): PlaceRow[] {
+  return db.prepare(
+    `SELECT * FROM places WHERE insee_code IN ('38185', '38140', '38303') ORDER BY name`
+  ).all() as PlaceRow[];
+}
+
+export function getPlaceByInsee(insee: string): PlaceRow | undefined {
+  return db.prepare(`SELECT * FROM places WHERE insee_code = ?`).get(insee) as PlaceRow | undefined;
+}
+
+export function searchPlaces(query: string, limit = 12): PlaceRow[] {
+  const q = query.trim().replace(/[%_]/g, "");
+  if (!q) {
+    return db.prepare(
+      `SELECT * FROM places WHERE country_code = 'FR' ORDER BY (population IS NULL), population DESC, name LIMIT ?`
+    ).all(limit) as PlaceRow[];
+  }
+  const like = `%${q}%`;
+  const prefix = `${q}%`;
+  const postalLike = `%${q}%`;
+  return db.prepare(`
+    SELECT * FROM places
+    WHERE country_code = 'FR'
+      AND (
+        name LIKE ? COLLATE NOCASE
+        OR insee_code LIKE ?
+        OR slug LIKE ? COLLATE NOCASE
+        OR IFNULL(postal_codes, '') LIKE ?
+      )
+    ORDER BY
+      CASE WHEN name LIKE ? COLLATE NOCASE THEN 0 ELSE 1 END,
+      CASE WHEN insee_code = ? THEN 0 ELSE 1 END,
+      (population IS NULL),
+      population DESC,
+      name
+    LIMIT ?
+  `).all(like, like, like, postalLike, prefix, q, limit) as PlaceRow[];
 }
 
 type StationRow = {
@@ -126,11 +174,14 @@ export function getPlaceHistory(slug: string, date: string) {
     : [];
 
   const era5 = db.prepare(`
-    SELECT variable_id, value, unit, method, origin_type, source_id, dataset_version
-    FROM point_extractions
-    WHERE date = ? AND variable_id IN ('air_temperature_min', 'air_temperature_max', 'air_temperature')
-      AND source_id = 'copernicus.c3s.era5.single-levels-hourly'
-      AND abs(latitude - ?) < 0.0001 AND abs(longitude - ?) < 0.0001
+    SELECT
+      pe.variable_id, pe.value, pe.unit, pe.method, pe.origin_type, pe.source_id, pe.dataset_version,
+      dl.method_version, dl.steps
+    FROM point_extractions pe
+    LEFT JOIN data_lineage dl ON dl.lineage_id = pe.lineage_id
+    WHERE pe.date = ? AND pe.variable_id IN ('air_temperature_min', 'air_temperature_max', 'air_temperature')
+      AND pe.source_id = 'copernicus.c3s.era5.single-levels-hourly'
+      AND abs(pe.latitude - ?) < 0.0001 AND abs(pe.longitude - ?) < 0.0001
   `).all(date, place.latitude, place.longitude) as {
     variable_id: string;
     value: number | null;
@@ -139,6 +190,8 @@ export function getPlaceHistory(slug: string, date: string) {
     origin_type: string;
     source_id: string;
     dataset_version: string | null;
+    method_version: string | null;
+    steps: string | null;
   }[];
 
   const era5ByVar = Object.fromEntries(era5.map((r) => [r.variable_id, r]));
@@ -146,19 +199,6 @@ export function getPlaceHistory(slug: string, date: string) {
   const distanceKm = preferred?.distanceKm ?? null;
   const altitudeDeltaM =
     preferred?.altitude != null && place.altitude_m != null ? preferred.altitude - place.altitude_m : preferred?.altitude ?? null;
-
-  const confidence = scoreConfidence({
-    originType: observation ? "OBSERVED" : "REANALYSIS",
-    distanceKm,
-    altitudeDeltaM,
-    qualitySuspect: false,
-    coverageOk: Boolean(observation),
-    interpolated: false,
-    independentCorroboration: Boolean(observation && era5.length)
-  });
-
-  const mfSource = getSource("meteo-france.climatologie.quotidienne.bulk");
-  const era5Source = getSource("copernicus.c3s.era5.single-levels-hourly");
 
   const tmin = roundToPrecision(observation?.tmin ?? null, 1);
   const tmax = roundToPrecision(observation?.tmax ?? null, 1);
@@ -168,12 +208,43 @@ export function getPlaceHistory(slug: string, date: string) {
   const era5TminC = toCelsius(era5ByVar.air_temperature_min);
   const era5TmaxC = toCelsius(era5ByVar.air_temperature_max);
   const era5TmeanC = toCelsius(era5ByVar.air_temperature);
+  const tmaxDelta =
+    tmax != null && era5TmaxC != null ? roundToPrecision(era5TmaxC - tmax, 1) : null;
+  const tminDelta =
+    tmin != null && era5TminC != null ? roundToPrecision(era5TminC - tmin, 1) : null;
+
+  const confidence = scoreConfidence({
+    originType: observation ? "OBSERVED" : "REANALYSIS",
+    distanceKm,
+    altitudeDeltaM,
+    qualitySuspect: false,
+    coverageOk: Boolean(observation),
+    interpolated: false,
+    independentCorroboration: false,
+    reanalysisDeltaC: tmaxDelta ?? tminDelta
+  });
+
+  const mfSource = getSource("meteo-france.climatologie.quotidienne.bulk");
+  const era5Source = getSource("copernicus.c3s.era5.single-levels-hourly");
+  const era5Grid = era5GridFromSteps(era5[0]?.steps ?? null);
+
+  const tmaxPercent = warmerThanPercent(
+    tmax,
+    series.map((s) => roundToPrecision(s.tmax, 1))
+  );
+  const dayMonthLabel = new Intl.DateTimeFormat("fr-FR", {
+    day: "numeric",
+    month: "long",
+    timeZone: "UTC"
+  }).format(new Date(`${date}T00:00:00Z`));
+  const yearsOnThisDay = records?.yearsOnThisDay ?? series.length;
+  const sameDayStory = describeSameDayTmax(tmax, tmaxPercent, dayMonthLabel, yearsOnThisDay);
 
   const comparison = observation && (era5TminC != null || era5TmaxC != null)
     ? {
-        tminDelta: tmin != null && era5TminC != null ? roundToPrecision(era5TminC - tmin, 1) : null,
-        tmaxDelta: tmax != null && era5TmaxC != null ? roundToPrecision(era5TmaxC - tmax, 1) : null,
-        note: "Écart = ERA5 − observation. Ce n'est pas une fusion. ERA5 n'est pas une confirmation indépendante (assimilation)."
+        tminDelta,
+        tmaxDelta,
+        note: "Écart = estimation climatique − mesure officielle. Ce n'est pas une fusion. La réanalyse n'est pas une confirmation indépendante (elle assimile des observations)."
       }
     : null;
 
@@ -210,7 +281,8 @@ export function getPlaceHistory(slug: string, date: string) {
     observation: observation
       ? {
           originType: observation.origin_type,
-          originLabel: ORIGIN_LABEL_FR.OBSERVED,
+          originLabel: ORIGIN_LABEL_PUBLIC_FR.OBSERVED,
+          originLabelTechnical: ORIGIN_LABEL_FR.OBSERVED,
           sourceId: observation.source_id,
           tmin,
           tmax,
@@ -225,15 +297,19 @@ export function getPlaceHistory(slug: string, date: string) {
     era5: era5.length
       ? {
           originType: "REANALYSIS",
-          originLabel: ORIGIN_LABEL_FR.REANALYSIS,
+          originLabel: ORIGIN_LABEL_PUBLIC_FR.REANALYSIS,
+          originLabelTechnical: ORIGIN_LABEL_FR.REANALYSIS,
           sourceId: "copernicus.c3s.era5.single-levels-hourly",
           method: era5[0]?.method ?? "nearest",
+          methodVersion: era5[0]?.method_version ?? null,
+          datasetVersion: era5[0]?.dataset_version ?? null,
+          gridLatitude: era5Grid.lat,
+          gridLongitude: era5Grid.lon,
           tmin: era5TminC,
           tmax: era5TmaxC,
           tmean: era5TmeanC,
           tminDisplay: formatCelsius(era5TminC),
-          tmaxDisplay: formatCelsius(era5TmaxC),
-          datasetVersion: era5[0]?.dataset_version ?? null
+          tmaxDisplay: formatCelsius(era5TmaxC)
         }
       : null,
     comparison,
@@ -254,6 +330,15 @@ export function getPlaceHistory(slug: string, date: string) {
       tmean: roundToPrecision(s.tmean, 1),
       precipitation: roundToPrecision(s.precipitation, 1)
     })),
+    sameDayContext: sameDayStory
+      ? {
+          tmaxPercentile: tmaxPercent,
+          label: sameDayStory
+        }
+      : null,
+    stationDisclaimer: preferred
+      ? `Mesures provenant de la station ${preferred.name} située à ${roundToPrecision(preferred.distanceKm, 1)} km.`
+      : null,
     confidence,
     attributions,
     sourcesUsed: [
@@ -261,6 +346,17 @@ export function getPlaceHistory(slug: string, date: string) {
       era5.length ? { sourceId: "copernicus.c3s.era5.single-levels-hourly", role: "reanalysis_comparison" } : null
     ].filter(Boolean)
   };
+}
+
+function era5GridFromSteps(stepsJson: string | null): { lat: number | null; lon: number | null } {
+  if (!stepsJson) return { lat: null, lon: null };
+  try {
+    const steps = JSON.parse(stepsJson) as { grid_latitude?: number; grid_longitude?: number }[];
+    const step = steps.find((s) => s.grid_latitude != null && s.grid_longitude != null);
+    return { lat: step?.grid_latitude ?? null, lon: step?.grid_longitude ?? null };
+  } catch {
+    return { lat: null, lon: null };
+  }
 }
 
 function toCelsius(row?: { value: number | null; unit: string }): number | null {

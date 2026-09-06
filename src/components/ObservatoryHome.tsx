@@ -1,7 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
 import OriginKinds from "./OriginKinds";
+import PlaceSearch from "./PlaceSearch";
 import { IGN_PHOTO_CREDIT, placePhotoSrc } from "@/lib/placeMedia";
+import { communePath, departmentLabel } from "@/lib/placeUrl";
 
 type Place = {
   name: string;
@@ -9,6 +11,8 @@ type Place = {
   insee_code: string;
   latitude: number;
   longitude: number;
+  region_slug: string;
+  department_slug: string;
 };
 
 export default function ObservatoryHome({ places }: { places: Place[] }) {
@@ -17,26 +21,25 @@ export default function ObservatoryHome({ places }: { places: Place[] }) {
       <section className="earthHero">
         <Image
           src="/images/hero-earth.png"
-          alt="La Terre vue de l’espace, l’Europe et les Alpes dans la pénombre"
+          alt="La France et les Alpes vues du ciel, illustration d’ambiance"
           fill
           priority
           sizes="100vw"
         />
         <div className="earthHeroContent">
-          <p className="eyebrow">TERRE • CLIMAT • OCÉANS • HISTOIRE</p>
+          <p className="eyebrow">LA MÉMOIRE MÉTÉO DE LA FRANCE</p>
           <h1>
-            Le moteur de recherche de l’histoire
-            <span> météo de la planète</span>
+            L’histoire météo
+            <span> de votre ville</span>
           </h1>
-          <p>
-            Cliquez un lieu, choisissez une date. Vous voyez l’observation, d’où elle vient, et ce qu’elle n’est pas.
-          </p>
+          <p>Tapez une commune, un code postal ou un code INSEE. Pas besoin de connaître une station météo.</p>
+          <PlaceSearch autoFocus />
           <div className="heroCtas">
-            <Link className="btnPrimary" href="/weather/france/auvergne-rhone-alpes/isere/grenoble?date=1983-05-12">
-              Remonter au 12 mai 1983
+            <Link className="btnGhost" href="/naissance">
+              Quel temps faisait-il le jour de votre naissance ?
             </Link>
-            <Link className="btnGhost" href="/weather/france/auvergne-rhone-alpes/isere/grenoble">
-              Explorer un lieu
+            <Link className="btnGhost" href="/comparer">
+              Comparer deux communes
             </Link>
           </div>
         </div>
@@ -44,7 +47,7 @@ export default function ObservatoryHome({ places }: { places: Place[] }) {
 
       <section className="placeCards">
         {places.map((place) => (
-          <Link key={place.slug} href={`/weather/france/auvergne-rhone-alpes/isere/${place.slug}`} className="placeCard">
+          <Link key={place.slug} href={communePath(place)} className="placeCard">
             <div className="placeCardPhoto">
               <Image
                 src={placePhotoSrc(place.slug)}
@@ -54,11 +57,11 @@ export default function ObservatoryHome({ places }: { places: Place[] }) {
               />
             </div>
             <div>
-              <span>Isère · INSEE {place.insee_code}</span>
+              <span>
+                {departmentLabel(place.department_slug)} · {place.name}
+              </span>
               <h2>{place.name}</h2>
-              <small>
-                {place.latitude.toFixed(3)}°N {place.longitude.toFixed(3)}°E · {IGN_PHOTO_CREDIT}
-              </small>
+              <small>{IGN_PHOTO_CREDIT}</small>
             </div>
           </Link>
         ))}

@@ -39,6 +39,9 @@ export default function ImportPanel({ onDone }: { onDone: () => void }) {
       <button onClick={runImport} disabled={busy}>{busy ? "Import…" : "Importer"}</button>
     </div>
     {message && <p className="importMessage">{message}</p>}
-    <small>Pour importer toute la France en masse, utilise la commande prévue dans le README afin d'éviter les limites de durée d'une requête web.</small>
+    <small>
+      L’import web lit uniquement les fichiers déjà présents dans <code>raw/</code> — aucune requête data.gouv.
+      Pour télécharger une fois : <code>npm run import:meteo -- --department=38 --from=1980 --to=2026</code>
+    </small>
   </section>;
 }

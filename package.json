@@ -7,9 +7,12 @@
     "build": "next build",
     "start": "next start",
     "import:meteo": "tsx scripts/import-meteo-france.ts",
-    "import:era5-point": "tsx scripts/import-era5-point.ts",
+    "import:communes": "tsx scripts/import-communes.ts",
+    "stats:compute": "tsx scripts/compute-statistics.ts",
     "rebuild:france": "tsx scripts/rebuild-france.ts",
-    "test:science": "tsx tests/science.test.ts"
+    "test:science": "tsx tests/science.test.ts",
+    "era5:extract-point": "pipelines/era5/.venv/Scripts/python.exe pipelines/era5/extract_point.py",
+    "import:era5": "tsx scripts/import-era5-point.ts --file=pipelines/era5/extracts/grenoble-1983-05-12.json"
   },
   "dependencies": {
     "better-sqlite3": "^12.2.0",

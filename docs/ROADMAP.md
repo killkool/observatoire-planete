@@ -1,312 +1,228 @@
-# Roadmap — Observatoire Planète
+# Roadmap — Observatoire Planète (V1 France)
 
-Nom de travail. Ne jamais laisser croire à un partenariat avec Météo-France, Copernicus, NOAA ou ECMWF.
+Nom de travail. Les fournisseurs (Météo-France, Copernicus, NOAA, ECMWF, IGN) sont des **sources**, jamais des partenaires.
 
-**Priorité produit :** fiabilité → traçabilité → simplicité → performance → coût → nouvelles features.
+**Produit actif (livraison) :** moteur de recherche de l’histoire météo de la **France**, grand public.  
+**Constitution définitive (vision) :** [PROMPT_MAITRE_V2.md](./PROMPT_MAITRE_V2.md) mot pour mot, sections 0–187.  
+**Séquençage V1 :** [V1_FRANCE_REFOCUS.md](./V1_FRANCE_REFOCUS.md) · audit : [V1_FRANCE_REFOCUS_AUDIT.md](./V1_FRANCE_REFOCUS_AUDIT.md)  
+**Stack cible :** [ARCHITECTURE_PRODUCTION.md](./ARCHITECTURE_PRODUCTION.md) (ADR-0002)  
+**Monde / océan / API (PARK) :** [BACKLOG_V2_GLOBAL.md](./BACKLOG_V2_GLOBAL.md) · archive : [roadmap-archive/GLOBAL_VISION.md](./roadmap-archive/GLOBAL_VISION.md)
 
-**Règle d’extension mondiale :** ne passer au monde entier que lorsque France ingestion, source engine, confidence engine, licences, cost model et cartes sont stables.
+**Priorité :** utilité → simplicité → fiabilité → rapidité → beauté → complexité technique.  
+Les cases `[x]` = livré **et** vérifié (preuve). Un fichier vide ne compte pas.
 
-Les cases `[x]` = livré **et** vérifié (preuve). `[ ]` = non fait. Une case n’est pas cochée parce que le fichier existe : il faut une preuve (import réel, test, page).
-
-Dernière mise à jour : 2026-09-06 (soir). Tableau lisible : [STATUS.md](./STATUS.md).
+Dernière mise à jour : 2026-09-06 (PoC ERA5 point Grenoble, comparaison sans fusion). Tableau : [STATUS.md](./STATUS.md).
 
 ---
 
 ## File d’exécution immédiate
 
-1. [x] Phase 0 — recherche & licences (docs + YAML, 2026-09-06)
-2. [ ] Phase 1 — Postgres/PostGIS + object storage (schéma SQL rédigé, runtime encore SQLite)
-3. [x] Phase 2 — source registry exécutable (gate licence + seed SQLite) — Postgres cible encore à brancher
-4. [x] Phase 3 — import Isère réel + checksum (1 208 439 obs, 156 postes, 1980–2026-09-04)
-5. [x] Phase 4 — page Grenoble + date réelle (preuve 1983-05-12, CORENC LA REVIREE, 6,6 / 21,6 °C) — SEO/search encore limité aux 3 lieux seed ; UI visuelle + carte IGN (2026-09-06)
-6. [ ] Phase 5 — ERA5 Grenoble (**prochaine action** : pipeline prêt, `point_extractions` = 0, pas de valeur inventée)
-7. [x] Provenance + confiance v1-draft affichées sur le slice (poids à calibrer ; ERA5 absente donc pas de corroboration)
+1. [x] Phase R0 — audit du projet actuel ([V1_FRANCE_REFOCUS_AUDIT.md](./V1_FRANCE_REFOCUS_AUDIT.md))
+2. [x] Phase R1 — docs + roadmap + archive vision mondiale (ce fichier)
+3. [x] Phase R1 suite — accueil recherche + langage grand public + flags de scope
+4. [x] **PoC 1 / R9 anticipé** — ERA5 point Grenoble 1983-05-12 (JSON ARCO réel, aucune invention). `point_extractions` = 3
+5. [x] Phase R2 — communes **Isère** (512, geo.api.gouv.fr, centres officiels). France entière encore ouverte
+6. [x] Phase R3 — Isère pilote (obs + 512 communes)
+7. [x] Phase R4 — page commune (climat annuel + comparateur d’années complètes). Records d’année = R7
+8. [x] Phase R6 — jour de naissance + enfance (moyennes d’années complètes, un seul poste). Réseaux sociaux ouverts
+9. [x] Phase R8 — ville vs ville Isère (`/comparer`, même poste = pas d’écart)
+10. [x] Phase R6 suite — ma ville se réchauffe-t-elle (OLS, un poste, ≥ 15 années climatiques)
+11. [x] Phase R7 suite — mois à l’écran (seuil 25 j) + SEO titres/sitemap Isère
+12. [x] Phase R7/R6 — quatre saisons à l’écran + carte PNG `/og/{slug}/{date}`
+13. [x] Phase R7 — épisodes de forte chaleur (Tmax consécutives, un poste ; pas canicule officielle)
+14. Ne **pas** extraire ERA5 mondial. Ne **pas** activer océan / NOAA / API commerciale. Ne **pas** feindre Vercel/Supabase. Ne **pas** extraire massivement les tuiles IGN.
+
+Héritage déjà vérifié (ne pas recommencer) : licences Phase 0, import Isère 1 208 439 obs, Grenoble 1983-05-12 (CORENC, 6,6 / 21,6 °C), matching station v1, carte IGN, provenance. Runtime encore SQLite. Cible prod : [ARCHITECTURE_PRODUCTION.md](./ARCHITECTURE_PRODUCTION.md).
 
 ---
 
-## Phase 0 — Research & legal
+## PHASE R0 — Audit du projet actuel
 
-- [x] Cataloguer Météo-France (Confluence + data.gouv, 2026-09-06)
-- [x] Cataloguer ERA5 CDS
-- [x] Cataloguer ERA5-Land CDS
-- [x] Cataloguer NOAA GHCN (NODD/CC0)
-- [x] Cataloguer NOAA ISD / GHCNh (NODD)
-- [x] Cataloguer Copernicus Marine (licence + DOI)
-- [x] Cataloguer ECMWF Open Data (subset vs catalogue)
-- [x] Vérifier licences et droits commerciaux
-- [x] Identifier restrictions (E-OBS, logos, proxy API, ECMWF HR)
-- [x] Documenter attributions
-- [x] Identifier formats
-- [x] Estimer volumes et coûts ([COSTS.md](./COSTS.md))
-- [x] Livrables `DATA_SOURCES.md` + `DATA_LICENSES.md`
-- [ ] Revue juriste avant offre payante (hors Phase 0 ingénierie)
+- [x] analyser repo
+- [x] analyser architecture
+- [x] analyser DB (SQLite réelle + schéma Postgres cible)
+- [x] analyser pipelines (MF réel, ERA5 prêt non ingéré)
+- [x] analyser UI
+- [x] analyser roadmap
+- [x] analyser coûts ([COSTS.md](./COSTS.md) + [V1_DATA_VOLUME.md](./V1_DATA_VOLUME.md))
+- [x] classer KEEP / ADAPT / PARK / REMOVE
+- [x] produire [V1_FRANCE_REFOCUS_AUDIT.md](./V1_FRANCE_REFOCUS_AUDIT.md)
 
-**Preuve :** [DATA_SOURCES.md](./DATA_SOURCES.md), [DATA_LICENSES.md](./DATA_LICENSES.md), `packages/licensing/registry/data-sources.yaml`.
+**Aucune suppression de code métier.** ClickHouse : absent, ne pas l’ajouter.
 
 ---
 
-## Phase 1 — Architecture
+## PHASE R1 — Recentrage
 
-- [ ] Monorepo `apps/` + `packages/` + `pipelines/` réellement branché (le dépôt est encore une app Next monolithique)
-- [ ] PostgreSQL / PostGIS (schéma versionné)
-- [ ] Object storage (MinIO local / S3 prod)
-- [ ] Worker + scheduler
-- [ ] CI
-- [ ] Observabilité (logs structurés a minima)
-- [ ] ADR stockage ERA5, ranking, tiles
+- [x] archiver vision mondiale ([roadmap-archive/GLOBAL_VISION.md](./roadmap-archive/GLOBAL_VISION.md))
+- [x] mettre à jour ROADMAP (ce fichier = active)
+- [x] mettre à jour README
+- [x] mettre à jour ARCHITECTURE
+- [x] mettre à jour BUSINESS_MODEL
+- [x] mettre à jour DATA_SOURCES
+- [x] feature flags `ENABLE_GLOBAL_DATA=false` `ENABLE_OCEAN=false` `ENABLE_GLOBAL_SEARCH=false`
+- [x] désactiver l’exposition UI des fonctions hors scope (océan, globe, ERA5 comme cœur)
+- [x] recherche sur les communes déjà seedées + accueil grand public
 
-**État actuel :** Next.js 15 + SQLite `data/meteo.sqlite` + scripts d’import MF. C’est un **prototype**, pas l’architecture cible.
-
----
-
-## Phase 2 — Source registry
-
-**État :** exécutable en SQLite pour MF + ERA5 + E-OBS. Pas le registre Postgres cible.
-
-- [x] Table `data_sources` (runtime SQLite, seed au démarrage)
-- [ ] Table `data_source_licenses` (présente dans `packages/database/schema/`, non branchée)
-- [x] YAML providers / datasets / `legal_status` ([data-sources.yaml](../packages/licensing/registry/data-sources.yaml))
-- [ ] Versions de dataset figées pour chaque connecteur (ERA5 non ingéré)
-- [x] `legal_status` bloquant les pipelines existants (`assertCommercialSource` sur import MF et ERA5)
-- [x] Provenance `data_lineage` (4 fichiers MF)
-- [x] Aucun pipeline MF/ERA5 sans entrée registry — autres connecteurs absents
-- [ ] Gate runtime aligné 1:1 sur tout le YAML (le gate TS n’embarque que 3 `source_id`)
+**État :** audit, archive mondiale, README, ARCHITECTURE, flags, accueil recherche (3 communes), labels publics. Référentiel INSEE national = R2.
 
 ---
 
-## Phase 3 — France MVP (Isère)
+## PHASE R2 — Data France
 
-**État :** import département 38 réel. Pas de référentiel communal IGN.
-
-- [ ] Import IGN ADMIN EXPRESS : régions, départements, communes (INSEE)
-- [x] Métadonnées stations MF (156 postes issus du bulk, lat/lon/alt)
-- [x] Import quotidien MF **département 38** (bulk, idempotent, checksum SHA-256)
-- [x] Zones de validation : Grenoble, Crolles, La Pierre (seed `places` + pages)
-- [x] Ne pas inventer de valeurs ; NULL ≠ 0 (`formatCelsius(null)` = « non disponible »)
-
-**Preuve :** 1 208 439 observations, 1980-01-01 → 2026-09-04, 4 `import_files` + 4 `data_lineage`.
-
----
-
-## Phase 4 — Première page historique
-
-Cible : `/weather/france/auvergne-rhone-alpes/isere/grenoble` (slugs stables).
-
-**État :** page lieu réelle pour 3 communes. Carte IGN + heatmap « ce jour ».
-
-- [ ] Recherche commune (seulement 3 slugs seed)
-- [x] Date historique (`?date=`, défaut = dernier jour importé)
-- [x] Station utilisée (id, nom, distance, altitude, matching ce jour-là)
-- [x] Tmin, Tmax, pluie si présente
-- [x] Source + licence (attribution MF sur la page)
-- [x] Records du lieu (observés, étiquetés « pas d’ERA5 »)
-- [x] Courbe + heatmap annuelle cliquable
-- [x] Tests unité (`npm run test:science`, 2026-09-06)
-- [ ] Test golden automatisé Grenoble 1983-05-12 (6,6 / 21,6 °C) — preuve manuelle + SQL uniquement
-- [x] Carte IGN Géoplateforme (ortho / plan) + extraits UI `public/images/places/`
-
-**Preuve page :** 1983-05-12, station `38126001` CORENC LA REVIREE, Tmin 6,6 °C, Tmax 21,6 °C, RR 0,1 mm.
+- [x] communes Isère (512, API Découpage administratif, centres WGS-84, **pas** de contours)
+- [ ] communes France entière (ADMIN EXPRESS / COG national)
+- [x] département Isère (table `departments`)
+- [x] région Auvergne-Rhône-Alpes (table `regions`)
+- [ ] autres départements / régions
+- [x] stations Météo-France (156 postes Isère issus du bulk)
+- [ ] historique station (métadonnées d’ouverture / fermeture officielles, au-delà du min/max d’obs)
+- [x] données quotidiennes (département 38)
+- [ ] quality flags exposés (présents dans le CSV source, pas encore en UI)
 
 ---
 
-## Phase 5 — ERA5 France (Grenoble d’abord)
+## PHASE R3 — Isère pilote
 
-**État : non ingéré.** `SELECT COUNT(*) FROM point_extractions` = 0. Aucune valeur inventée.
+- [x] importer Isère (1 208 439 obs, 1980-01-01 → 2026-09-04)
+- [x] Grenoble (preuve 1983-05-12)
+- [x] Crolles
+- [x] La Pierre
+- [x] vérifier historique + qualité NULL ≠ 0
+- [x] vérifier station mapping (CORENC vs Galochère)
 
-- [ ] Extraction point ERA5 (variables prioritaires, quotidien dérivé documenté)
-- [ ] Afficher MF **et** ERA5 côte à côte
-- [ ] Mesurer écarts (bias, MAE) **sans fusion**
-- [ ] ERA5T vs ERA5 final explicite
-- [x] Pas de téléchargement mondial horaire (interdit dans le pipeline et l’UI)
-
-**Précurseur :** `scripts/import-era5-point.ts` + [pipelines/era5/README.md](../pipelines/era5/README.md) ; panneau UI « Pas encore ingérée ».
-
----
-
-## Phase 6 — Source fusion engine
-
-**État :** matching station v1 (distance / altitude / couverture / Tmin-Tmax du jour). Pas de fusion multi-sources.
-
-- [ ] Ranking configurable au-delà du score station v1
-- [ ] Comparaison inter-sources (ERA5 absente)
-- [x] Lineage sur l’import MF
-- [ ] Graphe de dépendance (`source_dependency_group`)
-- [x] Jamais `mean(MF, NOAA, ERA5)` comme vérité (règle produit + UI)
+Reste : France entière (autres départements) en R10. Isère : 512 communes importées.
 
 ---
 
-## Phase 7 — Confidence engine
+## PHASE R4 — Page commune
 
-**État :** brouillon v1 affiché sur le slice. Non calibré.
+- [x] recherche (nom, code postal, INSEE ; 512 communes Isère)
+- [x] page Grenoble (adaptée grand public : mesure officielle, station à X km)
+- [x] historique date + heatmap « ce jour »
+- [x] graphique annuel précalculé (années complètes seulement, une station climatique, pas de concaténation)
+- [x] comparateur année vs année (années complètes, même station climatique)
+- [x] records du jour (station préférée)
+- [x] source + station (« mesures provenant de… à X km »)
+- [x] URL `/meteo/{région}/{département}/{commune}` (+ redirect depuis `/weather/france/...`)
 
-- [x] Score documenté ([CONFIDENCE_MODEL.md](./CONFIDENCE_MODEL.md)) + `confidence-v1-draft` dans l’UI
-- [ ] Tests plaine / montagne / littoral / ville
-- [x] Détail +X explicable dans l’UI (Grenoble / Crolles)
-
----
-
-## Phase 8 — NOAA (sous-ensemble)
-
-- [ ] GHCN sous-ensemble (France / Alpes)
-- [ ] Liens `physical_station_entities`
-- [ ] Test déduplication Grenoble
+**État :** climat annuel + comparateur d’années livrés. Ville vs ville = R8 (Isère). Records d’année observés = R7 (livrés).
 
 ---
 
-## Phase 9 — France complète
+## PHASE R5 — Date historique
 
-- [ ] Ingestion quotidienne métropole stable
-- [ ] Pages SEO uniquement si contenu réel
-- [ ] Outre-mer : timezone FU, ne pas traiter comme UTC métropole
-
----
-
-## Phase 10 — World stations
-
-- [ ] GHCN progressif
-- [ ] Recherche internationale (identité ≠ nom)
+- [x] date picker
+- [x] Tmin / Tmax / pluie si disponibles
+- [x] comparaison historique (percentile Tmax si ≥ 5 années du même jour-mois ; sinon non affiché)
+- [x] records Tmin/Tmax du même jour-mois (station)
 
 ---
 
-## Phase 11 — ERA5 world
+## PHASE R6 — Fonctions grand public
 
-- [ ] Stratégie point / régional / on-demand / daily precomputed
-- [ ] Variables prioritaires seulement
-- [ ] FinOps mesuré avant scale
+- [x] jour de ma naissance + partage (copie du texte + URL + carte PNG serveur ; pas de SDK social)
+- [ ] ce jour dans l’histoire (déjà heatmap ; storytelling à simplifier)
+- [x] quand j’étais enfant (moyenne des années climatiques complètes, un seul poste, fenêtre récente = 10 dernières années civiles ; pas une T quotidienne)
+- [x] ma ville se réchauffe-t-elle ? (OLS `ols-complete-years-v1`, un poste, ≥ 15 années climatiques, série brute pas LSH)
+- [x] partage social (carte PNG `/og/{slug}/{date}`, mesures réelles seulement)
 
----
-
-## Phase 12 — Ocean MVP
-
-- [ ] CMEMS, Méditerranée occidentale
-- [ ] SST, T(z), courants, salinité, vagues
-- [ ] DOI + attribution home/page océan
-- [ ] Profil vertical avec niveaux réels
+**État :** `/naissance` + page commune `?histoire=naissance` + carte de partage. Pas de SDK Facebook/Twitter. Pas d’homogénéisation.
 
 ---
 
-## Phase 13 — Global ocean
+## PHASE R7 — Statistiques
 
-- [ ] Extension progressive, produit par produit
+- [x] mois / saisons / années (mois + DJF/MAM/JJA/SON + annuel à l’écran ; pas de normale mensuelle)
+- [x] normales (défaut 1991-2020, ≥ 24 années climatiques, même station ; sinon autre poste unique sans anomalie croisée)
+- [x] anomalies (année − normale **du même poste** seulement)
+- [x] records d’année observés (plus chaude / plus froide / plus arrosée, station + période) ; records jour déjà en R5. Records de **mois** livrés. Épisodes Tmax consécutifs livrés (`heat-streak-tmax-v1`) — **pas** la canicule officielle Météo-France
 
----
-
-## Phase 14 — ECMWF forecast
-
-- [ ] Open Data subset IFS (puis AIFS)
-- [ ] Séparer past / present / future
-- [ ] Archive locale des runs si on promet un historique de prévision
+**État :** quatre saisons à l’écran (seuil 75 j, un poste). Hiver DJF étiqueté par l’année de janvier. Pas de comparaison hiver vs été. Pas de LSH. Pas de canicule officielle.
 
 ---
 
-## Phase 15 — Global map
+## PHASE R8 — Comparaisons
 
-**État :** MapLibre sur la **page lieu** (tuiles IGN), pas une carte météo mondiale.
+- [x] ville vs ville (Isère, `GET /api/v1/compare?inseeA=&inseeB=`, `/comparer`)
+- [x] année vs année (même commune, années complètes, `GET /api/v1/compare`)
+- [x] saison vs saison (même saison météorologique seulement, page commune)
 
-- [x] MapLibre + tuiles IGN Géoplateforme (ortho / plan) sur Grenoble / Crolles / La Pierre
-- [ ] Carte mondiale ; tuiles métier (pas de grille brute navigateur)
-- [ ] Couches temp, vent, pluie, SST, vagues, courants
-- [ ] Palettes distinctes valeur / anomalie
-- [ ] Accessibilité ≠ couleur seule
+**État :** ville vs ville Isère livrée. Saisons : on ne compare pas un hiver à un été. Pas France entière.
 
 ---
 
-## Phase 16 — Time machine
+## PHASE R9 — ERA5 France
 
-**État :** « ce jour dans l’histoire » pour la station préférée (heatmap + courbe), borné à la couverture réelle de ce poste.
+- [x] point Grenoble 1983-05-12 (maille 45,25 / 5,75, 24 h UTC, Kelvin réels)
+- [x] comparaison station **sans fusion** (écart affiché, pas de moyenne)
+- [x] contrôle de cohérence (ERA5 ≠ confirmation indépendante ; |ΔTmax| 7,4 °C → pas de bonus)
+- [x] fallback documenté (« estimation climatique »)
+- [ ] subset France (pas mondial)
+- [ ] variables essentielles au-delà de 2t min/max/mean sur un jour
 
-- [ ] Timeline 1940 → +15 j selon couverture réelle
-- [x] Machine « ce jour dans l’histoire » (heatmap annuelle cliquable, records de station)
-- [ ] Animation vent/courants (couches séparées)
-
----
-
-## Phase 17 — Premium
-
-- [ ] Comptes, favoris, source inspector, exports, comparaisons
+**État :** vertical slice point livré. Pas ERA5-Land, pas de grille France, pas de téléchargement mondial. **Ne pas inventer.**
 
 ---
 
-## Phase 18 — Pro
+## PHASE R10 — France complète
 
-- [ ] CSV / JSON / PDF / PNG ; NetCDF subset éventuel
-- [ ] Verticals (hors certification maritime)
-
----
-
-## Phase 19 — API commerciale
-
-**État :** endpoints internes de slice, pas une offre API.
-
-- [x] `/api/v1/history` et `/api/v1/sources` (slice Isère, `data_version=slice-isere-v1`)
-- [ ] `/api/v1/*` versionné commercial
-- [ ] API keys, quotas, Stripe usage, pas de proxy tiers
+- [ ] import national bulk MF
+- [ ] quality validation
+- [ ] jobs incrémentaux
+- [ ] monitoring
 
 ---
 
-## Phase 20 — Scale
+## PHASE R11 — SEO
 
-- [ ] Load tests, CDN, partitionnement mesuré, tile cache, cost dashboard
+- [x] pages communes (contenu réel seulement, Isère)
+- [x] métadonnées / sitemap / canonical / carte OG PNG (pas hreflang en, pas JSON-LD)
+- [ ] `seo_content_score` — helper seuil 50 au sitemap ; pas un scorer éditorial
 
----
-
-## Preuves de concept (gates)
-
-### PoC 1 — Grenoble (bloquant)
-
-- [x] Date réelle (1983-05-12)
-- [x] Observation Météo-France (CORENC LA REVIREE, 6,6 / 21,6 °C, 0,1 mm)
-- [ ] ERA5
-- [ ] Écart
-- [x] Source, station, distance, altitude (QC MF non exposé)
-- [x] Provenance (origine OBSERVED + attribution)
-- [x] Confiance (`confidence-v1-draft`, 90/100 sur cette date)
-
-### PoC 2 — Méditerranée
-
-- [ ] Coordonnée marine, SST, T(z), courant, vague, source CMEMS
-
-### PoC 3 — Prévision
-
-- [ ] ECMWF Open Data : temp, vent, pluie ; étiquette FORECAST
+**État :** titres et descriptions issus du nom officiel. Sitemap = référentiel Isère + pages utiles. Pas de millions de coquilles.
 
 ---
 
-## Documentation obligatoire (section 33)
+## PHASE R12 — Mobile / performance
 
-- [x] README.md (à réécrire produit)
-- [x] AGENTS.md
-- [x] CONTRIBUTING.md
-- [x] docs/ROADMAP.md
-- [x] docs/STATUS.md
-- [x] skills/00-track-development (lu à chaque prompt via règle Cursor + AGENTS.md)
-- [x] docs/ARCHITECTURE.md
-- [x] docs/DATABASE.md
-- [x] docs/GLOBAL_DATA_MODEL.md
-- [x] docs/DATA_SOURCES.md
-- [x] docs/DATA_LICENSES.md
-- [x] docs/DATA_LINEAGE.md
-- [x] docs/CONFIDENCE_MODEL.md
-- [x] docs/CLIMATE_METHODOLOGY.md
-- [x] docs/OCEAN_METHODOLOGY.md
-- [x] docs/STATION_MATCHING.md
-- [x] docs/BUSINESS_MODEL.md
-- [x] docs/COSTS.md
-- [x] docs/SEO.md
-- [x] docs/SECURITY.md
-- [x] docs/DEPLOYMENT.md
-- [x] docs/DISASTER_RECOVERY.md
-- [x] ADR-0001 france bulk first — autres ADR au fil des décisions
-- [x] DATA_CHANGELOG.md (ingestion 2026-09-06 + extraits IGN UI)
+- [ ] responsive page commune
+- [ ] Core Web Vitals
+- [ ] cache Next.js / CDN / vues matérialisées
+- [x] cache local tuiles IGN affichées (`data/tiles/ign/`, pas d’extract massif)
+- [ ] optimisation charts / images
 
-Les docs méthodologiques peuvent être **normatifs mais incomplets** tant que le code n’existe pas : ils décrivent les règles, pas des résultats inventés.
-
-Les docs méthodologiques peuvent être **normatifs mais incomplets** tant que le code n’existe pas : ils décrivent les règles, pas des résultats inventés.
+**État :** une page commune lit SQLite + tuiles déjà vues. CDN production = plus tard.
 
 ---
 
-## Definition of Done (produit global)
+## PHASE R13 — Monétisation
 
-Recherche mondiale ; sources versionnées ; licences connues ; provenance visible ; France observations officielles ; ERA5 ; NOAA ; CMEMS ; océans ; ECMWF forecast ; unités ; cartes ; timeline ; comparaisons ; confiance documentée ; manquants ; SEO ; mobile ; coûts mesurés ; tests scientifiques ; sécurité ; backups testés ; commercial documenté.
+- [ ] analytics
+- [ ] identifier Premium **après** traction FREE
+- [ ] publicité éventuelle sans dégrader lisibilité
+- [ ] Stripe seulement si validé
 
-**Le projet n’est pas « terminé » à la fin de la Phase 0.**
+API commerciale : [BACKLOG_V2_GLOBAL.md](./BACKLOG_V2_GLOBAL.md).
+
+---
+
+## PHASE R14 — Hardening
+
+- [x] tests science de base (`npm run test:science`)
+- [x] test golden Grenoble 1983-05-12 (si `import:meteo` a été joué)
+- [x] GitHub Actions `science` (`npm run test:science`)
+- [ ] sécurité / backups / monitoring / costs / DR testés
+
+---
+
+## Hors roadmap active (V2)
+
+Monde, NOAA, CMEMS, océans, ECMWF forecast, globe, ClickHouse, API keys : voir [BACKLOG_V2_GLOBAL.md](./BACKLOG_V2_GLOBAL.md).  
+**Ne pas cocher ici.** E-OBS reste `DISABLED`.
+
+---
+
+## MVP V1 (critère de succès)
+
+Un utilisateur peut : chercher une commune ; ouvrir sa page ; voir des décennies ; choisir une date ; lire Tmin/Tmax/pluie disponibles ; voir les autres années du même jour ; voir les records ; voir l’évolution annuelle ; comparer deux communes ; comprendre la source.

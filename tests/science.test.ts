@@ -1,12 +1,105 @@
 import assert from "node:assert/strict";
 import { currentTowardsUv, formatCelsius, roundToPrecision, windFromUv } from "../packages/weather-core/src/units";
+import { ORIGIN_LABEL_PUBLIC_FR } from "../packages/weather-core/src/origin";
+import { warmerThanPercent } from "../packages/weather-core/src/sameDayStats";
 import { scoreConfidence } from "../packages/confidence-engine/src/score";
 import { stationMatchScore } from "../packages/source-engine/src/stationMatch";
 import { assertCommercialSource } from "../packages/licensing/src/gate";
+import { communePath } from "../src/lib/placeUrl";
+import { searchPlaces, getPlaceHistory, getPlaceByInsee } from "../src/lib/placeHistory";
+import { computeStationStatistics, isMonthComplete, isPrecipComplete, isSeasonComplete, isYearComplete } from "../src/lib/computeStatistics";
+import { getCommuneYearCompare, getCommuneChildhood, getCommuneCityCompare, getCommuneYearly } from "../src/lib/communeYearly";
+import {
+  childhoodVsRecent,
+  compareCityClimate,
+  compareCompleteSeasons,
+  compareCompleteYears,
+  formatSignedCelsius,
+  hottestCompleteSeason
+} from "../src/lib/compareClimate";
+import { anomaly, isNormalComplete, observedYearRecords } from "../src/lib/climateNormals";
+import {
+  compareCompleteMonths,
+  formatMonthYear,
+  hottestCompleteMonth,
+  monthChartRows,
+  observedMonthRecords,
+  wettestCompleteMonth,
+  yearsWithTwelveCompleteMonths
+} from "../src/lib/climateMonths";
+import { seoContentScore } from "../src/lib/seoContent";
+import { coldestCompleteSeason, seasonPublicLabel } from "../src/lib/climateSeasons";
+import { buildShareCardModel, shareCardPath } from "../src/lib/shareCard";
+import { heatEpisodesAt, stationHeatStreaks } from "../src/lib/climateHeatStreaks";
+import {
+  formatSignedPerDecade,
+  MIN_TREND_COMPLETE_YEARS,
+  ordinaryLeastSquares,
+  stationWarmingTrend,
+  TREND_METHOD,
+  TREND_WINDOW_YEARS
+} from "../src/lib/climateTrend";
+import { communeSnapshotChecksum } from "../src/lib/ingestCommunes";
+import { buildShareText, communeHistoryHref, frenchLongDate, yearsElapsed } from "../src/lib/birthDay";
+import { filterDailyResources } from "../src/lib/meteoFrance";
+import { isAllowedIgnLayer, parseIgnTile } from "../src/lib/ignTiles";
+import db from "../src/lib/db";
 
 assert.equal(formatCelsius(24.437), "24.4 °C");
 assert.equal(formatCelsius(null), "non disponible");
 assert.equal(roundToPrecision(24.437, 1), 24.4);
+
+assert.equal(ORIGIN_LABEL_PUBLIC_FR.OBSERVED, "Mesure officielle");
+assert.equal(ORIGIN_LABEL_PUBLIC_FR.REANALYSIS, "Estimation climatique");
+assert.equal(communePath({ region_slug: "auvergne-rhone-alpes", department_slug: "isere", slug: "grenoble" }), "/meteo/auvergne-rhone-alpes/isere/grenoble");
+assert.equal(
+  communeHistoryHref("/meteo/auvergne-rhone-alpes/isere/grenoble", "1983-05-12", "naissance"),
+  "/meteo/auvergne-rhone-alpes/isere/grenoble?date=1983-05-12&histoire=naissance"
+);
+assert.equal(yearsElapsed("1983-05-12", "2026-09-06"), 43);
+assert.equal(yearsElapsed("1983-10-01", "2026-09-06"), 42);
+assert.equal(yearsElapsed("2027-01-01", "2026-09-06"), null);
+assert.ok(frenchLongDate("1983-05-12")?.includes("12"));
+assert.equal(frenchLongDate("1983-13-40"), null);
+
+const shareOk = buildShareText({
+  placeName: "Grenoble",
+  isoDate: "1983-05-12",
+  hasObservation: true,
+  tminDisplay: "6.6 °C",
+  tmaxDisplay: "21.6 °C",
+  precipDisplay: "0.1 mm",
+  stationName: "CORENC LA REVIREE",
+  distanceKm: 4.7,
+  url: "http://localhost:3000/meteo/auvergne-rhone-alpes/isere/grenoble?date=1983-05-12"
+});
+assert.ok(shareOk.includes("6.6 °C"));
+assert.ok(shareOk.includes("21.6 °C"));
+assert.ok(!shareOk.includes("invent"));
+const shareMissing = buildShareText({
+  placeName: "Grenoble",
+  isoDate: "1900-01-01",
+  hasObservation: false,
+  url: "http://localhost:3000/x"
+});
+assert.ok(shareMissing.includes("aucune mesure officielle"));
+assert.ok(!shareMissing.includes("0 °C"));
+
+assert.equal(warmerThanPercent(null, [1, 2, 3, 4, 5]), null);
+assert.equal(warmerThanPercent(21.6, [10, 12, 15, 18, 20, 21.6, 22]), 71);
+
+assert.equal(searchPlaces("99999").length, 0);
+
+const placeCount = (db.prepare(`SELECT COUNT(*) AS c FROM places`).get() as { c: number }).c;
+if (placeCount >= 100) {
+  const searchHits = searchPlaces("gren");
+  assert.ok(searchHits.some((p) => p.insee_code === "38185"), "search must find Grenoble by name prefix");
+  assert.ok(searchPlaces("voiron").some((p) => p.name === "Voiron"), "Voiron must come from the official referential");
+  assert.ok(searchPlaces("38000").some((p) => p.insee_code === "38185"), "postal code must resolve Grenoble");
+  const grenoblePlace = getPlaceByInsee("38185");
+  assert.equal(grenoblePlace?.latitude, 45.1885, "pinned Grenoble coordinates must stay");
+  assert.equal(grenoblePlace?.longitude, 5.7245);
+}
 
 const northWind = windFromUv(0, -1);
 assert.ok(Math.abs(northWind.fromDeg) < 1e-6 || Math.abs(northWind.fromDeg - 360) < 1e-6, `from north, got ${northWind.fromDeg}`);
@@ -44,5 +137,600 @@ const reanalysis = scoreConfidence({
   independentCorroboration: false
 });
 assert.ok(reanalysis.score < observed.score);
+
+const withIndependent = scoreConfidence({
+  originType: "OBSERVED",
+  distanceKm: 3,
+  altitudeDeltaM: 20,
+  qualitySuspect: false,
+  coverageOk: true,
+  interpolated: false,
+  independentCorroboration: true
+});
+assert.ok(withIndependent.score > observed.score, "true independent corroboration may add a bonus");
+
+const withEra5Coherence = scoreConfidence({
+  originType: "OBSERVED",
+  distanceKm: 3,
+  altitudeDeltaM: 20,
+  qualitySuspect: false,
+  coverageOk: true,
+  interpolated: false,
+  independentCorroboration: false,
+  reanalysisDeltaC: 1.2
+});
+assert.equal(
+  withEra5Coherence.breakdown.some((b) => b.label.includes("autre groupe")),
+  false,
+  "ERA5 must not count as independent corroboration"
+);
+assert.ok(
+  withEra5Coherence.breakdown.some((b) => b.label.includes("assimilation")),
+  "small ERA5 delta is coherence, not independence"
+);
+
+const largeEra5Delta = scoreConfidence({
+  originType: "OBSERVED",
+  distanceKm: 3,
+  altitudeDeltaM: 20,
+  qualitySuspect: false,
+  coverageOk: true,
+  interpolated: false,
+  independentCorroboration: false,
+  reanalysisDeltaC: 6
+});
+assert.equal(
+  largeEra5Delta.breakdown.some((b) => b.label.includes("assimilation")),
+  false,
+  "large ERA5 delta does not get a coherence bonus"
+);
+
+assert.ok(isYearComplete(330, 330));
+assert.equal(isYearComplete(329, 365), false);
+assert.ok(isPrecipComplete(330));
+assert.equal(isPrecipComplete(0), false);
+assert.ok(isMonthComplete(25, 25));
+assert.equal(isMonthComplete(24, 31), false);
+const monthSample = [
+  { year: 2003, month: 7, tminMean: 16, tmaxMean: 28, precipitationSum: 40, daysGe30: 12, monthComplete: true, precipComplete: true },
+  { year: 2003, month: 8, tminMean: 15, tmaxMean: 30, precipitationSum: null, daysGe30: 14, monthComplete: true, precipComplete: false },
+  { year: 2003, month: 1, tminMean: -2, tmaxMean: 8, precipitationSum: 80, daysGe30: 0, monthComplete: true, precipComplete: true },
+  { year: 2022, month: 7, tminMean: 18, tmaxMean: 32, precipitationSum: 10, daysGe30: 20, monthComplete: true, precipComplete: true },
+  { year: 2022, month: 2, tminMean: 99, tmaxMean: 99, precipitationSum: 999, daysGe30: 0, monthComplete: false, precipComplete: false }
+];
+assert.equal(hottestCompleteMonth(monthSample)?.year, 2022);
+assert.equal(hottestCompleteMonth(monthSample)?.month, 7);
+assert.equal(wettestCompleteMonth(monthSample)?.month, 1);
+assert.equal(wettestCompleteMonth(monthSample)?.precipitationSum, 80);
+const monthRec = observedMonthRecords(monthSample);
+assert.equal(monthRec.hottest?.value, 32);
+assert.equal(monthRec.coldest?.month, 1);
+assert.equal(monthRec.wettest?.value, 80);
+assert.equal(formatMonthYear(2022, 7), "juillet 2022");
+const chartHoles = monthChartRows(monthSample, 2022);
+assert.equal(chartHoles[6].tmax, 32);
+assert.equal(chartHoles[1].tmax, null, "incomplete February must not plot 99");
+assert.equal(yearsWithTwelveCompleteMonths(monthSample).length, 0);
+assert.equal(compareCompleteMonths(monthSample[0], monthSample[3]).comparable, true);
+assert.equal(compareCompleteMonths(monthSample[0], monthSample[2]).comparable, false);
+assert.equal(seoContentScore({ hasPlace: false, completeClimateYears: 0, hasDistinctiveHistory: false }).indexable, false);
+assert.equal(seoContentScore({ hasPlace: true, completeClimateYears: 0, hasDistinctiveHistory: false }).indexable, false);
+assert.equal(seoContentScore({ hasPlace: true, completeClimateYears: 0, hasDistinctiveHistory: true }).indexable, true);
+assert.equal(seoContentScore({ hasPlace: true, completeClimateYears: 10, hasDistinctiveHistory: false }).indexable, true);
+assert.ok(isSeasonComplete(75, 75));
+assert.equal(isSeasonComplete(74, 92), false);
+assert.ok(isNormalComplete(24));
+assert.equal(isNormalComplete(23), false);
+assert.equal(anomaly(20, 18), 2);
+assert.equal(anomaly(null, 18), null);
+assert.equal(anomaly(20, null), null);
+const yearRecords = observedYearRecords([
+  { year: 2024, tminMean: 0, tmaxMean: 40, precipitationSum: null, daysGe30: 80, yearComplete: false, precipComplete: false },
+  { year: 2000, tminMean: 8, tmaxMean: 18, precipitationSum: 800, daysGe30: 5, yearComplete: true, precipComplete: true },
+  { year: 2003, tminMean: 6, tmaxMean: 22, precipitationSum: 400, daysGe30: 20, yearComplete: true, precipComplete: true },
+  { year: 2010, tminMean: 5, tmaxMean: 20, precipitationSum: null, daysGe30: 10, yearComplete: true, precipComplete: false }
+]);
+assert.equal(yearRecords.hottest?.year, 2003);
+assert.equal(yearRecords.coldest?.year, 2010);
+assert.equal(yearRecords.wettest?.year, 2000);
+assert.equal(yearRecords.hottest?.value, 22);
+
+const trendYears = (n: number, start = 2000, tmaxAt: (i: number) => number, complete = true) =>
+  Array.from({ length: n }, (_, i) => ({
+    year: start + i,
+    yearComplete: complete,
+    tminMean: 7 + i * 0.1,
+    tmaxMean: tmaxAt(i),
+    daysGe30: 10 + i,
+    daysFrost: 40 - i,
+    tropicalNights: i % 3 === 0 ? 1 : 0
+  }));
+const tooShort = stationWarmingTrend(trendYears(MIN_TREND_COMPLETE_YEARS - 1, 2000, () => 18));
+assert.equal(tooShort.linear.available, false);
+assert.equal(tooShort.homogenized, false);
+assert.equal(tooShort.method, TREND_METHOD);
+const mixedIncomplete = [
+  ...trendYears(10, 2000, () => 18),
+  { year: 2010, yearComplete: false, tminMean: 99, tmaxMean: 99, daysGe30: 99, daysFrost: 0, tropicalNights: 99 },
+  ...trendYears(4, 2011, () => 18)
+];
+const olsShort = stationWarmingTrend(mixedIncomplete);
+assert.equal(olsShort.linear.available, false, "incomplete years must not fill the 15-year threshold");
+const ignoreSpike = stationWarmingTrend([
+  { year: 1999, yearComplete: false, tminMean: 99, tmaxMean: 99, daysGe30: 99, daysFrost: 0, tropicalNights: 99 },
+  ...trendYears(15, 2000, (i) => 10 + i * 0.1)
+]);
+assert.equal(ignoreSpike.linear.available, true);
+if (ignoreSpike.linear.available) {
+  assert.equal(ignoreSpike.linear.tmaxPerDecade, 1, "incomplete outlier year must not enter the slope");
+}
+const rising = stationWarmingTrend(trendYears(15, 2000, (i) => 10 + i * 0.1));
+assert.equal(rising.linear.available, true);
+if (rising.linear.available) {
+  assert.equal(rising.linear.n, 15);
+  assert.equal(rising.linear.tmaxPerDecade, 1);
+  assert.equal(rising.linear.tminPerDecade, 1);
+  assert.equal(rising.linear.shortSeries, true);
+}
+const windowed = stationWarmingTrend(trendYears(TREND_WINDOW_YEARS * 2, 2000, (i) => i));
+assert.equal(windowed.windows.comparable, true);
+if (windowed.windows.comparable) {
+  assert.equal(windowed.windows.early.from, 2000);
+  assert.equal(windowed.windows.early.to, 2009);
+  assert.equal(windowed.windows.late.from, 2010);
+  assert.equal(windowed.windows.late.to, 2019);
+  assert.equal(windowed.windows.tmaxDelta, 10);
+}
+const overlapWindows = stationWarmingTrend(trendYears(15, 2000, () => 18));
+assert.equal(overlapWindows.windows.comparable, false);
+const olsFit = ordinaryLeastSquares([2000, 2010], [10, 11]);
+assert.ok(olsFit);
+assert.ok(Math.abs(olsFit.slope - 0.1) < 1e-9);
+assert.equal(formatSignedPerDecade(1.24, "°C"), "+1.2 °C / 10 ans");
+assert.equal(formatSignedPerDecade(-0.3, "j"), "-0.3 j / 10 ans");
+assert.equal(formatSignedPerDecade(null, "°C"), "non disponible");
+
+const cityYears = (start: number, tmax: number) =>
+  Array.from({ length: 6 }, (_, i) => ({
+    year: start + i,
+    tminMean: 8,
+    tmaxMean: tmax,
+    precipitationSum: 800,
+    daysGe30: 10,
+    yearComplete: true,
+    precipComplete: true
+  }));
+const citySide = (insee: string, name: string, stationId: string, tmax: number) => ({
+  insee,
+  name,
+  station: { id: stationId, name: stationId, distanceKm: 5 },
+  years: cityYears(2000, tmax),
+  normal: {
+    available: false,
+    sameStation: false,
+    period: "1991-2020",
+    tminMean: null,
+    tmaxMean: null,
+    precipitationMean: null,
+    precipAvailable: false,
+    stationId: null
+  }
+});
+assert.equal(compareCityClimate(citySide("38185", "Grenoble", "A", 18), citySide("38185", "Grenoble", "A", 18)).overlap.comparable, false);
+assert.equal(compareCityClimate(citySide("38185", "Grenoble", "A", 18), citySide("38140", "Crolles", "A", 20)).sameStation, true);
+assert.equal(compareCityClimate(citySide("38185", "Grenoble", "A", 18), citySide("38140", "Crolles", "A", 20)).overlap.comparable, false);
+const twoCities = compareCityClimate(citySide("38185", "Grenoble", "A", 18), citySide("38140", "Crolles", "B", 20));
+assert.equal(twoCities.sameStation, false);
+assert.equal(twoCities.overlap.comparable, true);
+if (twoCities.overlap.comparable) {
+  assert.equal(twoCities.overlap.n, 6);
+  assert.equal(twoCities.overlap.tmaxDelta, 2);
+}
+
+const year1990 = {
+  year: 1990,
+  tminMean: 10,
+  tmaxMean: 18,
+  precipitationSum: 800,
+  daysGe30: 5,
+  yearComplete: true,
+  precipComplete: true
+};
+const year2020 = {
+  year: 2020,
+  tminMean: 11.5,
+  tmaxMean: 20,
+  precipitationSum: 700,
+  daysGe30: 20,
+  yearComplete: true,
+  precipComplete: true
+};
+const incompleteYear = { ...year2020, year: 2024, yearComplete: false, precipComplete: false, precipitationSum: null };
+assert.equal(compareCompleteYears(incompleteYear, year2020).comparable, false);
+const yearOk = compareCompleteYears(year1990, year2020);
+assert.equal(yearOk.comparable, true);
+if (yearOk.comparable) {
+  assert.equal(yearOk.tmaxDelta, 2);
+  assert.equal(yearOk.precipDelta, -100);
+}
+const mixedPrecip = compareCompleteYears(year1990, { ...year2020, precipComplete: false, precipitationSum: null });
+assert.equal(mixedPrecip.comparable, true);
+if (mixedPrecip.comparable) {
+  assert.equal(mixedPrecip.precipDelta, null);
+}
+
+const summerHot = hottestCompleteSeason([
+  { year: 2002, season: "JJA", tminMean: 14, tmaxMean: 26, precipitationSum: null, daysGe30: 10, seasonComplete: true, precipComplete: false },
+  { year: 2003, season: "JJA", tminMean: 15, tmaxMean: 28, precipitationSum: 80, daysGe30: 40, seasonComplete: true, precipComplete: true },
+  { year: 2004, season: "JJA", tminMean: 20, tmaxMean: 40, precipitationSum: 0, daysGe30: 50, seasonComplete: false, precipComplete: false }
+]);
+assert.equal(summerHot?.year, 2003);
+const winterCold = coldestCompleteSeason([
+  { year: 2012, season: "DJF", tminMean: 0.5, tmaxMean: 8, precipitationSum: 80, daysGe30: 0, seasonComplete: true, precipComplete: true },
+  { year: 2017, season: "DJF", tminMean: -3.2, tmaxMean: 6, precipitationSum: 40, daysGe30: 0, seasonComplete: true, precipComplete: true },
+  { year: 2005, season: "DJF", tminMean: -20, tmaxMean: 0, precipitationSum: null, daysGe30: 0, seasonComplete: false, precipComplete: false }
+]);
+assert.equal(winterCold?.year, 2017);
+assert.equal(seasonPublicLabel("DJF").eyebrow, "LES HIVERS");
+assert.equal(shareCardPath("grenoble", "1983-05-12"), "/og/grenoble/1983-05-12");
+assert.equal(shareCardPath("grenoble", "1983-13-40"), null);
+const cardMissing = buildShareCardModel({
+  placeName: "Grenoble",
+  isoDate: "1900-01-01",
+  hasObservation: false,
+  tminDisplay: "0.0 °C",
+  precipDisplay: "0.0 mm"
+});
+assert.equal(cardMissing.hasObservation, false);
+assert.ok(cardMissing.note.includes("Aucune mesure officielle"));
+assert.ok(!cardMissing.note.includes("0.0"));
+const cardOk = buildShareCardModel({
+  placeName: "Grenoble",
+  isoDate: "1983-05-12",
+  hasObservation: true,
+  tminDisplay: "6.6 °C",
+  tmaxDisplay: "21.6 °C",
+  precipDisplay: "0.1 mm",
+  stationName: "CORENC LA REVIREE",
+  distanceKm: 4.7
+});
+assert.equal(cardOk.tminDisplay, "6.6 °C");
+assert.ok(cardOk.stationLine?.includes("CORENC"));
+assert.ok(!cardOk.note.toLowerCase().includes("invent"));
+assert.equal(
+  compareCompleteSeasons(
+    { year: 2003, season: "JJA", tminMean: 15, tmaxMean: 28, precipitationSum: 80, daysGe30: 40, seasonComplete: true, precipComplete: true },
+    { year: 2003, season: "DJF", tminMean: 1, tmaxMean: 8, precipitationSum: 80, daysGe30: 0, seasonComplete: true, precipComplete: true }
+  ).comparable,
+  false
+);
+
+const threeHot = [
+  { date: "2003-08-01", tmin: 18, tmax: 32 },
+  { date: "2003-08-02", tmin: 19, tmax: 33 },
+  { date: "2003-08-03", tmin: 20, tmax: 34 }
+];
+assert.equal(heatEpisodesAt(threeHot, 30).length, 1);
+assert.equal(heatEpisodesAt(threeHot, 30)[0].durationDays, 3);
+assert.equal(heatEpisodesAt(threeHot, 30)[0].tmaxMax, 34);
+assert.equal(heatEpisodesAt(threeHot.slice(0, 2), 30).length, 0);
+assert.equal(
+  heatEpisodesAt(
+    [
+      ...threeHot,
+      { date: "2003-08-05", tmin: 20, tmax: 32 },
+      { date: "2003-08-06", tmin: 20, tmax: 32 },
+      { date: "2003-08-07", tmin: 20, tmax: 32 }
+    ],
+    30
+  ).length,
+  2
+);
+const nullBreaks = heatEpisodesAt(
+  [
+    { date: "2015-07-01", tmin: 20, tmax: 35 },
+    { date: "2015-07-02", tmin: null, tmax: null },
+    { date: "2015-07-03", tmin: 20, tmax: 35 },
+    { date: "2015-07-04", tmin: 20, tmax: 35 },
+    { date: "2015-07-05", tmin: 20, tmax: 35 }
+  ],
+  30
+);
+assert.equal(nullBreaks.length, 1);
+assert.equal(nullBreaks[0].startDate, "2015-07-03");
+assert.equal(
+  heatEpisodesAt(
+    [
+      { date: "2003-08-01", tmin: 18, tmax: 32 },
+      { date: "2003-08-02", tmin: null, tmax: 33 },
+      { date: "2003-08-03", tmin: 20, tmax: 34 }
+    ],
+    30
+  )[0].tminMin,
+  null
+);
+const heatSummary = stationHeatStreaks([
+  ...threeHot,
+  { date: "2003-08-10", tmin: 22, tmax: 41 },
+  { date: "2003-08-11", tmin: 22, tmax: 42 },
+  { date: "2003-08-12", tmin: 22, tmax: 40 }
+]);
+assert.equal(heatSummary.officialHeatwave, false);
+assert.equal(heatSummary.method, "heat-streak-tmax-v1");
+assert.equal(heatSummary.bands.find((band) => band.thresholdC === 30)?.episodeCount, 2);
+assert.equal(heatSummary.bands.find((band) => band.thresholdC === 40)?.longest?.durationDays, 3);
+
+const childhoodOk = childhoodVsRecent(
+  [
+    ...Array.from({ length: 13 }, (_, i) => ({
+      year: 1983 + i,
+      tminMean: 8,
+      tmaxMean: 17,
+      precipitationSum: null,
+      daysGe30: 5,
+      yearComplete: true,
+      precipComplete: false
+    })),
+    ...Array.from({ length: 10 }, (_, i) => ({
+      year: 2016 + i,
+      tminMean: 9,
+      tmaxMean: 19,
+      precipitationSum: null,
+      daysGe30: 12,
+      yearComplete: true,
+      precipComplete: false
+    }))
+  ],
+  1983,
+  2026
+);
+assert.equal(childhoodOk.comparable, true);
+if (childhoodOk.comparable) {
+  assert.equal(childhoodOk.tmaxDelta, 2);
+}
+assert.equal(
+  childhoodVsRecent(
+    [
+      ...Array.from({ length: 13 }, (_, i) => ({
+        year: 1983 + i,
+        tminMean: 8,
+        tmaxMean: 17,
+        precipitationSum: null,
+        daysGe30: 5,
+        yearComplete: true,
+        precipComplete: false
+      })),
+      ...Array.from({ length: 10 }, (_, i) => ({
+        year: 1996 + i,
+        tminMean: 9,
+        tmaxMean: 19,
+        precipitationSum: null,
+        daysGe30: 12,
+        yearComplete: true,
+        precipComplete: false
+      }))
+    ],
+    1983,
+    2026
+  ).comparable,
+  false
+);
+assert.equal(formatSignedCelsius(2), "+2.0 °C");
+assert.equal(formatSignedCelsius(-0.4), "-0.4 °C");
+
+const obsCount = (db.prepare(`SELECT COUNT(*) AS c FROM observations WHERE date = '1983-05-12'`).get() as { c: number }).c;
+if (obsCount === 0) {
+  console.log("golden Grenoble skipped: no observations for 1983-05-12 (npm run import:meteo)");
+} else {
+  const grenoble = getPlaceHistory("grenoble", "1983-05-12");
+  assert.ok(grenoble, "Grenoble seed must exist");
+  assert.equal(grenoble.preferredStation?.id, "38126001");
+  assert.equal(grenoble.observation?.tmin, 6.6);
+  assert.equal(grenoble.observation?.tmax, 21.6);
+  assert.equal(grenoble.observation?.precipitationMm, 0.1);
+  assert.equal(grenoble.observation?.originType, "OBSERVED");
+  assert.equal(grenoble.observation?.originLabel, "Mesure officielle");
+  assert.ok(grenoble.era5, "ERA5 point for Grenoble 1983-05-12 must be ingested (no invented Kelvin)");
+  assert.equal(grenoble.era5.originType, "REANALYSIS");
+  assert.equal(grenoble.era5.originLabel, "Estimation climatique");
+  assert.notEqual(grenoble.era5.originLabel, "Mesure officielle");
+  assert.equal(grenoble.era5.tmin, 3.4);
+  assert.equal(grenoble.era5.tmax, 14.2);
+  assert.equal(grenoble.era5.method, "nearest");
+  assert.ok(grenoble.comparison, "MF vs ERA5 comparison must be present without fusion");
+  assert.equal(grenoble.comparison.tminDelta, -3.2);
+  assert.equal(grenoble.comparison.tmaxDelta, -7.4);
+  assert.equal(
+    grenoble.confidence.breakdown.some((b) => b.label.includes("autre groupe")),
+    false,
+    "assimilated ERA5 is not an independent source"
+  );
+
+  const annualCount = (db.prepare(`SELECT COUNT(*) AS c FROM annual_statistics`).get() as { c: number }).c;
+  const seasonalCount = (db.prepare(`SELECT COUNT(*) AS c FROM seasonal_statistics`).get() as { c: number }).c;
+  const normalCount = (db.prepare(`SELECT COUNT(*) AS c FROM station_normals`).get() as { c: number }).c;
+  if (annualCount === 0 || seasonalCount === 0 || normalCount === 0) computeStationStatistics();
+  const yearly = getCommuneYearly("38185");
+  assert.ok(yearly, "Grenoble INSEE must resolve yearly payload");
+  assert.ok(yearly.years.length <= 150, "yearly API must not dump daily rows");
+  assert.ok((yearly.summers || []).length <= 80, "summers must not dump daily rows");
+  assert.ok((yearly.seasons || []).length <= 4 * 80, "seasonal API must not dump daily rows");
+  const winters = (yearly.seasons || []).filter((row) => row.season === "DJF");
+  assert.ok(winters.length, "Grenoble climate station must have winter rows in the payload");
+  for (const row of yearly.seasons || []) {
+    if (!row.precipComplete) {
+      assert.equal(row.precipitationSum, null, "incomplete season precip must not become 0");
+    }
+  }
+  if (yearly.coldestWinter) {
+    assert.equal(yearly.coldestWinter.season, "DJF");
+    assert.equal(yearly.coldestWinter.seasonComplete, true);
+    const minTmin = Math.min(
+      ...winters.filter((row) => row.seasonComplete && row.tminMean != null).map((row) => row.tminMean as number)
+    );
+    assert.equal(yearly.coldestWinter.tminMean, minTmin);
+  }
+  assert.ok((yearly.months || []).length <= 12 * 80, "monthly API must not dump daily rows");
+  for (const row of yearly.months || []) {
+    if (!row.precipComplete) {
+      assert.equal(row.precipitationSum, null, "incomplete month precip must not become 0");
+    }
+  }
+  if (yearly.monthRecords.hottest) {
+    const maxTmax = Math.max(
+      ...(yearly.months || [])
+        .filter((row) => row.monthComplete && row.tmaxMean != null)
+        .map((row) => row.tmaxMean as number)
+    );
+    assert.equal(yearly.monthRecords.hottest.value, maxTmax);
+  }
+  if (yearly.monthRecords.wettest) {
+    const wet = (yearly.months || []).find(
+      (row) => row.year === yearly.monthRecords.wettest?.year && row.month === yearly.monthRecords.wettest?.month
+    );
+    assert.equal(wet?.precipComplete, true);
+    assert.equal(wet?.monthComplete, true);
+  }
+  assert.ok(yearly.station, "climate series must map to one station, not copy observations per commune");
+  assert.equal(yearly.normal.period, "1991-2020");
+  assert.equal(yearly.normal.minYearsRequired, 24);
+  for (const row of yearly.years) {
+    if (!row.precipComplete) {
+      assert.equal(row.precipitationSum, null, "incomplete precip year must not become 0");
+    }
+    if (!row.yearComplete || !yearly.normal.sameStation) {
+      assert.equal(row.tmaxAnomaly ?? null, null, "anomaly only for complete years of the same station as the normal");
+    }
+  }
+  for (const row of yearly.summers) {
+    if (!row.precipComplete) {
+      assert.equal(row.precipitationSum, null, "incomplete summer precip must not become 0");
+    }
+  }
+  if (yearly.hottestSummer) {
+    assert.equal(yearly.hottestSummer.seasonComplete, true);
+    const maxTmax = Math.max(...yearly.summers.filter((row) => row.seasonComplete && row.tmaxMean != null).map((row) => row.tmaxMean as number));
+    assert.equal(yearly.hottestSummer.tmaxMean, maxTmax);
+  }
+  if (yearly.yearRecords.hottest) {
+    const maxTmax = Math.max(
+      ...yearly.years.filter((row) => row.yearComplete && row.tmaxMean != null).map((row) => row.tmaxMean as number)
+    );
+    assert.equal(yearly.yearRecords.hottest.value, maxTmax);
+  }
+  if (yearly.yearRecords.wettest) {
+    const wet = yearly.years.find((row) => row.year === yearly.yearRecords.wettest?.year);
+    assert.equal(wet?.precipComplete, true);
+  }
+  if (yearly.normal.available && !yearly.normal.sameStation) {
+    assert.ok(yearly.normal.station, "nearby 1991-2020 normal must name one station");
+    assert.notEqual(yearly.normal.station?.id, yearly.station?.id);
+  }
+  assert.equal(yearly.warming.method, TREND_METHOD);
+  assert.equal(yearly.warming.homogenized, false);
+  const completeForTrend = yearly.years.filter((row) => row.yearComplete);
+  if (completeForTrend.length >= MIN_TREND_COMPLETE_YEARS) {
+    assert.equal(yearly.warming.linear.available, true);
+    if (yearly.warming.linear.available) {
+      assert.equal(yearly.warming.linear.n, completeForTrend.length);
+      assert.equal(yearly.warming.linear.from, completeForTrend[0].year);
+      assert.equal(yearly.warming.linear.to, completeForTrend[completeForTrend.length - 1].year);
+    }
+  } else {
+    assert.equal(yearly.warming.linear.available, false);
+  }
+  if (completeForTrend.length >= TREND_WINDOW_YEARS * 2 && yearly.warming.windows.comparable) {
+    assert.ok(yearly.warming.windows.early.to < yearly.warming.windows.late.from);
+  }
+  assert.equal(yearly.heat.officialHeatwave, false);
+  assert.equal(yearly.heat.method, "heat-streak-tmax-v1");
+  const heat30 = yearly.heat.bands.find((band) => band.thresholdC === 30);
+  if (heat30?.longest) {
+    assert.ok(heat30.longest.durationDays >= 3);
+    assert.ok(heat30.longest.tmaxMax >= 30);
+  }
+  const heat40 = yearly.heat.bands.find((band) => band.thresholdC === 40);
+  if (heat40?.longest) {
+    assert.ok(heat40.longest.tmaxMax >= 40);
+    assert.ok(heat40.longest.durationDays >= 3);
+  }
+  const completePair = yearly.years.filter((row) => row.yearComplete);
+  if (completePair.length >= 2) {
+    const compared = getCommuneYearCompare("38185", completePair[0].year, completePair[completePair.length - 1].year);
+    assert.equal(compared?.comparison.comparable, true);
+  }
+  const childhood = getCommuneChildhood("38185", 1983, 2026);
+  assert.ok(childhood, "Grenoble childhood payload must resolve");
+  assert.equal(childhood.comparison.comparable, true, "1983 Grenoble must find one long station, not concatenate");
+  if (childhood.comparison.comparable) {
+    assert.ok(childhood.station, "childhood series must name one station");
+    assert.ok(childhood.comparison.childhood.n >= 5);
+    assert.ok(childhood.comparison.recent.n >= 5);
+    assert.ok(childhood.comparison.childhood.to < childhood.comparison.recent.from);
+  }
+  const sameCity = getCommuneCityCompare("38185", "38185");
+  assert.equal(sameCity?.overlap.comparable, false);
+  const vsCrolles = getCommuneCityCompare("38185", "38140");
+  const vsPierre = getCommuneCityCompare("38185", "38303");
+  const vsVoiron = getCommuneCityCompare("38185", "38563");
+  assert.ok(vsCrolles, "Grenoble vs Crolles must resolve");
+  assert.ok(vsPierre, "Grenoble vs La Pierre must resolve");
+  assert.ok(vsVoiron, "Grenoble vs Voiron must resolve");
+  if (vsCrolles?.sameStation) {
+    assert.equal(vsCrolles.overlap.comparable, false, "same climate station must not invent a city gap");
+  }
+  if (vsPierre?.sameStation) {
+    assert.equal(vsPierre.overlap.comparable, false, "same climate station must not invent a city gap");
+  }
+  if (vsVoiron?.sameStation) {
+    assert.equal(vsVoiron.overlap.comparable, false, "same climate station must not invent a city gap");
+  } else if (vsVoiron?.overlap.comparable) {
+    assert.ok(vsVoiron.stationA && vsVoiron.stationB);
+    assert.notEqual(vsVoiron.stationA?.id, vsVoiron.stationB?.id);
+    assert.ok(vsVoiron.overlap.n >= 5);
+    if (vsVoiron.overlap.precipDelta != null) {
+      assert.ok(vsVoiron.overlap.precipYears >= 5);
+    }
+  }
+  const incompleteSql = db.prepare(
+    `SELECT precipitation_sum, precip_complete, year_complete FROM annual_statistics WHERE precip_complete = 0 LIMIT 1`
+  ).get() as { precipitation_sum: number | null; precip_complete: number; year_complete: number } | undefined;
+  if (incompleteSql) {
+    assert.equal(incompleteSql.precipitation_sum, null);
+  }
+}
+
+assert.equal(isAllowedIgnLayer("ortho"), true);
+assert.equal(isAllowedIgnLayer("plan"), true);
+assert.equal(isAllowedIgnLayer("google"), false);
+assert.throws(() => parseIgnTile("99", "0", "0"));
+const tile = parseIgnTile("12", "10", "20");
+assert.equal(tile.zoom, 12);
+assert.equal(tile.row, 10);
+assert.equal(tile.col, 20);
+
+const mf38 = filterDailyResources(
+  [
+    { title: "Q_38_2020-2025_RR-T-Vent.csv.gz", url: "https://example.test/Q_38_2020-2025_RR-T-Vent.csv.gz" },
+    { title: "Q_75_2020-2025_RR-T-Vent.csv.gz", url: "https://example.test/Q_75_2020-2025_RR-T-Vent.csv.gz" }
+  ],
+  "38",
+  1980,
+  2026
+);
+assert.equal(mf38.length, 1);
+assert.equal(mf38[0].name, "Q_38_2020-2025_RR-T-Vent.csv.gz");
+
+const checksumA = communeSnapshotChecksum({
+  department: { nom: "Isère", code: "38", codeRegion: "84" },
+  region: { nom: "Auvergne-Rhône-Alpes", code: "84" },
+  communes: []
+});
+const checksumB = communeSnapshotChecksum({
+  department: { nom: "Isère", code: "38", codeRegion: "84" },
+  region: { nom: "Auvergne-Rhône-Alpes", code: "84" },
+  communes: []
+});
+assert.equal(checksumA, checksumB);
 
 console.log("science tests ok");

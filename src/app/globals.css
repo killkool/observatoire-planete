@@ -17,9 +17,25 @@
 .earthHeroContent h1 span{color:var(--accent2);display:block}
 .earthHeroContent p{max-width:560px;color:#d7e6ea;font-size:18px}
 .heroCtas{display:flex;gap:12px;flex-wrap:wrap;margin-top:22px}
-.btnPrimary,.btnGhost{text-decoration:none;padding:12px 18px;border-radius:999px;font-weight:800}
+.btnPrimary,.btnGhost{text-decoration:none;padding:12px 18px;border-radius:999px;font-weight:800;border:0;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}
 .btnPrimary{background:var(--accent);color:#1b0d06}
-.btnGhost{border:1px solid rgba(255,255,255,.35);color:#fff}
+.btnGhost{border:1px solid rgba(255,255,255,.35);color:#fff;background:transparent}
+
+.placeSearch{position:relative;display:grid;grid-template-columns:1.6fr .8fr auto;gap:10px;align-items:end;margin-top:22px;max-width:820px}
+.placeSearchField{display:grid;gap:6px}
+.placeSearchField span{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#c9dbe0;font-weight:700}
+.placeSearchField input{width:100%;background:rgba(7,17,21,.88);color:var(--text);border:1px solid rgba(255,255,255,.28);border-radius:12px;padding:12px 14px;font-size:16px}
+.placeSearchHits{position:absolute;left:0;right:0;top:calc(100% + 8px);margin:0;padding:8px;list-style:none;background:#0b171c;border:1px solid var(--line);border-radius:14px;z-index:5;max-height:280px;overflow:auto}
+.placeSearchHits button{width:100%;text-align:left;border:0;background:transparent;color:var(--text);padding:10px 12px;border-radius:10px;cursor:pointer;display:grid;gap:2px}
+.placeSearchHits button:hover{background:rgba(255,123,54,.12)}
+.placeSearchHits small{color:var(--muted);font-size:12px}
+.placeSearchHint{padding:10px 12px;color:var(--muted);font-size:13px}
+.placeSearchError{grid-column:1/-1;margin:0;color:#ffb4b4;font-size:13px}
+.heroActions{display:flex;gap:12px;flex-wrap:wrap;align-items:end;margin-top:14px}
+.shareBtn{height:44px}
+.shareFallback{width:min(720px,100%);margin-top:12px;background:#071115;color:var(--text);border:1px solid var(--line);border-radius:11px;padding:10px 12px;font:inherit;line-height:1.45}
+.birthPanel{width:min(1480px,94vw);margin:16px auto;padding:20px}
+.birthLead{margin:0;color:#d7e6ea;line-height:1.55;max-width:720px}
 
 .placeCards{width:min(1480px,94vw);margin:-48px auto 40px;display:grid;grid-template-columns:repeat(3,1fr);gap:16px;position:relative;z-index:2}
 .placeCard{overflow:hidden;border-radius:18px;border:1px solid var(--line);background:#0b171c;text-decoration:none;color:var(--text);box-shadow:0 24px 50px rgba(0,0,0,.28)}
@@ -30,7 +46,7 @@
 .placeCard h2{margin:6px 0 4px;font-size:22px}
 .placeCard small{color:var(--muted)}
 
-.originStory{width:min(1480px,94vw);margin:0 auto 70px;display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.originStory{width:min(1480px,94vw);margin:0 auto 70px;display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
 .originStory article{overflow:hidden;border:1px solid var(--line);border-radius:18px;background:rgba(13,24,29,.8)}
 .originStoryPhoto{position:relative;height:168px}
 .originStoryPhoto img{object-fit:cover}
@@ -97,21 +113,53 @@
 .tempTrack{height:14px;border-radius:99px;background:linear-gradient(90deg,#4d7cff,#7ec8ff,#e7d27a,#ff7b36,#e24a2b);position:relative;opacity:.35;margin:10px 0}
 .tempFill{position:absolute;top:-4px;height:22px;border-radius:99px;background:#fff;opacity:.92;box-shadow:0 0 18px rgba(255,255,255,.35)}
 .tempScale{display:flex;justify-content:space-between;color:var(--muted);font-size:11px}
-.metricRow{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.metricRow{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
 .metricRow span{display:block;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
 .metricRow strong{font-size:20px}
+.sameDayStory,.stationDisclaimer{color:#d7e6ea;line-height:1.5}
+.stationDisclaimer{font-size:13px;color:var(--muted)}
+.techDetails{margin-top:12px}
+.techDetails summary{cursor:pointer;color:var(--accent2);font-weight:700}
 .confidenceBars{display:grid;gap:8px;margin-top:14px}
 .confidenceBars div{display:flex;justify-content:space-between;gap:10px;color:#c5d6da;font-size:13px}
 .deltaLine{color:var(--accent2);font-weight:700}
+.sourceCompareGrid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:8px 0 14px}
+.sourceTemps{font-size:22px;font-weight:800;margin:4px 0}
+.sourceNote{color:var(--muted);font-size:13px;line-height:1.45}
 .yearHeatGrid{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0}
 .yearCell{border:0;min-width:52px;height:42px;border-radius:8px;color:#fff;font-weight:800;cursor:pointer;display:grid;place-items:center}
 .yearCell.on{outline:2px solid #fff;outline-offset:1px}
 .yearCell em{font-style:normal;font-size:11px;text-shadow:0 1px 2px rgba(0,0,0,.45)}
-.yearHeatLegend,.recordLine,.loadingNote{color:var(--muted);font-size:13px}
+.yearHeatLegend,.recordLine,.loadingNote,.yearlyNote{color:var(--muted);font-size:13px}
+.yearlyNote{line-height:1.5;margin:8px 0 14px}
+.compareRow{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0}
+.compareRow label{display:grid;gap:7px}
+.compareRow span{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:700}
+.compareRow select{background:#071115;color:var(--text);border:1px solid var(--line);border-radius:11px;padding:11px 12px}
+.compareMetrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:8px 0 4px}
+.compareMetrics span{display:block;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.compareMetrics strong{display:block;font-size:16px;margin:6px 0 4px}
+.compareMetrics small{color:#9bb4bb;font-size:13px}
+.compareShell{width:min(1100px,92vw);margin:28px auto 60px}
+.compareShell h1{font-size:clamp(32px,5vw,56px);letter-spacing:-.04em;margin:8px 0 14px}
+.compareShell h1 span{color:var(--accent2)}
+.compareLead{color:var(--muted);max-width:720px;line-height:1.55}
+.comparePage{margin-top:22px}
+.comparePickers{display:grid;grid-template-columns:1fr 1fr;gap:14px;position:relative;z-index:3}
+.communePicker{position:relative}
+.compareFeatured{color:var(--muted);font-size:14px}
+.compareFeatured a{color:var(--accent2)}
+.compareMetrics a{color:var(--accent2)}
+.warmingMetrics,.heatMetrics{grid-template-columns:repeat(3,minmax(0,1fr))}
+.moreMethod{margin:12px 0 0;color:var(--muted);font-size:13px;line-height:1.5}
+.moreMethod summary{cursor:pointer;color:var(--accent2)}
+.moreMethod p{margin:8px 0 0}
 
 @media(max-width:1000px){
-  .placeCards,.originStory,.storyGrid,.methodSteps{grid-template-columns:1fr}
+  .placeCards,.originStory,.storyGrid,.methodSteps,.placeSearch{grid-template-columns:1fr}
+  .placeSearch .btnPrimary{justify-content:center}
   .metricRow{grid-template-columns:1fr 1fr}
+  .compareRow,.compareMetrics,.comparePickers,.warmingMetrics,.heatMetrics,.sourceCompareGrid{grid-template-columns:1fr}
   .earthHero{min-height:70vh}
   .mapCanvas,.mapPlaceholder{height:320px}
 }

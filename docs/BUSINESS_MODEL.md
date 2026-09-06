@@ -2,22 +2,24 @@
 
 Hypothèses de marché à **tester**, non gravées. Aucun prix n’est une décision finale.
 
-## 1. Promesse commerciale
+**V1 :** croissance par le **trafic grand public** (histoire météo de la France). API, océan, monde : [BACKLOG_V2_GLOBAL.md](./BACKLOG_V2_GLOBAL.md).
 
-> La meilleure information météo / climat / océan disponible pour un point et une date, avec l’origine et un niveau de confiance explicable.
+## 1. Promesse commerciale (V1)
 
-Ce n’est pas une copie de Météo-France, Windy ou Weather.com. Différenciation :
+> La mémoire météo de la France : chercher une commune, une date, des records, des comparaisons, sans jargon scientifique.
 
-- fusion multi-sources (sans moyenne aveugle)
-- transparence (source inspector)
-- histoire longue
-- terre + océans
-- time machine
-- confiance documentée
-- comparaison lieu / date / source
-- API unifiée à valeur ajoutée (pas un proxy)
+Ce n’est pas une copie de Météo-France, Windy ou Weather.com. Différenciation V1 :
+
+- historique long, lisible
+- commune → station en arrière-plan
+- provenance simple (« mesure officielle », station à X km)
+- records et « ce jour dans l’histoire »
+- comparaisons villes / années
+- SEO de pages **vraiment** utiles
 
 Marque propre. Interdit : « Météo-France World » ou tout nom d’agence.
+
+Vision V2 (terre + océans + fusion mondiale + API) : conservée, pas vendue maintenant.
 
 ## 2. Quatre étages
 
@@ -40,13 +42,11 @@ Exports CSV / JSON / PDF / PNG ; NetCDF subset éventuel.
 
 **Pas** un système officiel de sécurité maritime. **Pas** une étude climatologique certifiée automatique.
 
-### API (B2B, usage based)
+### API (B2B, usage based) — PARK V2
 
-Produits possibles : Weather History, Climate, Ocean, Source Fusion, Climate Statistics.
+Ne pas construire en V1 : clés, billing API, quotas complexes, portail développeurs.
 
-Réponse : `preferred_value` + alternatives + confidence + provenance.
-
-Metering, clés, quotas, logs. Stripe : abonnements + usage, webhooks idempotents.
+Plus tard : Weather History, Climate, éventuellement Ocean / Source Fusion. Réponse : `preferred_value` + alternatives + confidence + provenance. Stripe usage **seulement** si le moteur est déjà fiable.
 
 ## 3. Ce qui est vendu
 
@@ -54,19 +54,19 @@ Normalisation, agrégation, cache, indexation, statistiques, fusion, provenance,
 
 Interdit : `proxy_request → source gratuite`.
 
-## 4. Océan / météo / climat — marchés
+## 4. Marchés
 
-| Domaine | Exemples | Limite |
+| Priorité | Public | Limite |
 |---|---|---|
-| Océan | nautisme, plongée, surf, pêche, ports, offshore, tourisme | pas d’aide à la navigation officielle sans certification |
-| Météo | agriculture, BTP, énergie, event, médias | |
-| Climat | journalisme, collectivités, enseignement, risques | méthode visible ; pas de certification implicite |
+| V1 | Grand public (dates perso, souvenirs, climat local) | pas un terminal scientifique |
+| V1 secondaire | Enseignants, journalistes, passionnés | méthode visible ; pas de certification climatologique automatique |
+| V2 | Pro / maritime / API | pas d’aide à la navigation officielle sans certification |
 
 ## 5. SEO programmatique
 
-Pages indexables **seulement** si contenu significatif (vrai historique, vraies stats) : pays, région, ville, date, climat, records, mois, année. `fr` + `en`.
+Pages indexables **seulement** si contenu significatif (vrai historique, vraies stats) : commune, date, climat, records, mois, année. Score `seo_content_score`. Pas de millions de pages faibles. V1 : `fr`. `en` en V2.
 
-Exemples de requêtes : *historical weather Grenoble*, *climate Grenoble*, *weather Grenoble 1983*.
+Exemples : *météo historique Grenoble*, *climat Grenoble*, *météo Grenoble 1983*, *été 2003 Grenoble*.
 
 ## 6. Conformité
 
@@ -77,6 +77,10 @@ Exemples de requêtes : *historical weather Grenoble*, *climate Grenoble*, *weat
 
 ## 7. Go-to-market du MVP
 
-Le premier marché n’est pas le monde : **France**, preuve Grenoble, puis SEO communes, puis Premium source inspector.
+1. Trafic grand public France (recherche + pages communes).
+2. FREE très complet (ne pas cacher l’intérêt principal derrière un paywall).
+3. PREMIUM seulement après validation d’intérêt (comparaisons avancées, exports, favoris, éventuellement sans pub).
+4. Publicité possible techniquement, sans casser Core Web Vitals ni la crédibilité.
+5. API commerciale : V2.
 
-L’API commerciale arrive **après** un moteur fiable, pas avant.
+L’API n’arrive **pas** avant un moteur fiable. Stripe : R13 si validé.

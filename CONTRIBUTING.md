@@ -2,12 +2,13 @@
 
 ## Avant une feature
 
-1. Lire [skills/00-track-development/SKILL.md](skills/00-track-development/SKILL.md).
-2. Vérifier la phase sur [docs/STATUS.md](docs/STATUS.md) et [docs/ROADMAP.md](docs/ROADMAP.md).
-3. Vérifier `legal_status` dans [docs/DATA_LICENSES.md](docs/DATA_LICENSES.md) et `packages/licensing/registry/data-sources.yaml`.
-4. Lire le skill métier `skills/` concerné.
-5. Prévoir un test (unité, data, ou golden).
-6. Avant de fusionner : STATUS + ROADMAP à jour dans le même changement.
+1. Lire [docs/PROMPT_MAITRE_V2.md](docs/PROMPT_MAITRE_V2.md) (constitution, mot pour mot) et [skills/00-prompt-maitre/SKILL.md](skills/00-prompt-maitre/SKILL.md).
+2. Lire [skills/00-track-development/SKILL.md](skills/00-track-development/SKILL.md).
+3. Vérifier la phase sur [docs/STATUS.md](docs/STATUS.md), [docs/ROADMAP.md](docs/ROADMAP.md) et [docs/PROMPT_INDEX.md](docs/PROMPT_INDEX.md).
+4. Vérifier `legal_status` dans [docs/DATA_LICENSES.md](docs/DATA_LICENSES.md) et `packages/licensing/registry/data-sources.yaml`.
+5. Lire le skill métier `skills/` concerné.
+6. Prévoir un test (unité, data, ou golden).
+7. Avant de fusionner : STATUS + ROADMAP + PROMPT_INDEX à jour dans le même changement.
 
 ## Données
 

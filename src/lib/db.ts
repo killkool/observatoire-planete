@@ -13,6 +13,7 @@ db.pragma("journal_mode = WAL");
 db.pragma("synchronous = NORMAL");
 db.pragma("temp_store = MEMORY");
 db.pragma("foreign_keys = ON");
+db.pragma("busy_timeout = 5000");
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS stations (
@@ -48,6 +49,120 @@ db.exec(`
   );
 
   CREATE INDEX IF NOT EXISTS idx_observations_date ON observations(date);
+
+  CREATE TABLE IF NOT EXISTS annual_statistics (
+    station_id TEXT NOT NULL,
+    year INTEGER NOT NULL,
+    tmin_mean REAL,
+    tmax_mean REAL,
+    tmean_mean REAL,
+    precipitation_sum REAL,
+    precip_days_known INTEGER NOT NULL,
+    days_tmin_known INTEGER NOT NULL,
+    days_tmax_known INTEGER NOT NULL,
+    days_ge_25 INTEGER NOT NULL,
+    days_ge_30 INTEGER NOT NULL,
+    days_ge_35 INTEGER NOT NULL,
+    days_ge_40 INTEGER NOT NULL,
+    days_frost INTEGER NOT NULL,
+    tropical_nights INTEGER NOT NULL,
+    days_rain INTEGER NOT NULL,
+    year_complete INTEGER NOT NULL,
+    precip_complete INTEGER NOT NULL,
+    source_id TEXT,
+    method_version TEXT NOT NULL,
+    PRIMARY KEY (station_id, year)
+  );
+
+  CREATE TABLE IF NOT EXISTS day_of_year_statistics (
+    station_id TEXT NOT NULL,
+    month INTEGER NOT NULL,
+    day INTEGER NOT NULL,
+    tmin_mean REAL,
+    tmax_mean REAL,
+    tmin_min REAL,
+    tmin_max REAL,
+    tmax_min REAL,
+    tmax_max REAL,
+    years_tmin INTEGER NOT NULL,
+    years_tmax INTEGER NOT NULL,
+    source_id TEXT,
+    method_version TEXT NOT NULL,
+    PRIMARY KEY (station_id, month, day)
+  );
+
+  CREATE TABLE IF NOT EXISTS monthly_statistics (
+    station_id TEXT NOT NULL,
+    year INTEGER NOT NULL,
+    month INTEGER NOT NULL,
+    tmin_mean REAL,
+    tmax_mean REAL,
+    tmean_mean REAL,
+    precipitation_sum REAL,
+    precip_days_known INTEGER NOT NULL,
+    days_tmin_known INTEGER NOT NULL,
+    days_tmax_known INTEGER NOT NULL,
+    days_ge_25 INTEGER NOT NULL,
+    days_ge_30 INTEGER NOT NULL,
+    days_ge_35 INTEGER NOT NULL,
+    days_ge_40 INTEGER NOT NULL,
+    days_frost INTEGER NOT NULL,
+    tropical_nights INTEGER NOT NULL,
+    days_rain INTEGER NOT NULL,
+    month_complete INTEGER NOT NULL,
+    precip_complete INTEGER NOT NULL,
+    source_id TEXT,
+    method_version TEXT NOT NULL,
+    PRIMARY KEY (station_id, year, month)
+  );
+
+  CREATE TABLE IF NOT EXISTS seasonal_statistics (
+    station_id TEXT NOT NULL,
+    year INTEGER NOT NULL,
+    season TEXT NOT NULL,
+    tmin_mean REAL,
+    tmax_mean REAL,
+    tmean_mean REAL,
+    precipitation_sum REAL,
+    precip_days_known INTEGER NOT NULL,
+    days_tmin_known INTEGER NOT NULL,
+    days_tmax_known INTEGER NOT NULL,
+    days_ge_25 INTEGER NOT NULL,
+    days_ge_30 INTEGER NOT NULL,
+    days_ge_35 INTEGER NOT NULL,
+    days_ge_40 INTEGER NOT NULL,
+    days_frost INTEGER NOT NULL,
+    tropical_nights INTEGER NOT NULL,
+    days_rain INTEGER NOT NULL,
+    season_complete INTEGER NOT NULL,
+    precip_complete INTEGER NOT NULL,
+    source_id TEXT,
+    method_version TEXT NOT NULL,
+    PRIMARY KEY (station_id, year, season)
+  );
+
+  CREATE TABLE IF NOT EXISTS station_normals (
+    station_id TEXT NOT NULL,
+    period TEXT NOT NULL,
+    period_start INTEGER NOT NULL,
+    period_end INTEGER NOT NULL,
+    years_used INTEGER NOT NULL,
+    years_precip INTEGER NOT NULL,
+    tmin_mean REAL,
+    tmax_mean REAL,
+    tmean_mean REAL,
+    precipitation_mean REAL,
+    normal_complete INTEGER NOT NULL,
+    precip_complete INTEGER NOT NULL,
+    source_id TEXT,
+    method_version TEXT NOT NULL,
+    PRIMARY KEY (station_id, period)
+  );
+
+  CREATE INDEX IF NOT EXISTS idx_annual_statistics_station ON annual_statistics(station_id, year);
+  CREATE INDEX IF NOT EXISTS idx_monthly_statistics_station ON monthly_statistics(station_id, year, month);
+  CREATE INDEX IF NOT EXISTS idx_seasonal_statistics_station ON seasonal_statistics(station_id, season, year);
+  CREATE INDEX IF NOT EXISTS idx_station_normals_period ON station_normals(period, normal_complete);
   CREATE INDEX IF NOT EXISTS idx_observations_station_date ON observations(station_id, date);
 
   CREATE TABLE IF NOT EXISTS france_daily (
@@ -115,6 +230,19 @@ db.exec(`
     department_slug TEXT
   );
 
+  CREATE TABLE IF NOT EXISTS regions (
+    code TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    slug TEXT NOT NULL
+  );
+
+  CREATE TABLE IF NOT EXISTS departments (
+    code TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    slug TEXT NOT NULL,
+    region_code TEXT
+  );
+
   CREATE TABLE IF NOT EXISTS point_extractions (
     id TEXT PRIMARY KEY,
     latitude REAL NOT NULL,
@@ -150,6 +278,10 @@ addColumn("observations", "original_tmean", "original_tmean REAL");
 addColumn("observations", "original_precipitation", "original_precipitation REAL");
 addColumn("observations", "lineage_id", "lineage_id TEXT");
 addColumn("stations", "source_id", "source_id TEXT DEFAULT 'meteo-france.climatologie.quotidienne.bulk'");
+addColumn("places", "postal_codes", "postal_codes TEXT");
+addColumn("places", "population", "population INTEGER");
+addColumn("places", "source_id", "source_id TEXT");
+db.exec(`CREATE UNIQUE INDEX IF NOT EXISTS idx_places_insee ON places(insee_code)`);
 
 const upsertSource = db.prepare(`
   INSERT INTO data_sources(source_id, legal_status, enabled, origin_type, attribution, license_name)

@@ -7,7 +7,10 @@ export type ConfidenceInput = {
   qualitySuspect: boolean;
   coverageOk: boolean;
   interpolated: boolean;
+  /** Autre groupe de dépendance (ex. NOAA). ERA5 assimilée ≠ indépendante. */
   independentCorroboration: boolean;
+  /** Écart réanalyse − observation (°C), souvent Tmax. Cohérence, pas indépendance. */
+  reanalysisDeltaC?: number | null;
 };
 
 export type ConfidenceResult = {
@@ -78,6 +81,17 @@ export function scoreConfidence(input: ConfidenceInput): ConfidenceResult {
   if (input.independentCorroboration) {
     score += 5;
     breakdown.push({ label: "Cohérence avec une source d'un autre groupe de dépendance", delta: 5 });
+  }
+
+  if (input.reanalysisDeltaC != null && Number.isFinite(input.reanalysisDeltaC)) {
+    const absDelta = Math.abs(input.reanalysisDeltaC);
+    if (absDelta <= 2) {
+      score += 5;
+      breakdown.push({
+        label: "Cohérence avec la réanalyse (assimilation, pas une confirmation indépendante)",
+        delta: 5
+      });
+    }
   }
 
   if (input.interpolated) {

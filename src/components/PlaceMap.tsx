@@ -4,10 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { LngLatBounds, Map as MapLibreMap, Marker, NavigationControl, Popup } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 
-const IGN_ORTHO =
-  "https://data.geopf.fr/wmts?LAYER=ORTHOIMAGERY.ORTHOPHOTOS&EXCEPTIONS=text/xml&FORMAT=image/jpeg&SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetTile&STYLE=normal&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}";
-const IGN_PLAN =
-  "https://data.geopf.fr/wmts?LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&EXCEPTIONS=text/xml&FORMAT=image/png&SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetTile&STYLE=normal&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}";
+const IGN_ORTHO = "/api/tiles/ign/ortho/{z}/{y}/{x}";
+const IGN_PLAN = "/api/tiles/ign/plan/{z}/{y}/{x}";
 
 type Nearby = {
   id: string;
@@ -56,14 +54,16 @@ export default function PlaceMap({
             type: "raster",
             tiles: [IGN_ORTHO],
             tileSize: 256,
-            maxzoom: 19,
+            minzoom: 12,
+            maxzoom: 14,
             attribution: "© IGN — Géoplateforme, orthophotographie"
           },
           "ign-plan": {
             type: "raster",
             tiles: [IGN_PLAN],
             tileSize: 256,
-            maxzoom: 19,
+            minzoom: 12,
+            maxzoom: 14,
             attribution: "© IGN — Géoplateforme, Plan IGN"
           }
         },
@@ -74,7 +74,8 @@ export default function PlaceMap({
       },
       center: [placeLon, placeLat],
       zoom: 12,
-      maxZoom: 18
+      minZoom: 12,
+      maxZoom: 14
     });
     map.addControl(new NavigationControl({ showCompass: false }), "top-right");
     map.on("load", () => setReady(true));

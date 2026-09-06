@@ -1,0 +1,14 @@
+---
+description: Constitution produit — V1 France active, PROMPT MAÎTRE V2 long terme mot pour mot
+alwaysApply: true
+---
+
+# Constitution — chaque prompt
+
+**Exécuter :** `docs/V1_FRANCE_REFOCUS.md` + `docs/ROADMAP.md` (R0–R14).
+
+**Conserver mot pour mot, ne pas paraphraser, ne pas exécuter maintenant :** `docs/PROMPT_MAITRE_V2.md` (sections 0–187). Index : `docs/PROMPT_INDEX.md`. Backlog : `docs/BACKLOG_V2_GLOBAL.md`.
+
+Lire aussi `skills/00-track-development/SKILL.md`.
+
+Le slice Isère est le premier chantier de la **V1 France**, pas une réduction qui autorise à jeter la vision mondiale. Si une exigence mondiale n’est plus dans la roadmap active, elle doit être dans le backlog V2 — jamais supprimée.

@@ -13,6 +13,7 @@ export const DataOriginType = {
 
 export type DataOriginType = (typeof DataOriginType)[keyof typeof DataOriginType];
 
+/** Labels techniques (méthodologie, « En savoir plus »). */
 export const ORIGIN_LABEL_FR: Record<DataOriginType, string> = {
   OBSERVED: "Observation",
   REANALYSIS: "Réanalyse",
@@ -24,6 +25,20 @@ export const ORIGIN_LABEL_FR: Record<DataOriginType, string> = {
   BLENDED: "Produit mixte",
   MODEL: "Modèle",
   CLIMATOLOGY: "Climatologie"
+};
+
+/** Labels grand public. Le backend garde DataOriginType. */
+export const ORIGIN_LABEL_PUBLIC_FR: Record<DataOriginType, string> = {
+  OBSERVED: "Mesure officielle",
+  REANALYSIS: "Estimation climatique",
+  SATELLITE: "Image satellite",
+  FORECAST: "Prévision",
+  DERIVED: "Indicateur calculé",
+  HOMOGENIZED: "Série climatique corrigée",
+  INTERPOLATED: "Estimation interpolée",
+  BLENDED: "Produit mixte",
+  MODEL: "Modèle",
+  CLIMATOLOGY: "Normale climatique"
 };
 
 export function assertNotObservation(origin: DataOriginType) {

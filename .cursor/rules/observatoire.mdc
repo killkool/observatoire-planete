@@ -1,10 +1,17 @@
 ---
-description: Règles produit Observatoire Planète — licences, sources, honnêteté scientifique
+description: Règles produit Observatoire Planète — V1 France, licences, honnêteté scientifique
 alwaysApply: true
 ---
 
-Lire `AGENTS.md`, `skills/00-track-development/SKILL.md`, `docs/STATUS.md` et `docs/ROADMAP.md` avant d’implémenter. Mettre à jour STATUS + ROADMAP dans le même lot que le code.
+Lire `docs/V1_FRANCE_REFOCUS.md`, `docs/ROADMAP.md` (phases R0–R14) et `docs/STATUS.md` avant d’implémenter.
+Audit KEEP/ADAPT/PARK/REMOVE : `docs/V1_FRANCE_REFOCUS_AUDIT.md`.
+Vision mondiale (ne pas exécuter en V1) : `docs/PROMPT_MAITRE_V2.md` mot pour mot, `docs/BACKLOG_V2_GLOBAL.md`.
+Stack cible V1 : `docs/ARCHITECTURE_PRODUCTION.md` + `docs/adr/ADR-0002-production-stack-v1.md`. Runtime actuel = SQLite ; ne pas inventer un hébergement.
+
+Mettre à jour STATUS + ROADMAP dans le même lot que le code. Index 0–187 : cases PARK, ne pas les effacer.
 
 Ne jamais inventer donnée, licence, API ou quota. E-OBS interdit. Réanalyse ≠ observation.
-Pas de connecteur hors `APPROVED_COMMERCIAL`. Skills dans `skills/`.
-Vertical slice : Isère → Météo-France → Grenoble (date réelle) → provenance → confiance. ERA5 point : pas encore ingéré.
+Pas de connecteur hors `APPROVED_COMMERCIAL`. Skills ACTIVE dans `docs/SKILLS.md`.
+V1 : Isère → Météo-France → commune → date réelle → provenance. ERA5 = R9 (France seulement). Pas d’ERA5 mondial, pas d’océan, pas d’API commerciale.
+Ne pas supprimer le travail mondial : PARK + flags `ENABLE_GLOBAL_DATA=false`.
+UI grand public : pas de jargon ERA5/GRIB en premier.

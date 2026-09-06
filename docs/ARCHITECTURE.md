@@ -2,192 +2,156 @@
 
 Nom de travail : **Observatoire Planète**. Marque propre. Les fournisseurs sont des **sources**, pas des partenaires.
 
-## 1. État actuel vs cible
+**Cible V1 :** historique météo **France**, grand public.  
+**Référence technique officielle :** [ARCHITECTURE_PRODUCTION.md](./ARCHITECTURE_PRODUCTION.md) (ADR-0002). Runtime actuel = prototype **SQLite / Next.js 15 / Recharts** — pas un hébergement Vercel/Supabase déjà branché.  
+**Cible V2/V3 :** extension Europe → monde, océans, prévisions — [BACKLOG_V2_GLOBAL.md](./BACKLOG_V2_GLOBAL.md). Ne pas construire le data lake mondial maintenant.
 
-| Aujourd’hui (prototype, 2026-09-06) | Cible |
+Détail produit : [V1_FRANCE_REFOCUS.md](./V1_FRANCE_REFOCUS.md). Audit : [V1_FRANCE_REFOCUS_AUDIT.md](./V1_FRANCE_REFOCUS_AUDIT.md).
+
+## 1. État actuel vs cible V1
+
+| Aujourd’hui (2026-09-06) | Cible V1 |
 |---|---|
-| App Next.js unique (`src/`) | Monorepo `apps/web`, `apps/api`, `apps/worker`, `apps/tile-server` |
-| SQLite `data/meteo.sqlite` (1,2 M obs Isère) | PostgreSQL / PostGIS (métadonnées, stations, agrégats) + object storage (grilles) |
-| Import MF bulk + checksum + lineage | Pipelines idempotents + source registry Postgres + checksum + lineage |
-| Moyenne arithmétique « France » sur `/dashboard` seulement | Jamais présentée comme indicateur officiel ; stats documentées |
-| MapLibre + tuiles IGN sur la page lieu ; Recharts sur le prototype | MapLibre + couches métier ; identité Earth Observatory |
-| Une observation MF préférée + ERA5 prévu non ingéré | Global Weather Source Engine |
+| App Next.js unique (`src/`) | Même app tant que ça tient ; split `apps/` seulement si besoin mesuré |
+| SQLite `data/meteo.sqlite` (1,2 M obs Isère) + stats précalculées `annual_statistics` | PostgreSQL / PostGIS (Supabase) + Cloudflare R2 |
+| Import MF bulk + checksum + lineage | Idem, worker **Python / Polars / DuckDB** (Docker) |
+| Graphiques Recharts | ECharts (cible) ; Recharts tant que le prototype tient |
+| MapLibre + tuiles IGN page lieu | MapLibre + **PMTiles** (cible) ; IGN conservé pour le lieu |
+| Matching station v1 + une obs préférée | Mapping commune↔station (jour) + station climatique (série) |
+| Accueil « planète » | Recherche commune France, storytelling |
+| ERA5 point Grenoble (1 jour, comparaison sans fusion) | R9 remainder : subset France, pas mondial |
+| Schéma `packages/database/schema/` Postgres | Garder les noms **génériques** ; n’implémenter que les tables utiles |
 
-Le prototype **reste utilisable** pendant la migration. Il ne dicte pas le modèle de données.
+Le prototype `/dashboard` **reste utilisable** pour l’import local. Il ne dicte pas le produit.
 
-## 2. Monorepo
+ClickHouse : **absent**. Redis : **pas au lancement** (ADR-0002).
+
+## 2. Schéma V1 (simple)
 
 ```
-/
-  apps/web/            Next.js App Router, TypeScript strict, Tailwind, SSR
-  apps/api/            API interne / future API commerciale
-  apps/worker/         ingestion, agrégats, records, exports
-  apps/tile-server/    rasters / vecteurs
-  packages/
-    database/
-    weather-core/      unités, variables, origin types
-    source-engine/
-    confidence-engine/
-    climate-statistics/
-    geo/
-    ocean/
-    map/
-    ui/
-    auth/
-    billing/
-    licensing/
-    provenance/
-  pipelines/           un dossier par provider
-  skills/
-  docs/
-  infrastructure/
-  tests/
-  scripts/
-  config/
+Navigateur (Next.js, mobile first)
+  → API interne /api/v1/search | communes | history | records | compare (années **ou** villes Isère) | yearly (normale, records, tendance OLS, mois, 4 saisons, épisodes Tmax) | sources | OG `/og/{slug}/{date}`
+  → SQLite puis PostgreSQL (places INSEE, stations, observations, stats)
+  → object storage : raw/meteo-france/... ; era5 France subset
+
+Flags (défaut false) : ENABLE_GLOBAL_DATA, ENABLE_OCEAN, ENABLE_GLOBAL_SEARCH
 ```
 
-Durant la Phase 1, `src/` du prototype peut cohabiter. Toute nouvelle feature va dans la structure cible.
+Noms de services génériques (`WeatherObservation`, `MeteoFranceProvider`, `ERA5Provider`). Pas `FrenchTemperatureService`. Pas d’orchestrateur mondial.
+
+Packages déjà utiles : `weather-core`, `source-engine`, `confidence-engine`, `licensing`, `geo`.  
+Packages `ocean`, `billing`, `auth` : ne pas les créer tant que PARK.
 
 ## 3. Séparation des plans
 
 ```
-Utilisateur → web (SSR) → API v1 → caches L1/L2/(L3) → PostgreSQL
-                                              ↘ object storage (Zarr/GRIB/COG)
-Workers / scheduler → ingestion bulk → raw (immuable) → standardized → derived
+Utilisateur → web (SSR) → API v1 → cache Next/CDN → PostgreSQL
+Workers plus tard → ingestion bulk → raw (immuable) → observations + derived
 ```
 
-Une page vue normale **ne déclenche pas** : téléchargement CDS, appel MF, appel NOAA, job ERA5 lourd.
+Une page vue normale **ne déclenche pas** : téléchargement CDS, appel MF, job ERA5.
 
 ## 4. Stockage
 
-### PostgreSQL / PostGIS
+### PostgreSQL / PostGIS (cible V1)
 
-Utilisateurs, lieux, stations, observations **ponctuelles**, agrégats, records, mappings, licences, provenance, abonnements.
+Communes, départements, régions, stations, historique de poste, observations quotidiennes, mapping commune–station, stats mensuelles/saisonnières/annuelles, day-of-year, records, normales, licences, jobs d’import, qualité.
 
-Partitionner observations **quand** les mesures le justifient (année ou source), pas avant.
+Horaires : seulement si un écran le justifie.
 
-Index : GiST nearest station, point-in-polygon, lookups INSEE / ISO.
+Index : INSEE, nearest station, date+station.
 
 ### Object storage
 
 ```
 raw/meteo-france/...
-raw/noaa/ghcn/...
-raw/noaa/isd/...
-raw/copernicus/era5/...
-raw/copernicus/marine/...
-raw/ecmwf/...
+raw/copernicus/era5/france/...
 standardized/...
 derived/...
-public/tiles/...
 quarantine/...
 ```
 
-Ne jamais écraser `raw/`. Version + `supersedes` + checksum.
+Ne jamais écraser `raw/`. Les préfixes `raw/noaa/`, `raw/copernicus/marine/`, `raw/ecmwf/` restent prévus **sur le papier** (V2), pas à remplir en V1.
 
-### Interdit
+### Interdit V1
 
-Stocker la grille mondiale ERA5 horaire en lignes SQL.
+Stocker la grille mondiale ERA5 horaire en SQL ou en object storage « au cas où ».
 
 ## 5. Formats
 
-| Besoin | Format |
+| Besoin V1 | Format |
 |---|---|
-| Multidim cloud | Zarr |
-| Tables analytiques | Parquet (+ DuckDB en job) |
-| Rasters web | COG, tuiles |
-| Source scientifique | NetCDF, GRIB |
-| Cartes vecteur précalculées | PMTiles |
-| Métadonnées | PostgreSQL |
+| Observations / stats | PostgreSQL (SQLite tant que le slice tient) |
+| Source MF | CSV.GZ |
+| ERA5 subset | GRIB / NetCDF / JSON point — backend seulement |
+| Cartes lieu | WMTS IGN (pas de grille météo navigateur) |
 
-Python data : Polars, PyArrow, Xarray, Zarr, cfgrib/eccodes, rasterio, psycopg, httpx, pydantic. Dask seulement si mesuré nécessaire. Copernicus Marine Toolbox pour CMEMS.
+Zarr / cfgrib : outils ERA5, ils ne dictent pas l’architecture produit.
 
 ## 6. Frontend
 
-- Next.js Active LTS (aujourd’hui : 15.x dans le prototype ; ne pas figer une version obsolète)
-- React + TypeScript strict + App Router + SSR / Server Components
-- Tailwind + design system maison (`packages/ui`)
-- Apache ECharts
-- MapLibre GL JS
-- Deck.gl / WebGL seulement si couches massives ou particules vent/courants
-- i18n dès l’architecture : `fr`, `en` ; unités °C/°F, km/h/mph/kn, mm/in
-- Pas de millions de nœuds DOM
+- Next.js 15 (cible prod : Next.js sur Vercel, TS strict)
+- Design éditorial météo / souvenir / histoire — pas un dashboard froid
+- Graphiques : Recharts aujourd’hui ; **ECharts** cible production
+- MapLibre + IGN (PMTiles plus tard)
+- i18n : français V1 ; `en` en V2
+- Unités UI : °C, km/h, mm, hPa, heures de soleil
+- Accueil : barre « Recherchez votre ville »
+- Mobile first
 
-UX : Earth Observatory / data journalism, pas dashboard SaaS générique, pas clone Windy.
+Labels publics : Mesure officielle / Série climatique corrigée / Estimation climatique. Codes `OBSERVED` / `REANALYSIS` derrière « En savoir plus ».
 
-Accueil : recherche mondiale + globe + timeline. CTA « Explorer un lieu » / « Remonter dans le temps ».
+## 7. Source engine (V1)
 
-Mobile : carte + bottom sheet + timeline + couches.
+Ordre par défaut France :
 
-## 7. Click anywhere
+1. observation Météo-France appropriée
+2. autre poste MF pertinent
+3. série homogénéisée si dataset identifié et adapté
+4. ERA5 / ERA5-Land en complément
 
-1. Point → land / ocean / coast / large lake  
-2. Panneau terre ou océan  
-3. Source engine selon variable et date  
-4. Timeline bornée à la **couverture réelle** de chaque source
+Jamais `mean(MF, ERA5)` comme vérité. Ranking **par variable × période**, pas une hiérarchie figée pour tout.
 
-## 8. Source engine
+## 8. Confidence engine
 
-Package `source-engine` :
+Conservé. Affichage public secondaire. Voir [CONFIDENCE_MODEL.md](./CONFIDENCE_MODEL.md).
 
-- catalogue + ranking **par pays × variable × période**
-- cross-validation (écarts, pas de moyenne aveugle)
-- `source_dependency_group`
-- best source + alternatives
-- extraction point : `nearest` | `bilinear` | `area_average` (défaut documenté par produit)
+## 9. API interne V1
 
-## 9. Confidence engine
+Priorité :
 
-Score documenté, pas un nombre magique. Voir [CONFIDENCE_MODEL.md](./CONFIDENCE_MODEL.md).
+- `GET /api/v1/search`
+- `GET /api/v1/communes/{insee}`
+- `GET /api/v1/communes/{insee}/daily|monthly|yearly|records`
+- `GET /api/v1/compare`
+- `GET /api/v1/sources`
 
-## 10. API
+Slice actuel : `/api/v1/history?place=&date=` + `GET /api/v1/communes/{insee}/yearly` (années, étés, normale 1991-2020 si ≥ 24 ans climatiques, records d’année observés, anomalies seulement si même poste) + `GET /api/v1/compare` + childhood. **Pas** d’API keys / billing.
 
-Interne versionnée :
+## 10. Caches
 
-`/api/v1/location` `point` `history` `climate` `records` `sources` `compare` `ocean` `forecast` `stations` `tiles`
+SQLite local + `raw/` + cache tuiles IGN (`data/tiles/ign/`, uniquement les tuiles déjà affichées). Une page vue ne frappe ni data.gouv, ni geo.api, ni Météo-France. IGN : au plus la première fois qu’une tuile manque, 2 requêtes simultanées max. Redis **interdit au lancement** (ADR-0002). `npm run stats:compute` n’est **jamais** déclenché par une page vue.
 
-Réponse commerciale type : `preferred_value`, `unit`, `source`, `source_type`, `confidence`, `alternatives`, `quality`, `provenance`, `data_version`, `method_version`.
+## 11. Ingestion
 
-Valeur vendue : normalisation, cache, index, stats, fusion, provenance, SLA — **pas** le proxy d’une API gratuite.
+Bulk > API unitaire. **Local-first** : relire `raw/` avant tout HTTP. Idempotence + checksum. Ne jamais écraser `raw/`. Schema drift → stop + quarantine. Tests qualité : **flag**, pas suppression silencieuse. Volumes : [V1_DATA_VOLUME.md](./V1_DATA_VOLUME.md).
 
-## 11. Caches (L1→L5)
+## 12. Sécurité
 
-Application → CDN → Redis **si justifié** → produits précalculés → object storage.
+Secrets serveur. Jamais de jeton CDS / MF / S3 dans le client. SQL paramétré. RGPD dès qu’il y a des comptes (R13).
 
-Précalcul : agrégats journaliers/mensuels/annuels, records, normales, day-of-year, villes fréquentes.
+## 13. Tests
 
-Hot / warm / cold selon fraîcheur et popularité.
+`npm run test:science` (local + GitHub Actions). Golden Grenoble 1983-05-12 si la base est importée. Feature sans test : non.
 
-## 12. Ingestion
+## 14. IA
 
-- Bulk > API unitaire
-- Idempotence (clé naturelle + checksum)
-- Schema drift → stop + quarantine
-- Quality tests prudents (Tmin ≤ Tmax, RR ≥ 0, …) : **flag**, pas suppression silencieuse
-- Sync metadata : `update_frequency`, `last_successful_import`, `source_version`
+N’invente jamais une valeur manquante. Absent = « Non disponible ».
 
-## 13. Sécurité
+## 15. ADR
 
-Secrets serveur (Vault / env). Jamais de jeton CDS / CMEMS / MF / S3 dans le client. Auth rôles FREE / PREMIUM / PRO / ADMIN / API_CUSTOMER. Rate limit, CSP, OWASP, RGPD (export / delete). Stripe webhooks idempotents.
-
-## 14. Observabilité & FinOps
-
-Logs structurés, métriques d’import, lag source, coût storage/egress/compute, coût / 1000 pageviews. Alertes : pipeline, licence, schema, volume, spike coût.
-
-## 15. Tests
-
-Unit, integration, data, statistical, GIS, E2E, load, security. Golden datasets : Grenoble, Paris, altitude (Mont Aiguille), Marseille côte, Méditerranée, New York, Tokyo. Régression scientifique : moyennes, records, unités, bornes de jour, direction du vent.
-
-## 16. IA
-
-Une IA **n’invente jamais** une valeur manquante. Elle explique à partir de stats du moteur. Absent = « non disponible ».
-
-## 17. Décisions à consigner en ADR
-
-- ADR stockage ERA5 (point + daily régional vs Zarr mondial)
+- ADR-0001 France bulk first (toujours valable)
+- [ADR-0002](./adr/ADR-0002-production-stack-v1.md) stack production V1 (cible, pas le runtime local)
+- ADR stockage ERA5 France (R9)
 - ADR ranking sources France
-- ADR modèle de confiance
-- ADR tuiles
-- ADR produits CMEMS Méditerranée (DOI)
-
-Voir `docs/adr/`.
+- ADR modèle de confiance (déjà partiel)

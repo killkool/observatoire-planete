@@ -34,6 +34,15 @@ export const SOURCE_CATALOG: SourceRecord[] = [
     licenseName: "CC-BY-4.0"
   },
   {
+    sourceId: "etalab.geo-api.communes",
+    legalStatus: "APPROVED_COMMERCIAL",
+    enabled: true,
+    originType: "DERIVED",
+    attribution:
+      "Source : API Découpage administratif (geo.api.gouv.fr — DINUM / INSEE). Licence Ouverte 2.0. Aucun contour OSM importé.",
+    licenseName: "Licence Ouverte 2.0"
+  },
+  {
     sourceId: "ecad.e-obs",
     legalStatus: "DISABLED",
     enabled: false,

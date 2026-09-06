@@ -1,10 +1,11 @@
 # Catalogue des sources de données
 
 **Audit :** 2026-09-06  
-**Complément juridique :** [DATA_LICENSES.md](./DATA_LICENSES.md)  
-**Principe :** plusieurs sources, jamais une seule. Le *Global Weather Source Engine* classe, compare et n’assimile pas une réanalyse à une observation.
+**Complément juridique :** [DATA_LICENSES.md](./DATA_LICENSES.md) · [LEGAL.md](./LEGAL.md)
 
-Aucune source n’est activée en production commerciale sans `legal_status` compatible.
+**V1 :** Météo-France est la source **principale**. ERA5 est un **complément** (France seulement). NOAA, CMEMS, ECMWF forecast : catalogués ci-dessous, **PARK** ([BACKLOG_V2_GLOBAL.md](./BACKLOG_V2_GLOBAL.md)).
+
+**Principe (inchangé) :** plusieurs sources, jamais une seule. Le moteur classe, compare et n’assimile pas une réanalyse à une observation. Aucune source n’est activée en production commerciale sans `legal_status` compatible.
 
 ---
 
@@ -18,14 +19,16 @@ Entrée :
 - variable canonique
 - résolution souhaitée
 
-Recherche, dans l’ordre **configurable** (jamais figé « MF > NOAA > ERA5 » pour toutes les variables) :
+Recherche, dans l’ordre **configurable** (jamais figé pour toutes les variables) :
 
-1. station nationale officielle
-2. autre observation fiable
-3. réseau international
-4. réanalyse
-5. satellite / analyse
-6. produit dérivé
+**V1 France :**
+
+1. observation officielle Météo-France appropriée
+2. autre station Météo-France pertinente
+3. longue série homogénéisée lorsque le dataset est identifié et adapté
+4. ERA5 / ERA5-Land en complément
+
+**V2 (extensible, non exécuté) :** réseau international, satellite, océan, prévision — toujours sans moyenne aveugle.
 
 Sortie : toutes les sources utiles + valeur préférée éventuelle + alternatives + confiance + provenance.
 
@@ -123,7 +126,8 @@ Département 38 (Isère). Identifiants de postes : ceux du fichier MF, jamais un
 | Incertitude | ensemble 10 membres, 3 h, 0.5° |
 | Fichier | GRIB (CDS) ; Zarr/ARCO chez certains miroirs |
 | Fraîcheur | ERA5T ~5 jours ; final 2–3 mois |
-| UI | « Réanalyse ERA5 » — jamais « Observation ERA5 » |
+| V1 | Un point Grenoble 1983-05-12 ingéré. Pas de subset France, pas de grille mondiale. |
+| UI | Grand public : « Estimation climatique ». Technique (« En savoir plus ») : réanalyse ERA5 — jamais « Observation ERA5 » |
 
 ### Variables prioritaires (Phase 11, sous-ensemble France d’abord)
 
@@ -217,7 +221,7 @@ Catalogué uniquement pour **interdiction**. `DISABLED`. Voir [DATA_LICENSES.md]
 
 | Couche | Source candidate | Statut licence |
 |---|---|---|
-| Communes / dép. / régions FR | IGN ADMIN EXPRESS COG | APPROVED_COMMERCIAL |
+| Communes / dép. / régions FR | IGN ADMIN EXPRESS COG (cible) ; **V1 Isère** : API Découpage administratif geo.api.gouv.fr (centres uniquement) | APPROVED_COMMERCIAL |
 | Identifiant FR | code INSEE | — |
 | Pays ISO 3166 | registre interne + source géographique audité | — |
 | Land/ocean/coast | à choisir (ERA5 LSM, GSHHG, etc.) | audit au moment du choix |

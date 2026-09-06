@@ -3,18 +3,13 @@ import Image from "next/image";
 const KINDS = [
   {
     src: "/images/origin-observed.png",
-    title: "Observation",
-    text: "Une station a mesuré. Distance, altitude et numéro de poste restent visibles."
+    title: "Mesure officielle",
+    text: "Un poste Météo-France a relevé la température et la pluie. La station n’est pas forcément dans la commune : la distance reste indiquée."
   },
   {
     src: "/images/origin-reanalysis.png",
-    title: "Réanalyse",
-    text: "ERA5 n’est pas une station. Quand elle est là, elle est comparée, jamais fusionnée."
-  },
-  {
-    src: "/images/origin-forecast.png",
-    title: "Prévision",
-    text: "Le futur restera une couche à part. Jamais présenté comme un relevé."
+    title: "Estimation climatique",
+    text: "Quand aucune station pertinente n’existe, une réanalyse peut compléter. Ce n’est pas un thermomètre."
   }
 ] as const;
 

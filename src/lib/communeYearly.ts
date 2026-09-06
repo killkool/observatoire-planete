@@ -1,0 +1,631 @@
+import { rankStationsForPlace } from "../../packages/source-engine/src/stationMatch";
+import { roundToPrecision } from "../../packages/weather-core/src/units";
+import {
+  childhoodVsRecent,
+  compareCityClimate,
+  compareCompleteYears,
+  hottestCompleteSeason,
+  type ChildhoodCompareOk,
+  type CompareFail,
+  type SeasonClimatePoint,
+  type YearClimatePoint
+} from "./compareClimate";
+import {
+  anomaly,
+  DEFAULT_NORMAL_PERIOD,
+  MIN_NORMAL_COMPLETE_YEARS,
+  observedYearRecords,
+  type ObservedYearRecords
+} from "./climateNormals";
+import { stationWarmingTrend, type WarmingResult } from "./climateTrend";
+import { emptyHeatStreaks, stationHeatStreaks, type DailyTmax, type HeatStreakResult } from "./climateHeatStreaks";
+import { coldestCompleteSeasonOf } from "./climateSeasons";
+import {
+  observedMonthRecords,
+  type MonthClimatePoint,
+  type ObservedMonthRecords
+} from "./climateMonths";
+import {
+  listAnnualStats,
+  listCompleteNormalStations,
+  listMonthlyStats,
+  listSeasonalStats,
+  getStationNormal,
+  STATS_METHOD,
+  COMPLETE_DAY_THRESHOLD,
+  COMPLETE_MONTH_DAY_THRESHOLD,
+  COMPLETE_SEASON_DAY_THRESHOLD
+} from "./computeStatistics";
+import db from "./db";
+import { getPlaceByInsee, type PlaceRow } from "./placeHistory";
+import { communePath } from "./placeUrl";
+
+const CLIMATE_COMPLETE_YEARS_MIN = 10;
+
+type ClimateStationRow = {
+  id: string;
+  name: string;
+  latitude: number | null;
+  longitude: number | null;
+  altitude: number | null;
+  years: number;
+  complete_years: number;
+};
+
+type ChildhoodEligibleRow = {
+  id: string;
+  name: string;
+  latitude: number | null;
+  longitude: number | null;
+  altitude: number | null;
+  child_n: number;
+  recent_n: number;
+};
+
+export type CommuneNormalPayload = {
+  period: string;
+  minYearsRequired: number;
+  available: boolean;
+  sameStation: boolean;
+  yearsUsed: number;
+  station: {
+    id: string;
+    name: string;
+    distanceKm: number | null;
+  } | null;
+  tminMean: number | null;
+  tmaxMean: number | null;
+  precipitationMean: number | null;
+  precipAvailable: boolean;
+  reason: string | null;
+};
+
+export type CommuneYearlyPayload = {
+  computed: boolean;
+  methodVersion: string;
+  completeDayThreshold: number;
+  completeMonthDayThreshold: number;
+  completeSeasonDayThreshold: number;
+  commune: {
+    insee: string;
+    name: string;
+    slug: string;
+  };
+  station: {
+    id: string;
+    name: string;
+    distanceKm: number | null;
+    altitudeDeltaM: number | null;
+    completeYears: number;
+    yearsInTable: number;
+  } | null;
+  disclaimer: string | null;
+  years: YearClimatePoint[];
+  seasons: SeasonClimatePoint[];
+  summers: SeasonClimatePoint[];
+  hottestSummer: SeasonClimatePoint | null;
+  coldestWinter: SeasonClimatePoint | null;
+  months: MonthClimatePoint[];
+  monthRecords: ObservedMonthRecords;
+  normal: CommuneNormalPayload;
+  yearRecords: ObservedYearRecords;
+  warming: WarmingResult;
+  heat: HeatStreakResult;
+};
+
+export function getCommuneYearly(insee: string): CommuneYearlyPayload | null {
+  const place = getPlaceByInsee(insee);
+  if (!place) return null;
+
+  const computed = (db.prepare(`SELECT COUNT(*) AS c FROM annual_statistics`).get() as { c: number }).c > 0;
+  if (!computed) {
+    return emptyPayload(place, false);
+  }
+
+  const stations = db.prepare(
+    `
+    SELECT s.id, s.name, s.latitude, s.longitude, s.altitude,
+           COUNT(*) AS years,
+           SUM(a.year_complete) AS complete_years
+    FROM annual_statistics a
+    JOIN stations s ON s.id = a.station_id
+    GROUP BY s.id
+    `
+  ).all() as ClimateStationRow[];
+
+  const withClimate = stations.filter((s) => s.complete_years >= CLIMATE_COMPLETE_YEARS_MIN);
+  const pool = withClimate.length ? withClimate : stations;
+  const ranked = rankStationsForPlace(
+    place.latitude,
+    place.longitude,
+    place.altitude_m,
+    pool.map((s) => ({
+      id: s.id,
+      name: s.name,
+      latitude: s.latitude,
+      longitude: s.longitude,
+      altitude: s.altitude,
+      coverageDays: s.complete_years * 365,
+      hasTempOnDate: s.complete_years >= CLIMATE_COMPLETE_YEARS_MIN
+    }))
+  );
+  const preferred = ranked[0] ?? null;
+  if (!preferred) return emptyPayload(place, true);
+
+  const meta = stations.find((s) => s.id === preferred.id);
+  const altitudeDeltaM =
+    preferred.altitude != null && place.altitude_m != null ? preferred.altitude - place.altitude_m : preferred.altitude;
+  const distanceKm = roundToPrecision(preferred.distanceKm, 2);
+  const seasons: SeasonClimatePoint[] = listSeasonalStats(preferred.id).map((row) => ({
+    year: row.year,
+    season: row.season,
+    tminMean: roundToPrecision(row.tmin_mean, 1),
+    tmaxMean: roundToPrecision(row.tmax_mean, 1),
+    precipitationSum: row.precip_complete ? roundToPrecision(row.precipitation_sum, 1) : null,
+    daysGe30: row.days_ge_30,
+    seasonComplete: row.season_complete === 1,
+    precipComplete: row.precip_complete === 1
+  }));
+  const summers = seasons.filter((row) => row.season === "JJA");
+  const months: MonthClimatePoint[] = listMonthlyStats(preferred.id).map((row) => ({
+    year: row.year,
+    month: row.month,
+    tminMean: roundToPrecision(row.tmin_mean, 1),
+    tmaxMean: roundToPrecision(row.tmax_mean, 1),
+    precipitationSum: row.precip_complete ? roundToPrecision(row.precipitation_sum, 1) : null,
+    daysGe30: row.days_ge_30,
+    monthComplete: row.month_complete === 1,
+    precipComplete: row.precip_complete === 1
+  }));
+
+  const ownNormalRow = getStationNormal(preferred.id);
+  const ownComplete = ownNormalRow?.normal_complete === 1;
+  const ownTmin = ownComplete && ownNormalRow ? roundToPrecision(ownNormalRow.tmin_mean, 1) : null;
+  const ownTmax = ownComplete && ownNormalRow ? roundToPrecision(ownNormalRow.tmax_mean, 1) : null;
+  const annualRows = listAnnualStats(preferred.id);
+  const years: YearClimatePoint[] = annualRows.map((row) => {
+    const tminMean = roundToPrecision(row.tmin_mean, 1);
+    const tmaxMean = roundToPrecision(row.tmax_mean, 1);
+    const yearComplete = row.year_complete === 1;
+    return {
+      year: row.year,
+      tminMean,
+      tmaxMean,
+      precipitationSum: row.precip_complete ? roundToPrecision(row.precipitation_sum, 1) : null,
+      daysGe30: row.days_ge_30,
+      yearComplete,
+      precipComplete: row.precip_complete === 1,
+      tminAnomaly: yearComplete && ownComplete ? roundToPrecision(anomaly(tminMean, ownTmin), 1) : null,
+      tmaxAnomaly: yearComplete && ownComplete ? roundToPrecision(anomaly(tmaxMean, ownTmax), 1) : null
+    };
+  });
+  const warming = stationWarmingTrend(
+    annualRows.map((row) => ({
+      year: row.year,
+      yearComplete: row.year_complete === 1,
+      tminMean: row.tmin_mean,
+      tmaxMean: row.tmax_mean,
+      daysGe30: row.days_ge_30,
+      daysFrost: row.days_frost,
+      tropicalNights: row.tropical_nights
+    }))
+  );
+
+  const normal = resolveCommuneNormal({
+    place,
+    climateStationId: preferred.id,
+    climateStationName: preferred.name,
+    climateDistanceKm: roundToPrecision(preferred.distanceKm, 1),
+    ownRow: ownNormalRow
+  });
+
+  return {
+    computed: true,
+    methodVersion: STATS_METHOD,
+    completeDayThreshold: COMPLETE_DAY_THRESHOLD,
+    completeMonthDayThreshold: COMPLETE_MONTH_DAY_THRESHOLD,
+    completeSeasonDayThreshold: COMPLETE_SEASON_DAY_THRESHOLD,
+    commune: { insee: place.insee_code, name: place.name, slug: place.slug },
+    station: {
+      id: preferred.id,
+      name: preferred.name,
+      distanceKm,
+      altitudeDeltaM: altitudeDeltaM != null ? roundToPrecision(altitudeDeltaM, 0) : null,
+      completeYears: meta?.complete_years ?? 0,
+      yearsInTable: meta?.years ?? years.length
+    },
+    disclaimer: `Évolution d’après la station ${preferred.name} à ${roundToPrecision(preferred.distanceKm, 1)} km. Ce n’est pas une concaténation de plusieurs postes, ni une moyenne de la commune.`,
+    years,
+    seasons,
+    summers,
+    hottestSummer: hottestCompleteSeason(summers),
+    coldestWinter: coldestCompleteSeasonOf(seasons, "DJF"),
+    months,
+    monthRecords: observedMonthRecords(months),
+    normal,
+    yearRecords: observedYearRecords(years),
+    warming,
+    heat: stationHeatStreaks(listStationDailyTemps(preferred.id))
+  };
+}
+
+export function getCommuneYearCompare(insee: string, yearA: number, yearB: number) {
+  const yearly = getCommuneYearly(insee);
+  if (!yearly) return null;
+  const a = yearly.years.find((row) => row.year === yearA);
+  const b = yearly.years.find((row) => row.year === yearB);
+  return {
+    computed: yearly.computed,
+    methodVersion: yearly.methodVersion,
+    commune: yearly.commune,
+    station: yearly.station,
+    disclaimer: yearly.disclaimer,
+    yearA: a ?? null,
+    yearB: b ?? null,
+    comparison: compareCompleteYears(a, b)
+  };
+}
+
+function toCitySide(yearly: CommuneYearlyPayload) {
+  return {
+    insee: yearly.commune.insee,
+    name: yearly.commune.name,
+    station: yearly.station
+      ? { id: yearly.station.id, name: yearly.station.name, distanceKm: yearly.station.distanceKm }
+      : null,
+    years: yearly.years,
+    normal: {
+      available: yearly.normal.available,
+      sameStation: yearly.normal.sameStation,
+      period: yearly.normal.period,
+      tminMean: yearly.normal.tminMean,
+      tmaxMean: yearly.normal.tmaxMean,
+      precipitationMean: yearly.normal.precipitationMean,
+      precipAvailable: yearly.normal.precipAvailable,
+      stationId: yearly.normal.station?.id ?? null
+    }
+  };
+}
+
+function roundCityNumber(value: number | null): number | null {
+  return roundToPrecision(value, 1);
+}
+
+export function getCommuneCityCompare(inseeA: string, inseeB: string) {
+  const yearlyA = getCommuneYearly(inseeA);
+  const yearlyB = getCommuneYearly(inseeB);
+  if (!yearlyA || !yearlyB) return null;
+  const placeA = getPlaceByInsee(inseeA);
+  const placeB = getPlaceByInsee(inseeB);
+  const comparison = compareCityClimate(toCitySide(yearlyA), toCitySide(yearlyB));
+  const overlap =
+    comparison.overlap.comparable
+      ? {
+          ...comparison.overlap,
+          tminMeanA: roundCityNumber(comparison.overlap.tminMeanA),
+          tmaxMeanA: roundCityNumber(comparison.overlap.tmaxMeanA),
+          tminMeanB: roundCityNumber(comparison.overlap.tminMeanB),
+          tmaxMeanB: roundCityNumber(comparison.overlap.tmaxMeanB),
+          tminDelta: roundCityNumber(comparison.overlap.tminDelta),
+          tmaxDelta: roundCityNumber(comparison.overlap.tmaxDelta),
+          precipMeanA: roundCityNumber(comparison.overlap.precipMeanA),
+          precipMeanB: roundCityNumber(comparison.overlap.precipMeanB),
+          precipDelta: roundCityNumber(comparison.overlap.precipDelta)
+        }
+      : comparison.overlap;
+  const normals =
+    comparison.normals.comparable
+      ? {
+          ...comparison.normals,
+          tminMeanA: roundCityNumber(comparison.normals.tminMeanA),
+          tmaxMeanA: roundCityNumber(comparison.normals.tmaxMeanA),
+          tminMeanB: roundCityNumber(comparison.normals.tminMeanB),
+          tmaxMeanB: roundCityNumber(comparison.normals.tmaxMeanB),
+          tminDelta: roundCityNumber(comparison.normals.tminDelta),
+          tmaxDelta: roundCityNumber(comparison.normals.tmaxDelta),
+          precipMeanA: roundCityNumber(comparison.normals.precipMeanA),
+          precipMeanB: roundCityNumber(comparison.normals.precipMeanB),
+          precipDelta: roundCityNumber(comparison.normals.precipDelta)
+        }
+      : comparison.normals;
+
+  return {
+    computed: yearlyA.computed && yearlyB.computed,
+    methodVersion: yearlyA.methodVersion,
+    communeA: {
+      ...yearlyA.commune,
+      path: placeA ? communePath(placeA) : null
+    },
+    communeB: {
+      ...yearlyB.commune,
+      path: placeB ? communePath(placeB) : null
+    },
+    stationA: yearlyA.station,
+    stationB: yearlyB.station,
+    sameStation: comparison.sameStation,
+    overlap,
+    normals,
+    disclaimer:
+      "Chaque commune garde sa station climatique. On ne mélange pas les postes, on ne moyenne pas les deux villes. L’écart = B − A, sur les années climatiques communes ou sur la normale 1991-2020 du poste de chaque commune."
+  };
+}
+
+export type CommuneChildhoodPayload = {
+  computed: boolean;
+  methodVersion: string;
+  commune: CommuneYearlyPayload["commune"];
+  station: CommuneYearlyPayload["station"];
+  disclaimer: string | null;
+  birthYear: number;
+  comparison: CompareFail | ChildhoodCompareOk;
+};
+
+export function getCommuneChildhood(
+  insee: string,
+  birthYear: number,
+  asOfYear = new Date().getFullYear()
+): CommuneChildhoodPayload | null {
+  const place = getPlaceByInsee(insee);
+  if (!place) return null;
+  const computed = (db.prepare(`SELECT COUNT(*) AS c FROM annual_statistics`).get() as { c: number }).c > 0;
+  if (!computed) {
+    return {
+      computed: false,
+      methodVersion: STATS_METHOD,
+      commune: { insee: place.insee_code, name: place.name, slug: place.slug },
+      station: null,
+      disclaimer: "Statistiques non calculées. Lancer npm run stats:compute — une page vue ne déclenche pas ce calcul.",
+      birthYear,
+      comparison: { comparable: false, reason: "Statistiques non calculées." }
+    };
+  }
+
+  const childhoodSpan = 12;
+  const minN = 5;
+  const childhoodUntil = birthYear + childhoodSpan;
+  const recentFrom = asOfYear - 10;
+  const stations = db
+    .prepare(
+      `
+      SELECT s.id, s.name, s.latitude, s.longitude, s.altitude,
+             SUM(CASE WHEN a.year BETWEEN ? AND ? AND a.year_complete = 1 THEN 1 ELSE 0 END) AS child_n,
+             SUM(CASE WHEN a.year >= ? AND a.year <= ? AND a.year > ? AND a.year_complete = 1 THEN 1 ELSE 0 END) AS recent_n
+      FROM annual_statistics a
+      JOIN stations s ON s.id = a.station_id
+      GROUP BY s.id
+      HAVING child_n >= ? AND recent_n >= ?
+      `
+    )
+    .all(birthYear, childhoodUntil, recentFrom, asOfYear, childhoodUntil, minN, minN) as ChildhoodEligibleRow[];
+
+  const ranked = rankStationsForPlace(
+    place.latitude,
+    place.longitude,
+    place.altitude_m,
+    stations.map((s) => ({
+      id: s.id,
+      name: s.name,
+      latitude: s.latitude,
+      longitude: s.longitude,
+      altitude: s.altitude,
+      coverageDays: 10000,
+      hasTempOnDate: true
+    }))
+  );
+  const preferred = ranked[0];
+  if (!preferred) {
+    return {
+      computed: true,
+      methodVersion: STATS_METHOD,
+      commune: { insee: place.insee_code, name: place.name, slug: place.slug },
+      station: null,
+      disclaimer: null,
+      birthYear,
+      comparison: {
+        comparable: false,
+        reason:
+          "Aucune station unique n’a assez d’années climatiques complètes à la fois pendant l’enfance et récemment. On ne mélange pas les postes."
+      }
+    };
+  }
+
+  const years: YearClimatePoint[] = listAnnualStats(preferred.id).map((row) => ({
+    year: row.year,
+    tminMean: roundToPrecision(row.tmin_mean, 1),
+    tmaxMean: roundToPrecision(row.tmax_mean, 1),
+    precipitationSum: row.precip_complete ? roundToPrecision(row.precipitation_sum, 1) : null,
+    daysGe30: row.days_ge_30,
+    yearComplete: row.year_complete === 1,
+    precipComplete: row.precip_complete === 1
+  }));
+  const comparison = childhoodVsRecent(years, birthYear, asOfYear, {
+    childhoodSpan,
+    minCompleteYears: minN
+  });
+  const rounded =
+    comparison.comparable
+      ? {
+          ...comparison,
+          childhood: {
+            ...comparison.childhood,
+            tminMean: roundToPrecision(comparison.childhood.tminMean, 1),
+            tmaxMean: roundToPrecision(comparison.childhood.tmaxMean, 1)
+          },
+          recent: {
+            ...comparison.recent,
+            tminMean: roundToPrecision(comparison.recent.tminMean, 1),
+            tmaxMean: roundToPrecision(comparison.recent.tmaxMean, 1)
+          },
+          tminDelta: roundToPrecision(comparison.tminDelta, 1),
+          tmaxDelta: roundToPrecision(comparison.tmaxDelta, 1)
+        }
+      : comparison;
+  const altitudeDeltaM =
+    preferred.altitude != null && place.altitude_m != null ? preferred.altitude - place.altitude_m : preferred.altitude;
+  const meta = stations.find((s) => s.id === preferred.id);
+
+  return {
+    computed: true,
+    methodVersion: STATS_METHOD,
+    commune: { insee: place.insee_code, name: place.name, slug: place.slug },
+    station: {
+      id: preferred.id,
+      name: preferred.name,
+      distanceKm: roundToPrecision(preferred.distanceKm, 2),
+      altitudeDeltaM: altitudeDeltaM != null ? roundToPrecision(altitudeDeltaM, 0) : null,
+      completeYears: (meta?.child_n ?? 0) + (meta?.recent_n ?? 0),
+      yearsInTable: years.length
+    },
+    disclaimer: `Moyenne des années climatiques de la station ${preferred.name} à ${roundToPrecision(preferred.distanceKm, 1)} km — un seul poste, pas une concaténation. « Récent » = années complètes depuis ${recentFrom}, pas les années juste après l’enfance. Ce n’est pas une température quotidienne d’enfance ni une étude certifiée.`,
+    birthYear,
+    comparison: rounded
+  };
+}
+
+function emptyNormal(): CommuneNormalPayload {
+  return {
+    period: DEFAULT_NORMAL_PERIOD,
+    minYearsRequired: MIN_NORMAL_COMPLETE_YEARS,
+    available: false,
+    sameStation: false,
+    yearsUsed: 0,
+    station: null,
+    tminMean: null,
+    tmaxMean: null,
+    precipitationMean: null,
+    precipAvailable: false,
+    reason: "Statistiques non calculées. Lancer npm run stats:compute — une page vue ne déclenche pas ce calcul."
+  };
+}
+
+function resolveCommuneNormal(input: {
+  place: PlaceRow;
+  climateStationId: string;
+  climateStationName: string;
+  climateDistanceKm: number | null;
+  ownRow: ReturnType<typeof getStationNormal>;
+}): CommuneNormalPayload {
+  const yearsUsed = input.ownRow?.years_used ?? 0;
+  if (input.ownRow?.normal_complete === 1) {
+    return {
+      period: DEFAULT_NORMAL_PERIOD,
+      minYearsRequired: MIN_NORMAL_COMPLETE_YEARS,
+      available: true,
+      sameStation: true,
+      yearsUsed,
+      station: {
+        id: input.climateStationId,
+        name: input.climateStationName,
+        distanceKm: input.climateDistanceKm
+      },
+      tminMean: roundToPrecision(input.ownRow.tmin_mean, 1),
+      tmaxMean: roundToPrecision(input.ownRow.tmax_mean, 1),
+      precipitationMean: input.ownRow.precip_complete === 1 ? roundToPrecision(input.ownRow.precipitation_mean, 1) : null,
+      precipAvailable: input.ownRow.precip_complete === 1,
+      reason: null
+    };
+  }
+
+  const eligible = listCompleteNormalStations().filter((row) => row.station_id !== input.climateStationId);
+  const ranked = rankStationsForPlace(
+    input.place.latitude,
+    input.place.longitude,
+    input.place.altitude_m,
+    eligible.map((row) => ({
+      id: row.station_id,
+      name: row.name,
+      latitude: row.latitude,
+      longitude: row.longitude,
+      altitude: row.altitude,
+      coverageDays: 10000,
+      hasTempOnDate: true
+    }))
+  );
+  const nearby = ranked[0];
+  const nearbyRow = nearby ? eligible.find((row) => row.station_id === nearby.id) : undefined;
+  const missingReason = `La station ${input.climateStationName} n’a que ${yearsUsed} année${yearsUsed > 1 ? "s" : ""} climatique${yearsUsed > 1 ? "s" : ""} complète${yearsUsed > 1 ? "s" : ""} entre ${DEFAULT_NORMAL_PERIOD.replace("-", " et ")} (il en faut ${MIN_NORMAL_COMPLETE_YEARS}, soit 80 % de 30 ans). Ce n’est pas une normale ${DEFAULT_NORMAL_PERIOD}.`;
+
+  if (!nearby || !nearbyRow) {
+    return {
+      period: DEFAULT_NORMAL_PERIOD,
+      minYearsRequired: MIN_NORMAL_COMPLETE_YEARS,
+      available: false,
+      sameStation: false,
+      yearsUsed,
+      station: null,
+      tminMean: null,
+      tmaxMean: null,
+      precipitationMean: null,
+      precipAvailable: false,
+      reason: missingReason
+    };
+  }
+
+  const distanceKm = roundToPrecision(nearby.distanceKm, 1);
+  return {
+    period: DEFAULT_NORMAL_PERIOD,
+    minYearsRequired: MIN_NORMAL_COMPLETE_YEARS,
+    available: true,
+    sameStation: false,
+    yearsUsed: nearbyRow.years_used,
+    station: { id: nearby.id, name: nearby.name, distanceKm },
+    tminMean: roundToPrecision(nearbyRow.tmin_mean, 1),
+    tmaxMean: roundToPrecision(nearbyRow.tmax_mean, 1),
+    precipitationMean: nearbyRow.precip_complete === 1 ? roundToPrecision(nearbyRow.precipitation_mean, 1) : null,
+    precipAvailable: nearbyRow.precip_complete === 1,
+    reason: `${missingReason} Normale affichée : ${nearby.name} à ${distanceKm} km — un autre poste, donc pas d’anomalie sur la série annuelle ci-dessus.`
+  };
+}
+
+function emptyPayload(place: PlaceRow, computed: boolean): CommuneYearlyPayload {
+  return {
+    computed,
+    methodVersion: STATS_METHOD,
+    completeDayThreshold: COMPLETE_DAY_THRESHOLD,
+    completeMonthDayThreshold: COMPLETE_MONTH_DAY_THRESHOLD,
+    completeSeasonDayThreshold: COMPLETE_SEASON_DAY_THRESHOLD,
+    commune: { insee: place.insee_code, name: place.name, slug: place.slug },
+    station: null,
+    disclaimer: computed
+      ? "Aucune série annuelle précalculée n’est disponible pour une station proche."
+      : "Statistiques non calculées. Lancer npm run stats:compute — une page vue ne déclenche pas ce calcul.",
+    years: [],
+    seasons: [],
+    summers: [],
+    hottestSummer: null,
+    coldestWinter: null,
+    months: [],
+    monthRecords: { hottest: null, coldest: null, wettest: null },
+    normal: computed
+      ? {
+          period: DEFAULT_NORMAL_PERIOD,
+          minYearsRequired: MIN_NORMAL_COMPLETE_YEARS,
+          available: false,
+          sameStation: false,
+          yearsUsed: 0,
+          station: null,
+          tminMean: null,
+          tmaxMean: null,
+          precipitationMean: null,
+          precipAvailable: false,
+          reason: "Aucune série annuelle précalculée n’est disponible pour une station proche."
+        }
+      : emptyNormal(),
+    yearRecords: { periodFrom: null, periodTo: null, yearsUsed: 0, hottest: null, coldest: null, wettest: null },
+    warming: stationWarmingTrend([]),
+    heat: emptyHeatStreaks()
+  };
+}
+
+function listStationDailyTemps(stationId: string): DailyTmax[] {
+  return db
+    .prepare(
+      `
+      SELECT date, tmin, tmax
+      FROM observations
+      WHERE station_id = ?
+      ORDER BY date
+      `
+    )
+    .all(stationId) as DailyTmax[];
+}

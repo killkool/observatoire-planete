@@ -18,14 +18,17 @@ const mainlandDepartments = [
 
 const departments = target === "FRANCE" || target === "ALL" ? mainlandDepartments : [target.padStart(2, "0")];
 
+const refresh = args.refresh === "true";
+const mode = refresh ? "refresh" : "local-first";
+
 async function main() {
 
 let total = 0;
 for (const department of departments) {
-  console.log(`\n[${department}] Import Météo-France ${fromYear}-${toYear} (source registry + checksum)...`);
-  const result = await ingestMeteoFranceDaily(department, fromYear, toYear);
+  console.log(`\n[${department}] Import Météo-France ${fromYear}-${toYear} (${mode})...`);
+  const result = await ingestMeteoFranceDaily(department, fromYear, toYear, mode);
   total += result.rowsWritten;
-  console.log(`  ressources: ${result.resources.length}, écrites: ${result.rowsWritten}, checksum identique ignoré: ${result.skippedUnchanged}`);
+  console.log(`  ressources: ${result.resources.length}, écrites: ${result.rowsWritten}, cache local: ${result.fromCache}, téléchargées: ${result.downloaded}, checksum identique ignoré: ${result.skippedUnchanged}`);
   if (result.minDate) console.log(`  période: ${result.minDate} → ${result.maxDate}`);
 }
 

@@ -36,6 +36,28 @@ sources:
       attribution_text: "Source : Meteo-France"
       notes: "Confluence Open Data: no fee, Licence Ouverte, credit Meteo-France. Prefer bulk over API."
 
+  - source_id: etalab.geo-api.communes
+    provider: DINUM / INSEE (API Géo)
+    dataset: API Découpage administratif — communes
+    origin_type: DERIVED
+    source_dependency_group: administrative_referential
+    access_mode: api
+    legal_status: APPROVED_COMMERCIAL
+    enabled: true
+    coverage_notes: "V1 import département 38 only. Centre points, no commune contours."
+    terms_url: "https://www.data.gouv.fr/dataservices/api-decoupage-administratif-api-geo"
+    license:
+      license_name: Licence Ouverte / Open Licence
+      license_version: "2.0"
+      commercial_use_allowed: true
+      redistribution_allowed: true
+      attribution_required: true
+      license_url: "https://www.etalab.gouv.fr/licence-ouverte-open-licence/"
+      reviewed_at: "2026-09-06"
+      reviewed_by: "r2-isere-communes-audit"
+      attribution_text: "Source : API Découpage administratif (geo.api.gouv.fr)"
+      notes: "data.gouv dataservice states Open Data licences. OSM is listed as a partner; this connector does not import contours/polygons."
+
   - source_id: meteo-france.climatologie.horaire.bulk
     provider: Meteo-France
     dataset: Donnees climatologiques de base - horaires
@@ -127,8 +149,8 @@ sources:
     coverage_start: "1940-01-01"
     access_mode: api
     legal_status: APPROVED_COMMERCIAL
-    enabled: false
-    notes: "Enable only after point-extraction pipeline exists. Never call it a station. ERA5T vs final."
+    enabled: true
+    notes: "Point extraction pipeline exists (ARCO public Zarr, same ERA5 DOI). Never call it a station. ERA5T vs final. Not a France-wide grid."
     terms_url: "https://cds.climate.copernicus.eu/datasets/reanalysis-era5-single-levels"
     license:
       license_name: Creative Commons Attribution

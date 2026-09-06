@@ -5,6 +5,39 @@ ROOT = Path(__file__).resolve().parents[1]
 SKILLS = ROOT / "skills"
 
 SKILL_DOCS = {
+    "00-prompt-maitre": {
+        "name": "00-prompt-maitre",
+        "description": "Observatoire Planète master constitution (PROMPT MAÎTRE V2), stored verbatim in docs/PROMPT_MAITRE_V2.md. Use on every prompt in this repository. Never paraphrase, shorten, or replace that file. Never drop a numbered requirement because the current slice is smaller. Read with 00-track-development.",
+        "title": "Prompt maître V2 — constitution",
+        "body": """
+**À chaque prompt.** Le texte intégral, mot pour mot, est :
+
+[docs/PROMPT_MAITRE_V2.md](../../docs/PROMPT_MAITRE_V2.md)
+
+Ne pas le réécrire. Ne pas en faire une « version simplifiée » qui remplacerait l’original. Ne pas oublier une section parce que le slice Isère n’y est pas encore.
+
+Index anti-oubli (cases, pas le texte) : [docs/PROMPT_INDEX.md](../../docs/PROMPT_INDEX.md)
+
+## Avant de coder
+
+1. L’objectif reste **l’intégralité** du prompt maître (sections 0 à 187).
+2. L’ordre d’exécution reste PHASE 0 → vertical slice Isère → Grenoble → date réelle → ERA5 → comparaison sans fusion → provenance → confiance. **Ne pas sauter.**
+3. Si STATUS / ROADMAP / INDEX sont plus étroits que le prompt : **compléter le suivi**, ne jamais réduire l’objectif.
+
+## Interdit
+
+- Inventer donnée, API, licence, quota, paramètre.
+- FREE ACCESS ≠ COMMERCIAL REUSE. E-OBS interdit en commercial.
+- Réanalyse / interpolation / prévision présentées comme observation.
+- Moyenne aveugle multi-sources.
+- IA générative qui invente une valeur météo.
+- Télécharger la planète entière sans étude de volume.
+
+## Après chaque changement
+
+Mettre à jour STATUS, ROADMAP, PROMPT_INDEX et (si ingestion) DATA_CHANGELOG. Voir [00-track-development](../00-track-development/SKILL.md).
+""",
+    },
     "00-track-development": {
         "name": "00-track-development",
         "description": "Maintains Observatoire Planète progress docs in the same change as the code. Use on every prompt that implements, fixes, refactors, documents, or ships anything in this repo. Mandatory before ending a turn that touched code or product docs. Updates docs/STATUS.md, docs/ROADMAP.md, DATA_CHANGELOG.md. Never mark a phase done without proof (import, test, or page).",

@@ -1,117 +1,73 @@
 # Avancement — Observatoire Planète
 
-**Date de revue :** 2026-09-06 (soir)  
-**Règle :** une case n’est « faite » que si elle a une **preuve** (import, test, page). Un fichier vide ne compte pas.  
-**Source de vérité de l’ordre :** [ROADMAP.md](./ROADMAP.md)
+**Date de revue :** 2026-09-06 (vertical slice ERA5 point Grenoble)  
+**Constitution définitive :** [PROMPT_MAITRE_V2.md](./PROMPT_MAITRE_V2.md) — mot pour mot, sections 0–187.  
+**Livraison V1 :** [V1_FRANCE_REFOCUS.md](./V1_FRANCE_REFOCUS.md) + [ROADMAP.md](./ROADMAP.md).  
+**Stack cible :** [ARCHITECTURE_PRODUCTION.md](./ARCHITECTURE_PRODUCTION.md) — [ADR-0002](./adr/ADR-0002-production-stack-v1.md). Runtime encore SQLite.
 
-Les fournisseurs (Météo-France, Copernicus, NOAA, ECMWF, IGN) sont des **sources**, jamais des partenaires.
+Les fournisseurs sont des **sources**, jamais des partenaires.
 
 ---
 
 ## En une phrase
 
-## En une phrase
-
-Le vertical slice **Isère / Météo-France / Grenoble** affiche une **observation réelle**, sa **station**, sa **carte IGN**, sa **provenance** et un **score de confiance v1**. **ERA5 n’est pas ingéré** (aucune valeur inventée). L’architecture cible Postgres/PostGIS n’est pas branchée. Le suivi d’avancement est **obligatoire à chaque prompt** (`skills/00-track-development`).
+Le parcours **Isère → Météo-France → Grenoble → 1983-05-12 → ERA5 point → comparaison sans fusion → provenance → confiance** est livré. L’estimation climatique n’est pas une station et n’est pas fusionnée avec la mesure.
 
 ## Prochaine action
 
-**Phase 5 — extraire un point ERA5 réel** (CDS, JSON, `npm run import:era5-point`) pour Grenoble, idéalement le **1983-05-12**, puis afficher la comparaison **sans fusion**.
+1. **Science / R9 remainder :** subset ERA5 France (pas mondial) — seulement après le point.  
+2. **Produit :** storytelling « ce jour dans l’histoire », normale mensuelle, ou hreflang.
 
-Ne pas : E-OBS, moyenne aveugle multi-sources, téléchargement ERA5 mondial horaire, élargir le dashboard SQLite ClimaFrance comme architecture cible.
-
-## Dépôt Git
-
-- GitHub **privé** : https://github.com/killkool/observatoire-planete
-- SQLite locale gitignorée (`data/meteo.sqlite`). Après clone : `npm install` puis `npm run import:meteo -- --department=38 --from=1980 --to=2026`.
-- Skill de suivi : `skills/00-track-development` (lu à chaque prompt).
-
----
+Ne pas : E-OBS, ERA5 mondial, océan, extract massif IGN, migrer vers un faux Supabase, déclencher un import à la page vue.
 
 ## File d’exécution
 
-| # | Phase | Statut | Preuve / limite |
-|---|---|---|---|
-| 0 | Recherche & licences | **Fait** | [DATA_LICENSES.md](./DATA_LICENSES.md), YAML, 2026-09-06. Revue juriste **non faite**. |
-| 1 | Postgres / PostGIS / object storage | **Non** | Schéma SQL rédigé ; runtime **SQLite**. |
-| 2 | Source registry exécutable | **Fait (SQLite)** | Gate `assertCommercialSource` sur les imports MF et ERA5. Table `data_source_licenses` Postgres **non branchée**. Catalogue YAML plus large que le gate runtime (3 sources). |
-| 3 | Import Isère | **Fait** | 1 208 439 obs, 156 postes, 4 fichiers SHA-256, 1980-01-01 → 2026-09-04. Pas d’ADMIN EXPRESS. |
-| 4 | Page historique Grenoble | **Fait (3 lieux)** | Preuve 1983-05-12 ci-dessous. Pas de recherche commune. Pas de test golden automatisé. |
-| 4b | UI visuelle (hors phase numérotée) | **Fait** | Accueil, cartes IGN, photos lieu, heatmap. Vérifié navigateur 2026-09-06. |
-| 5 | ERA5 point Grenoble | **Non** | Pipeline prêt. `point_extractions` = **0** ligne. |
-| 6 | Fusion multi-sources | **Non** | Matching station v1 seulement. |
-| 7 | Confiance | **Partiel** | Score `confidence-v1-draft` affiché + tests unité. Poids non calibrés. Pas de golden plaine/montagne/littoral. |
-
----
-
-## Preuve Grenoble 1983-05-12
-
-Vérifiée en base SQLite **et** sur la page `/weather/france/auvergne-rhone-alpes/isere/grenoble?date=1983-05-12` (2026-09-06).
-
-| Champ | Valeur |
-|---|---|
-| Lieu | Grenoble, INSEE 38185, 45.1885°N 5.7245°E |
-| Station | `38126001` CORENC LA REVIREE |
-| Distance / Δ alt. | 4,73 km / 15 m |
-| Tmin / Tmax / RR | **6,6 °C / 21,6 °C / 0,1 mm** (unité telle que publiée) |
-| Origine | `OBSERVED` — Météo-France bulk, Licence Ouverte 2.0 |
-| ERA5 | **absente** (panneau « pas encore ingérée ») |
-| Confiance UI | 90/100, méthode `confidence-v1-draft` |
-| Carte | IGN Géoplateforme WMTS (ortho + Plan IGN) |
-
-Crolles (dernier jour importé 2026-09-04) : station TENCIN, Tmin 11,3 °C, Tmax 35,2 °C — relevé de station, pas une réanalyse.
-
-Tests : `npm run test:science` → `science tests ok` (2026-09-06). Couvre unités, vent vs courant, matching « pas seulement nearest », gate E-OBS, score OBSERVED > REANALYSIS. **Ne fige pas** 6,6 / 21,6.
-
----
-
-## Runtime réel
-
-| Élément | État |
-|---|---|
-| App | Next.js 15, `http://localhost:3000` |
-| Base | SQLite `data/meteo.sqlite` |
-| Observations | 1 208 439 |
-| Stations importées | 156 |
-| Fichiers MF + lineage | 4 |
-| Lieux seed | Grenoble, Crolles, La Pierre |
-| Extractions ERA5 | 0 |
-| E-OBS | `DISABLED` dans le registre et le gate |
-
-Pages : `/`, `/weather/.../isere/{grenoble,crolles,la-pierre}`, `/sources`, `/methodology`, `/dashboard` (prototype ClimaFrance, ne pas étendre).
-
-API slice : `GET /api/v1/history`, `GET /api/v1/sources` — **pas** une API commerciale (pas de clés, pas de quotas).
-
----
-
-## Ce qui n’est pas livré (volontaire)
-
-- Postgres / PostGIS / MinIO / workers / CI
-- Import IGN ADMIN EXPRESS (communes France)
-- ERA5, NOAA, CMEMS, ECMWF forecast
-- Carte mondiale de variables météo (seulement carte **lieu** IGN)
-- Recherche mondiale, SEO programmatique au-delà de 3 slugs
-- Offre payante, auth, exports Pro
-
----
-
-## Cartes et images (2026-09-06)
-
-| Visuel | Nature | Licence / mention |
+| Phase | Statut | Preuve |
 |---|---|---|
-| Carte page lieu | Tuiles IGN WMTS ortho + Plan IGN | Licence Ouverte, « © IGN — Géoplateforme » |
-| Cartes d’accueil / héros lieu | Extraits WMS ponctuels `public/images/places/*.jpg` | Idem ; **pas** un extract massif |
-| Terre, observation, réanalyse, prévision | Illustrations de marque | **Pas** une photo du lieu, **pas** une donnée météo |
+| R2 communes Isère | **Fait (38 seulement)** | 512 communes |
+| R3 Isère obs | **Fait** | 1 208 439 obs |
+| R4 climat annuel | **Fait** | yearly API + graphique |
+| R6 naissance | **Partiel** | `/naissance` + enfance + carte PNG `/og/{slug}/{date}` ; pas de SDK social |
+| R7 mois/saisons/normales | **Partiel** | mois + 4 saisons + normale 1991-2020 + épisodes Tmax ; pas d’anomalies LSH, pas de normale mensuelle, pas de canicule officielle |
+| R8 comparateur | **Partiel** | année vs année + saison vs **même** saison + ville vs ville Isère ; pas hiver vs été, pas France entière |
+| R9 ERA5 | **Partiel** | point Grenoble 1983-05-12 ; pas de subset France |
+| R11 SEO | **Partiel** | titres + sitemap + carte OG PNG ; pas hreflang |
+| PoC 1 ERA5 | **Fait** | `point_extractions` = 3 |
 
----
+## Preuve statistiques `precompute-v2`
 
-## Definition of Done du slice actuel
+Recalcul `npm run stats:compute` (2026-09-06) : 3976 années-station (1657 complètes), 40754 mois-station (23143 complets), 14149 saisons-station (7190 complètes), **141 normales / 16 affichables** (≥ 24 années 1991-2020), 49926 jours de l’année. Une page vue ne lance pas ce job.
 
-Le slice Isère n’est **pas** le produit mondial. Il est « bon pour enchaîner Phase 5 » si :
+Seuils : année 330 j ; mois 25 j ; saison 75 j ; normale 24 années climatiques. Pluie incomplète = `NULL`, jamais 0.
 
-1. [x] Observation MF réelle, date réelle, station nommée
-2. [x] Provenance + licence visibles
-3. [x] Confiance expliquée (brouillon)
-4. [x] Carte du lieu réelle (IGN)
-5. [ ] ERA5 point réel comparé, jamais fusionné
-6. [ ] Test golden automatisé Grenoble 1983-05-12
+## Preuve Grenoble
+
+- Jour : CORENC LA REVIREE (`38126001`), 6,6 / 21,6 °C, 0,1 mm (1983-05-12), 4,7 km, Δz 15 m.
+- Estimation climatique ERA5 (réanalyse, pas une mesure) : maille **45,25°N, 5,75°E**, 24 h UTC `2m_temperature`, min/max horaires **3,4 / 14,2 °C** (276,5640 / 287,3429 K). Accès ARCO, DOI 10.24381/cds.adbb2d47, SHA-256 `bc400068cf019e64cebd974445af9a49a551339527613d4af388515affa15afb`.
+- Écart estimation − mesure : Tmin **−3,2 °C**, Tmax **−7,4 °C**. Pas de fusion, pas de correction d’altitude. ERA5 n’est pas une confirmation indépendante.
+- Confiance `confidence-v1-draft` : **90**/100 (observé + distance + Δz + couverture). Pas de bonus d’indépendance ERA5. Pas de bonus de cohérence (|ΔTmax| > 2 °C).
+- Série annuelle / étés / records d’année : **GRENOBLE - LVD** (10,2 km, 26 années 2000–2025). Année la plus chaude **2022** (max. moyenne 20,2 °C), la plus froide **2005** (min. moyenne 6,2 °C), la plus arrosée **2001** (1182,2 mm). Observé sur ce poste, pas ERA5.
+- Normale 1991-2020 : LVD n’a que **21** années climatiques sur 1991-2020 → **pas** une normale 1991-2020. Normale affichée : **CHATTE_SAPC** (33,2 km, 29 ans) 6,6 / 17,6 °C, 970,1 mm. **Pas d’anomalie** sur le graphique LVD.
+- Tendance (LVD, 26 années climatiques 2000–2025, `ols-complete-years-v1`, série brute) : max. **+0,8 °C / 10 ans**, min. **+0,6 °C / 10 ans**, jours ≥ 30 °C **+9,5 / 10 ans**, gel **−9,6 / 10 ans**, nuits tropicales **+1,6 / 10 ans**. Fenêtres 2000–2009 vs 2016–2025 : max. 17,9 → 19,1 °C (+1,2). Série courte (< 30 ans). Pas une expertise certifiée.
+- Mois (LVD, 327 mois complets, 26 années 2000–2025 avec 12 mois) : plus chaud **août 2003** (max. moyenne 33,5 °C), plus froid **janvier 2017** (min. moyenne −5,8 °C), plus arrosé **mars 2001** (249 mm). Observé sur ce poste, pas le record de la commune.
+- Hivers DJF (LVD, 27 hivers complets 2000–2026) : plus froid **2017**, min. moyenne **−2,9 °C**. Décembre compte pour l’hiver suivant. Pas une comparaison hiver vs été.
+- Épisodes Tmax (LVD, `heat-streak-tmax-v1`, pas une canicule officielle) : 131 épisodes ≥ 30 °C (856 j). Plus long **43 j** du 13 juin au 25 juillet 2026 (max. moyenne 33,9 °C, pic 38,3 °C). Plus chaud **1–17 août 2003** (max. moyenne 36,2 °C, pic 39,5 °C). ≥ 35 °C : plus long **12 j** du 3 au 14 août 2003. Aucun épisode de 3 jours ≥ 40 °C. Observé sur ce poste, série jusqu’au 4 septembre 2026.
+- Carte de partage : `/og/grenoble/1983-05-12` → PNG. Date sans mesure : `/og/grenoble/1900-01-01` → PNG « aucune mesure officielle », pas de 0 inventé. Pas d’ERA5 sur la carte.
+
+Ville vs ville (preuve 2026-09-06) :
+
+- Grenoble vs Crolles / La Pierre : **même poste GRENOBLE - LVD** → aucun écart affiché.
+- Grenoble vs Voiron : LVD vs **COUBLEVIE**, 21 années climatiques 2005–2025. Max. moyenne 18,5 → 18,2 °C (−0,3) ; min. 7,3 → 8,4 °C (+1,1) ; pluie 980,8 → 1117,6 mm. Pas de normale 1991-2020 (LVD n’a que 21 ans sur la période).
+
+Tests : `npm run test:science`. Pages : `/meteo/auvergne-rhone-alpes/isere/grenoble?date=1983-05-12#comparaison-sources` · `#saisons` · `#chaleur` · `/og/grenoble/1983-05-12`.
+
+## Runtime
+
+| Élément | Valeur |
+|---|---|
+| Communes | 512 (Isère) |
+| Observations | 1 208 439 |
+| ERA5 | 3 points (Grenoble 1983-05-12, min/max/mean) |
+| method_version stats | precompute-v2 |
+| method_version ERA5 | era5-point-nearest-hourly-2t-minmax-v1 |
+| Normales 1991-2020 affichables | 16 postes |

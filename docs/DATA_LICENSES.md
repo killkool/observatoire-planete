@@ -119,7 +119,7 @@ Une source `APPROVED_COMMERCIAL` n’autorise **pas** à :
 > Contient des informations Copernicus Climate Change Service modifiées [année]. Ni la Commission européenne ni l’ECMWF ne sont responsables de l’usage qui pourrait être fait des informations ou données Copernicus qu’elles contiennent.  
 > ERA5 hourly data on single levels from 1940 to present. Copernicus Climate Change Service (C3S) Climate Data Store (CDS). DOI: 10.24381/cds.adbb2d47 (accès le [date]). Licensed under CC-BY-4.0.
 
-**Compte CDS :** l’accès programmatique CDS exige un compte et l’acceptation de la licence du jeu. Les identifiants restent côté serveur.
+**Compte CDS :** l’accès programmatique CDS exige un compte et l’acceptation de la licence du jeu. Les identifiants restent côté serveur. Le PoC point Grenoble 1983-05-12 a été lu via le miroir public ARCO ERA5 (`gs://gcp-public-data-arco-era5/...zarr-v3`), **même DOI / même jeu**, pas une autre réanalyse.
 
 **Dépendance :** ERA5 assimile des observations (dont des réseaux nationaux). Un accord ERA5 / station **n’est pas** une confirmation indépendante.
 
@@ -274,6 +274,7 @@ Aucune tuile, aucune moyenne, aucun « fond de carte » E-OBS dans l’offre com
 |---|---|---|---|
 | IGN Géoplateforme WMTS / WMS (ORTHO + Plan IGN) | Licence Ouverte 2.0 (Géoplateforme, 2026-09-06) | **APPROVED_COMMERCIAL** | Affichage carte et extraits ponctuels d’UI (`public/images/places/`) ; pas d’extract massif ; attribution « © IGN — Géoplateforme » |
 | IGN ADMIN EXPRESS / COG | Licence Ouverte 2.0 (fiche data.gouv IGN, à reconfirmer à l’import) | **APPROVED_COMMERCIAL** *sous réserve fiche* | France : communes, départements, régions ; identifiant INSEE |
+| API Découpage administratif (geo.api.gouv.fr) | Open Data / Licence Ouverte 2.0 (dataservice data.gouv, 2026-09-06) | **APPROVED_COMMERCIAL** | Import V1 **centres** de communes (Isère). **Pas** de contours. OSM est partenaire de l’API : ne pas importer de polygones via ce canal. |
 | Natural Earth | domaine public (à reconfirmer sur naturalearthdata.com au moment de l’import) | **REQUIRES_REVIEW** jusqu’à capture de la page licence | pays / lieux mondiaux |
 | OpenStreetMap | ODbL 1.0 (share-alike base) | **REQUIRES_REVIEW** | ne pas extraire une base OSM substantielle sans stratégie ODbL |
 | GeoNames | CC-BY (à reconfirmer) | **REQUIRES_REVIEW** | toponymes |

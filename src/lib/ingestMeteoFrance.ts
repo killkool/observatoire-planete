@@ -1,8 +1,9 @@
 import { randomUUID } from "node:crypto";
 import db from "./db";
 import { rebuildFranceDaily } from "./aggregates";
-import { downloadCompressed, iterateCsvRows, listDailyResources, parseDate, parseNumber, SOURCE_ID } from "./meteoFrance";
+import { iterateCsvRows, listDailyResources, loadCompressed, parseDate, parseNumber, SOURCE_ID } from "./meteoFrance";
 import { assertCommercialSource } from "../../packages/licensing/src/gate";
+import type { FetchMode } from "./localPaths";
 
 export type IngestResult = {
   department: string;
@@ -11,14 +12,21 @@ export type IngestResult = {
   resources: string[];
   rowsWritten: number;
   skippedUnchanged: number;
+  downloaded: number;
+  fromCache: number;
   minDate: string | null;
   maxDate: string | null;
 };
 
-export async function ingestMeteoFranceDaily(department: string, fromYear: number, toYear: number): Promise<IngestResult> {
+export async function ingestMeteoFranceDaily(
+  department: string,
+  fromYear: number,
+  toYear: number,
+  mode: FetchMode = "local-first"
+): Promise<IngestResult> {
   assertCommercialSource(SOURCE_ID);
 
-  const resources = await listDailyResources(department, fromYear, toYear);
+  const resources = await listDailyResources(department, fromYear, toYear, mode);
   const stationUpsert = db.prepare(`
     INSERT INTO stations(id, name, department, latitude, longitude, altitude, source_id)
     VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -52,6 +60,8 @@ export async function ingestMeteoFranceDaily(department: string, fromYear: numbe
 
   let rowsWritten = 0;
   let skippedUnchanged = 0;
+  let downloaded = 0;
+  let fromCache = 0;
   let minDate: string | null = null;
   let maxDate: string | null = null;
   const names: string[] = [];
@@ -61,7 +71,9 @@ export async function ingestMeteoFranceDaily(department: string, fromYear: numbe
     const log = db.prepare(`INSERT INTO import_log(started_at, department, resource_title, status) VALUES (?, ?, ?, 'RUNNING')`)
       .run(new Date().toISOString(), department, name);
     try {
-      const file = await downloadCompressed(resource);
+      const file = await loadCompressed(resource, mode);
+      if (file.fromCache) fromCache += 1;
+      else downloaded += 1;
       if (knownFile.get(file.checksumSha256) && process.env.FORCE_REPROCESS !== "1") {
         skippedUnchanged++;
         db.prepare(`UPDATE import_log SET finished_at=?, rows_read=0, rows_written=0, status='SKIPPED_CHECKSUM', message=? WHERE id=?`)
@@ -160,5 +172,5 @@ export async function ingestMeteoFranceDaily(department: string, fromYear: numbe
 
   if (minDate && maxDate) rebuildFranceDaily(minDate, maxDate);
 
-  return { department, fromYear, toYear, resources: names, rowsWritten, skippedUnchanged, minDate, maxDate };
+  return { department, fromYear, toYear, resources: names, rowsWritten, skippedUnchanged, downloaded, fromCache, minDate, maxDate };
 }

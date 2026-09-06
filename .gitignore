@@ -15,8 +15,10 @@ credentials.json
 data/*.sqlite
 data/*.sqlite-shm
 data/*.sqlite-wal
+data/tiles/
 raw/
 tmp/
+pipelines/era5/.venv/
 
 npm-debug.log*
 .DS_Store

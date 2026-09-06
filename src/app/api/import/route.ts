@@ -15,8 +15,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Période invalide" }, { status: 400 });
   }
 
+  const allowRemote = process.env.ALLOW_REMOTE_IMPORT === "true";
+  const mode = allowRemote ? "local-first" : "offline";
+
   try {
-    const result = await ingestMeteoFranceDaily(department, fromYear, toYear);
+    const result = await ingestMeteoFranceDaily(department, fromYear, toYear, mode);
     return NextResponse.json({ ok: true, ...result });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Erreur d'import" }, { status: 500 });

@@ -1,11 +1,15 @@
 import { createGunzip } from "node:zlib";
 import { createHash } from "node:crypto";
 import { Readable } from "node:stream";
+import fs from "node:fs";
+import path from "node:path";
 import { parse } from "csv-parse";
+import { type FetchMode, rawMeteoFranceDir, readFileIfExists, writeRawIfAbsent } from "./localPaths";
 
 export const DATASET_API = "https://www.data.gouv.fr/api/1/datasets/donnees-climatologiques-de-base-quotidiennes/";
 export const SOURCE_ID = "meteo-france.climatologie.quotidienne.bulk";
 export const DATASET_ID = "6569b51ae64326786e4e8e1a";
+const USER_AGENT = "Observatoire-Planete/1.0 (local bulk cache; Licence Ouverte 2.0)";
 
 type DataGouvResource = {
   title?: string;
@@ -58,16 +62,21 @@ function extractRange(name: string): [number, number] | null {
   return [Math.min(...all), Math.max(...all)];
 }
 
-export async function listDailyResources(department: string, fromYear: number, toYear: number) {
-  const response = await fetch(DATASET_API, { cache: "no-store" });
-  if (!response.ok) throw new Error(`data.gouv.fr a répondu ${response.status}`);
-  const dataset = (await response.json()) as DatasetResponse;
-
-  return (dataset.resources || [])
+export function filterDailyResources(
+  resources: DataGouvResource[],
+  department: string,
+  fromYear: number,
+  toYear: number
+) {
+  return resources
     .map((resource) => ({ resource, name: resourceName(resource) }))
     .filter(({ resource, name }) => {
       const url = resource.url || resource.latest || "";
-      const isCsvGz = /csv\.gz($|\?)/i.test(url) || /csv\.gz$/i.test(name) || resource.format === "csv.gz";
+      const isCsvGz =
+        /csv\.gz($|\?)/i.test(url) ||
+        /csv\.gz$/i.test(name) ||
+        resource.format === "csv.gz" ||
+        name.toLowerCase().endsWith(".csv.gz");
       if (!isCsvGz) return false;
       if (!resourceMatchesDepartment(name, department)) return false;
       if (!isTemperatureResource(name)) return false;
@@ -77,14 +86,121 @@ export async function listDailyResources(department: string, fromYear: number, t
     });
 }
 
-export async function downloadCompressed(resource: DataGouvResource) {
-  const url = resource.url || resource.latest;
-  if (!url) throw new Error("Ressource sans URL");
-  const response = await fetch(url, { cache: "no-store" });
+function catalogFiles() {
+  const dir = rawMeteoFranceDir();
+  if (!fs.existsSync(dir)) return [];
+  return fs
+    .readdirSync(dir)
+    .filter((name) => name.startsWith(`catalog-${DATASET_ID}`) && name.endsWith(".json"))
+    .map((name) => {
+      const full = path.join(dir, name);
+      return { full, mtime: fs.statSync(full).mtimeMs };
+    })
+    .sort((a, b) => b.mtime - a.mtime);
+}
+
+function readLatestCatalog(): DatasetResponse | null {
+  const latest = catalogFiles()[0];
+  if (!latest) return null;
+  return JSON.parse(fs.readFileSync(latest.full, "utf8")) as DatasetResponse;
+}
+
+function persistCatalog(dataset: DatasetResponse) {
+  const body = JSON.stringify(dataset);
+  const checksum = createHash("sha256").update(body).digest("hex").slice(0, 12);
+  writeRawIfAbsent(path.join(rawMeteoFranceDir(), `catalog-${DATASET_ID}-${checksum}.json`), body);
+}
+
+function resourcesFromDisk(department: string, fromYear: number, toYear: number) {
+  const dir = rawMeteoFranceDir();
+  if (!fs.existsSync(dir)) return [];
+  const files = fs.readdirSync(dir).filter((name) => name.toLowerCase().endsWith(".csv.gz"));
+  const resources: DataGouvResource[] = files.map((name) => ({
+    title: name,
+    url: path.join(dir, name),
+    format: "csv.gz"
+  }));
+  return filterDailyResources(resources, department, fromYear, toYear);
+}
+
+export async function listDailyResources(
+  department: string,
+  fromYear: number,
+  toYear: number,
+  mode: FetchMode = "local-first"
+) {
+  const localCatalog = mode !== "refresh" ? readLatestCatalog() : null;
+  if (localCatalog) {
+    return filterDailyResources(localCatalog.resources || [], department, fromYear, toYear);
+  }
+
+  const fromFiles = resourcesFromDisk(department, fromYear, toYear);
+  if (mode === "offline") {
+    if (fromFiles.length) return fromFiles;
+    throw new Error(
+      `Catalogue data.gouv absent de ${rawMeteoFranceDir()}. Relancer npm run import:meteo -- --refresh une seule fois.`
+    );
+  }
+
+  if (mode === "local-first" && fromFiles.length) {
+    return fromFiles;
+  }
+
+  const response = await fetch(DATASET_API, {
+    cache: "no-store",
+    headers: { "User-Agent": USER_AGENT }
+  });
+  if (!response.ok) throw new Error(`data.gouv.fr a répondu ${response.status}`);
+  const dataset = (await response.json()) as DatasetResponse;
+  persistCatalog(dataset);
+  return filterDailyResources(dataset.resources || [], department, fromYear, toYear);
+}
+
+export async function loadCompressed(
+  resource: DataGouvResource,
+  mode: FetchMode = "local-first"
+) {
+  const name = resourceName(resource);
+  if (!name) throw new Error("Ressource sans nom de fichier");
+  const dest = path.join(rawMeteoFranceDir(), name);
+  const cached = readFileIfExists(dest);
+  if (cached) {
+    const checksumSha256 = createHash("sha256").update(cached).digest("hex");
+    return {
+      compressed: cached,
+      checksumSha256,
+      bytes: cached.length,
+      url: dest,
+      name,
+      fromCache: true
+    };
+  }
+
+  const remoteUrl = resource.url || resource.latest;
+  if (remoteUrl && fs.existsSync(remoteUrl)) {
+    const compressed = fs.readFileSync(remoteUrl);
+    const checksumSha256 = createHash("sha256").update(compressed).digest("hex");
+    writeRawIfAbsent(dest, compressed);
+    return { compressed, checksumSha256, bytes: compressed.length, url: remoteUrl, name, fromCache: true };
+  }
+
+  if (mode === "offline") {
+    throw new Error(`Fichier absent du cache local : ${dest}. Relancer npm run import:meteo -- --refresh.`);
+  }
+  if (!remoteUrl) throw new Error("Ressource sans URL");
+  if (remoteUrl.startsWith("http") === false) {
+    throw new Error(`Fichier local introuvable : ${remoteUrl}`);
+  }
+
+  const response = await fetch(remoteUrl, {
+    cache: "no-store",
+    headers: { "User-Agent": USER_AGENT }
+  });
   if (!response.ok) throw new Error(`Téléchargement impossible (${response.status})`);
   const compressed = Buffer.from(await response.arrayBuffer());
   const checksumSha256 = createHash("sha256").update(compressed).digest("hex");
-  return { compressed, checksumSha256, bytes: compressed.length, url, name: resourceName(resource) };
+  writeRawIfAbsent(dest, compressed);
+  return { compressed, checksumSha256, bytes: compressed.length, url: remoteUrl, name, fromCache: false };
 }
 
 export async function* iterateCsvRows(compressed: Buffer): AsyncGenerator<MeteoRow> {

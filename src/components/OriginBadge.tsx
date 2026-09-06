@@ -1,8 +1,8 @@
 import Image from "next/image";
 
 const ICONS = {
-  OBSERVED: { src: "/images/origin-observed.png", label: "Observation" },
-  REANALYSIS: { src: "/images/origin-reanalysis.png", label: "Réanalyse" },
+  OBSERVED: { src: "/images/origin-observed.png", label: "Mesure officielle" },
+  REANALYSIS: { src: "/images/origin-reanalysis.png", label: "Estimation climatique" },
   FORECAST: { src: "/images/origin-forecast.png", label: "Prévision" }
 } as const;
 

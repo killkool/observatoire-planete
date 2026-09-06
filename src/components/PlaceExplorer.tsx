@@ -5,17 +5,44 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import TempRange from "./TempRange";
 import YearHeatmap from "./YearHeatmap";
 import OriginBadge from "./OriginBadge";
 import { IGN_PHOTO_CREDIT, placePhotoSrc } from "@/lib/placeMedia";
+import { departmentLabel } from "@/lib/placeUrl";
+import { buildShareText, frenchLongDate, yearsElapsed } from "@/lib/birthDay";
+import {
+  compareCompleteSeasons,
+  compareCompleteYears,
+  formatSignedCelsius,
+  formatSignedMm
+} from "@/lib/compareClimate";
+import { formatCelsius, formatMm } from "../../packages/weather-core/src/units";
+import { formatSignedPerDecade } from "@/lib/climateTrend";
+import {
+  coldestCompleteSeasonOf,
+  hottestCompleteSeasonOf,
+  SEASON_CODES,
+  seasonPublicLabel,
+  seasonSelectLabel,
+  type SeasonCode
+} from "@/lib/climateSeasons";
+import { type HeatEpisode, type HeatStreakResult } from "@/lib/climateHeatStreaks";
+import {
+  compareCompleteMonths,
+  formatMonthYear,
+  monthChartRows,
+  monthNameFr,
+  yearsWithAnyCompleteMonth,
+  yearsWithTwelveCompleteMonths
+} from "@/lib/climateMonths";
 
 const PlaceMap = dynamic(() => import("./PlaceMap"), { ssr: false, loading: () => <div className="mapCanvas mapPlaceholder">Carte IGN…</div> });
 
 type HistoryPayload = {
   date: string;
-  place: { name: string; insee_code: string; latitude: number; longitude: number; altitude_m: number | null; timezone: string };
+  place: { name: string; insee_code: string; latitude: number; longitude: number; altitude_m: number | null; timezone: string; department_slug?: string };
   preferredStation: {
     id: string;
     name: string;
@@ -40,15 +67,24 @@ type HistoryPayload = {
     sourceId: string;
     tminDisplay: string;
     tmaxDisplay: string;
+    tmeanDisplay: string;
     precipDisplay: string;
     tmin: number | null;
     tmax: number | null;
   } | null;
   era5: {
+    originType: string;
     originLabel: string;
+    originLabelTechnical: string;
     method: string;
+    methodVersion: string | null;
+    datasetVersion: string | null;
+    gridLatitude: number | null;
+    gridLongitude: number | null;
     tminDisplay: string;
     tmaxDisplay: string;
+    tmin: number | null;
+    tmax: number | null;
   } | null;
   comparison: { tminDelta: number | null; tmaxDelta: number | null; note: string } | null;
   recordsObserved: {
@@ -60,8 +96,153 @@ type HistoryPayload = {
     yearsOnThisDay: number;
   } | null;
   seriesSameDay: { date: string; tmin: number | null; tmax: number | null }[];
+  sameDayContext: { tmaxPercentile: number | null; label: string } | null;
+  stationDisclaimer: string | null;
   confidence: { score: number; methodVersion: string; breakdown: { label: string; delta: number }[] };
   attributions: string[];
+};
+
+type YearRow = {
+  year: number;
+  tminMean: number | null;
+  tmaxMean: number | null;
+  precipitationSum: number | null;
+  daysGe30: number;
+  yearComplete: boolean;
+  precipComplete: boolean;
+  tminAnomaly?: number | null;
+  tmaxAnomaly?: number | null;
+};
+
+type SeasonRow = {
+  year: number;
+  season: "DJF" | "MAM" | "JJA" | "SON";
+  tminMean: number | null;
+  tmaxMean: number | null;
+  precipitationSum: number | null;
+  daysGe30: number;
+  seasonComplete: boolean;
+  precipComplete: boolean;
+};
+
+type MonthRow = {
+  year: number;
+  month: number;
+  tminMean: number | null;
+  tmaxMean: number | null;
+  precipitationSum: number | null;
+  daysGe30: number;
+  monthComplete: boolean;
+  precipComplete: boolean;
+};
+
+type YearlyPayload = {
+  computed: boolean;
+  methodVersion: string;
+  completeDayThreshold: number;
+  completeMonthDayThreshold: number;
+  completeSeasonDayThreshold: number;
+  station: { id: string; name: string; distanceKm: number | null; completeYears: number } | null;
+  disclaimer: string | null;
+  years: YearRow[];
+  seasons?: SeasonRow[];
+  summers: SeasonRow[];
+  hottestSummer: SeasonRow | null;
+  coldestWinter?: SeasonRow | null;
+  months?: MonthRow[];
+  monthRecords?: {
+    hottest: { year: number; month: number; value: number } | null;
+    coldest: { year: number; month: number; value: number } | null;
+    wettest: { year: number; month: number; value: number } | null;
+  };
+  normal: {
+    period: string;
+    minYearsRequired: number;
+    available: boolean;
+    sameStation: boolean;
+    yearsUsed: number;
+    station: { id: string; name: string; distanceKm: number | null } | null;
+    tminMean: number | null;
+    tmaxMean: number | null;
+    precipitationMean: number | null;
+    precipAvailable: boolean;
+    reason: string | null;
+  };
+  yearRecords: {
+    periodFrom: number | null;
+    periodTo: number | null;
+    yearsUsed: number;
+    hottest: { year: number; value: number } | null;
+    coldest: { year: number; value: number } | null;
+    wettest: { year: number; value: number } | null;
+  };
+  warming: {
+    method: string;
+    homogenized: false;
+    minYears: number;
+    windowYears: number;
+    methodNote: string;
+    linear:
+      | { available: false; reason: string }
+      | {
+          available: true;
+          from: number;
+          to: number;
+          n: number;
+          tmaxPerDecade: number | null;
+          tminPerDecade: number | null;
+          daysGe30PerDecade: number | null;
+          frostPerDecade: number | null;
+          tropicalNightsPerDecade: number | null;
+          shortSeries: boolean;
+        };
+    windows:
+      | { comparable: false; reason: string }
+      | {
+          comparable: true;
+          early: {
+            from: number;
+            to: number;
+            n: number;
+            tminMean: number | null;
+            tmaxMean: number | null;
+            daysGe30Mean: number | null;
+            frostMean: number | null;
+            tropicalNightsMean: number | null;
+          };
+          late: {
+            from: number;
+            to: number;
+            n: number;
+            tminMean: number | null;
+            tmaxMean: number | null;
+            daysGe30Mean: number | null;
+            frostMean: number | null;
+            tropicalNightsMean: number | null;
+          };
+          tminDelta: number | null;
+          tmaxDelta: number | null;
+          daysGe30Delta: number | null;
+          frostDelta: number | null;
+          tropicalNightsDelta: number | null;
+        };
+  };
+  heat?: HeatStreakResult;
+};
+
+type ChildhoodPayload = {
+  computed: boolean;
+  station: { id: string; name: string; distanceKm: number | null } | null;
+  disclaimer: string | null;
+  comparison:
+    | { comparable: false; reason: string }
+    | {
+        comparable: true;
+        childhood: { from: number; to: number; n: number; tminMean: number | null; tmaxMean: number | null };
+        recent: { from: number; to: number; n: number; tminMean: number | null; tmaxMean: number | null };
+        tminDelta: number | null;
+        tmaxDelta: number | null;
+      };
 };
 
 export default function PlaceExplorer({ slug, initialDate }: { slug: string; initialDate: string }) {
@@ -70,11 +251,53 @@ export default function PlaceExplorer({ slug, initialDate }: { slug: string; ini
   const searchParams = useSearchParams();
   const date = searchParams.get("date") || initialDate;
   const [data, setData] = useState<HistoryPayload | null>(null);
+  const [yearly, setYearly] = useState<YearlyPayload | null>(null);
+  const [childhood, setChildhood] = useState<ChildhoodPayload | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [copied, setCopied] = useState(false);
+  const [shareFallback, setShareFallback] = useState("");
+  const [yearA, setYearA] = useState<number | null>(null);
+  const [yearB, setYearB] = useState<number | null>(null);
+  const [seasonKind, setSeasonKind] = useState<SeasonCode>("DJF");
+  const [seasonYearA, setSeasonYearA] = useState<number | null>(null);
+  const [seasonYearB, setSeasonYearB] = useState<number | null>(null);
+  const [monthYear, setMonthYear] = useState<number | null>(null);
+  const [monthKind, setMonthKind] = useState(7);
+  const [monthYearA, setMonthYearA] = useState<number | null>(null);
+  const [monthYearB, setMonthYearB] = useState<number | null>(null);
+
+  const histoire = searchParams.get("histoire") === "naissance";
 
   function goToDate(next: string) {
-    router.replace(`${pathname}?date=${next}`, { scroll: false });
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("date", next);
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  }
+
+  async function copyShare() {
+    if (!data?.place) return;
+    const url = `${window.location.origin}${pathname}?date=${date}${histoire ? "&histoire=naissance" : ""}`;
+    const text = buildShareText({
+      placeName: data.place.name,
+      isoDate: date,
+      hasObservation: Boolean(data.observation),
+      tminDisplay: data.observation?.tminDisplay,
+      tmaxDisplay: data.observation?.tmaxDisplay,
+      precipDisplay: data.observation?.precipDisplay,
+      stationName: data.preferredStation?.name,
+      distanceKm: data.preferredStation?.distanceKm,
+      url
+    });
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setShareFallback("");
+      window.setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setShareFallback(text);
+      setCopied(false);
+    }
   }
 
   useEffect(() => {
@@ -95,10 +318,160 @@ export default function PlaceExplorer({ slug, initialDate }: { slug: string; ini
     return () => controller.abort();
   }, [slug, date]);
 
+  const insee = data?.place?.insee_code;
+  useEffect(() => {
+    if (!insee) return;
+    const controller = new AbortController();
+    fetch(`/api/v1/communes/${insee}/yearly`, { signal: controller.signal })
+      .then(async (r) => {
+        const j = await r.json();
+        if (!r.ok) throw new Error(j.error || "Erreur statistiques");
+        return j as YearlyPayload;
+      })
+      .then(setYearly)
+      .catch((e) => {
+        if (e.name !== "AbortError") setYearly(null);
+      });
+    return () => controller.abort();
+  }, [insee]);
+
+  useEffect(() => {
+    if (!histoire || !insee) {
+      setChildhood(null);
+      return;
+    }
+    const birthYear = Number(date.slice(0, 4));
+    if (!Number.isInteger(birthYear)) {
+      setChildhood(null);
+      return;
+    }
+    const controller = new AbortController();
+    fetch(`/api/v1/communes/${insee}/childhood?birthYear=${birthYear}`, { signal: controller.signal })
+      .then(async (r) => {
+        const j = await r.json();
+        if (!r.ok) throw new Error(j.error || "Erreur enfance");
+        return j as ChildhoodPayload;
+      })
+      .then(setChildhood)
+      .catch((e) => {
+        if (e.name !== "AbortError") setChildhood(null);
+      });
+    return () => controller.abort();
+  }, [histoire, insee, date]);
+
   const chart = useMemo(
     () => (data?.seriesSameDay || []).map((row) => ({ year: row.date.slice(0, 4), tmin: row.tmin, tmax: row.tmax })),
     [data]
   );
+
+  const yearlyChart = useMemo(
+    () =>
+      (yearly?.years || [])
+        .filter((row) => row.yearComplete)
+        .map((row) => ({ year: String(row.year), tmin: row.tminMean, tmax: row.tmaxMean })),
+    [yearly]
+  );
+
+  const completeYears = useMemo(
+    () => (yearly?.years || []).filter((row) => row.yearComplete),
+    [yearly]
+  );
+  const allSeasons = useMemo(
+    () => yearly?.seasons || yearly?.summers || [],
+    [yearly]
+  );
+  const completeSeasons = useMemo(
+    () => allSeasons.filter((row) => row.seasonComplete && row.season === seasonKind),
+    [allSeasons, seasonKind]
+  );
+  const seasonChart = useMemo(
+    () => completeSeasons.map((row) => ({ year: String(row.year), tmin: row.tminMean, tmax: row.tmaxMean })),
+    [completeSeasons]
+  );
+  const seasonCopy = seasonPublicLabel(seasonKind);
+  const seasonRecord =
+    seasonCopy.recordKind === "coldest"
+      ? coldestCompleteSeasonOf(allSeasons, seasonKind)
+      : hottestCompleteSeasonOf(allSeasons, seasonKind);
+  const monthYearsFull = useMemo(
+    () => yearsWithTwelveCompleteMonths(yearly?.months || []),
+    [yearly]
+  );
+  const monthYearsAny = useMemo(
+    () => yearsWithAnyCompleteMonth(yearly?.months || []),
+    [yearly]
+  );
+  const monthChart = useMemo(
+    () => (monthYear != null ? monthChartRows(yearly?.months || [], monthYear) : []),
+    [yearly, monthYear]
+  );
+  const completeMonthPairs = useMemo(
+    () => (yearly?.months || []).filter((row) => row.monthComplete && row.month === monthKind),
+    [yearly, monthKind]
+  );
+
+  useEffect(() => {
+    if (!completeYears.length) {
+      setYearA(null);
+      setYearB(null);
+      return;
+    }
+    setYearA(completeYears[0].year);
+    setYearB(completeYears[completeYears.length - 1].year);
+  }, [completeYears]);
+
+  useEffect(() => {
+    if (!completeSeasons.length) {
+      setSeasonYearA(null);
+      setSeasonYearB(null);
+      return;
+    }
+    setSeasonYearA(completeSeasons[0].year);
+    setSeasonYearB(completeSeasons[completeSeasons.length - 1].year);
+  }, [completeSeasons]);
+
+  const yearCompare = useMemo(() => {
+    if (yearA == null || yearB == null || !yearly) return null;
+    return compareCompleteYears(
+      yearly.years.find((row) => row.year === yearA),
+      yearly.years.find((row) => row.year === yearB)
+    );
+  }, [yearly, yearA, yearB]);
+
+  const seasonCompare = useMemo(() => {
+    if (seasonYearA == null || seasonYearB == null || !allSeasons.length) return null;
+    return compareCompleteSeasons(
+      allSeasons.find((row) => row.year === seasonYearA && row.season === seasonKind),
+      allSeasons.find((row) => row.year === seasonYearB && row.season === seasonKind)
+    );
+  }, [allSeasons, seasonKind, seasonYearA, seasonYearB]);
+
+  const heatBand30 = yearly?.heat?.bands.find((band) => band.thresholdC === 30);
+  const heatBand35 = yearly?.heat?.bands.find((band) => band.thresholdC === 35);
+  const heatBand40 = yearly?.heat?.bands.find((band) => band.thresholdC === 40);
+
+  useEffect(() => {
+    const next = monthYearsFull.at(-1) ?? monthYearsAny.at(-1) ?? null;
+    setMonthYear(next);
+  }, [monthYearsFull, monthYearsAny]);
+
+  useEffect(() => {
+    if (completeMonthPairs.length < 2) {
+      setMonthYearA(null);
+      setMonthYearB(null);
+      return;
+    }
+    setMonthYearA(completeMonthPairs[0].year);
+    setMonthYearB(completeMonthPairs[completeMonthPairs.length - 1].year);
+  }, [completeMonthPairs]);
+
+  const monthCompare = useMemo(() => {
+    if (monthYearA == null || monthYearB == null || !yearly) return null;
+    return compareCompleteMonths(
+      (yearly.months || []).find((row) => row.year === monthYearA && row.month === monthKind),
+      (yearly.months || []).find((row) => row.year === monthYearB && row.month === monthKind)
+    );
+  }, [yearly, monthKind, monthYearA, monthYearB]);
 
   const place = data?.place;
 
@@ -115,24 +488,57 @@ export default function PlaceExplorer({ slug, initialDate }: { slug: string; ini
         <div className="placeHeroContent">
           <p className="crumb">
             <Link href="/">Accueil</Link>
-            <span> / Isère / {place?.name || slug}</span>
+            <span>
+              {" "}
+              / {place?.department_slug ? `${departmentLabel(place.department_slug)} / ` : ""}
+              {place?.name || slug}
+            </span>
           </p>
-          <p className="eyebrow">OBSERVATION • CARTE IGN • PAS UNE RÉANALYSE</p>
+          <p className="eyebrow">{histoire ? "JOUR DE NAISSANCE · MESURE OFFICIELLE" : "HISTOIRE MÉTÉO · MESURE OFFICIELLE"}</p>
           <h1>{place?.name || slug}</h1>
-          <p>
-            {date.split("-").reverse().join("/")}
-            {place ? ` · INSEE ${place.insee_code} · ${place.timezone}` : ""}
-          </p>
+          <p>{date.split("-").reverse().join("/")}</p>
           <p className="photoCredit">{IGN_PHOTO_CREDIT}</p>
-          <label className="datePick">
-            <span>Choisir un jour</span>
-            <input type="date" value={date} onChange={(e) => goToDate(e.target.value)} />
-          </label>
+          <div className="heroActions">
+            <label className="datePick">
+              <span>{histoire ? "Date de naissance" : "Quel temps faisait-il ?"}</span>
+              <input type="date" value={date} onChange={(e) => goToDate(e.target.value)} />
+            </label>
+            <button type="button" className="btnGhost shareBtn" onClick={copyShare}>
+              {copied ? "Souvenir copié" : "Partager ce jour"}
+            </button>
+          </div>
+          {shareFallback ? (
+            <textarea className="shareFallback" readOnly value={shareFallback} rows={4} />
+          ) : null}
         </div>
       </section>
 
       {error && <div className="error">{error}</div>}
       {loading && <p className="note loadingNote">Chargement des observations…</p>}
+
+      {histoire && place && data && (
+        <section className="panel birthPanel">
+          <div className="panelTitle">
+            <div>
+              <span>CE JOUR-LÀ</span>
+              <h2>{frenchLongDate(date) || date}</h2>
+            </div>
+            {(() => {
+              const age = yearsElapsed(date, new Date().toISOString().slice(0, 10));
+              return age != null ? (
+                <strong>
+                  Il y a {age} an{age > 1 ? "s" : ""}
+                </strong>
+              ) : null;
+            })()}
+          </div>
+          <p className="birthLead">
+            {data.observation
+              ? `${data.observation.tminDisplay} le matin, ${data.observation.tmaxDisplay} l’après-midi. ${data.stationDisclaimer || ""}`
+              : "Aucune mesure officielle n’est disponible pour cette date. Aucune valeur n’est inventée."}
+          </p>
+        </section>
+      )}
 
       {place && (
         <section className="mapBlock panel">
@@ -167,54 +573,104 @@ export default function PlaceExplorer({ slug, initialDate }: { slug: string; ini
               <div className="storyPhoto">
                 <Image src="/images/origin-observed.png" alt="" fill sizes="60vw" />
               </div>
-              <OriginBadge kind="OBSERVED" caption={data.preferredStation.name} />
+              <OriginBadge kind="OBSERVED" caption={data.observation?.originLabel} />
               <TempRange tmin={data.observation?.tmin ?? null} tmax={data.observation?.tmax ?? null} />
+              {data.sameDayContext ? <p className="sameDayStory">{data.sameDayContext.label}</p> : null}
               <div className="metricRow">
                 <div>
                   <span>Pluie</span>
-                  <strong>{data.observation?.precipDisplay || "non disponible"}</strong>
+                  <strong>{data.observation?.precipDisplay || "Non disponible"}</strong>
                 </div>
                 <div>
-                  <span>Confiance</span>
-                  <strong>{data.confidence.score}/100</strong>
-                </div>
-                <div>
-                  <span>Distance</span>
-                  <strong>{data.preferredStation.distanceKm ?? "—"} km</strong>
-                </div>
-                <div>
-                  <span>Δ altitude</span>
-                  <strong>{data.preferredStation.altitudeDeltaM ?? "—"} m</strong>
+                  <span>Moyenne</span>
+                  <strong>{data.observation?.tmeanDisplay || "Non disponible"}</strong>
                 </div>
               </div>
+              {data.stationDisclaimer ? <p className="stationDisclaimer">{data.stationDisclaimer}</p> : null}
             </article>
             <article className="panel storySide">
-              <div className="storyPhoto storyPhoto-side">
-                <Image src="/images/origin-reanalysis.png" alt="" fill sizes="40vw" />
-              </div>
-              <OriginBadge
-                kind="REANALYSIS"
-                caption={data.era5 ? `${data.era5.tminDisplay} / ${data.era5.tmaxDisplay}` : "Pas encore ingérée"}
-              />
+              <h2 className="subh">Sources</h2>
               <p>
-                {data.era5
-                  ? `Réanalyse ERA5 (${data.era5.method}).`
-                  : "Aucune valeur ERA5 n’est inventée. La comparaison apparaîtra après une extraction point réelle."}
+                Source : Météo-France.
+                {data.preferredStation ? ` Station utilisée : ${data.preferredStation.name}.` : ""}
               </p>
-              {data.comparison && (
-                <p className="deltaLine">
-                  Écart ERA5 − obs : Tmin {data.comparison.tminDelta ?? "—"} °C · Tmax {data.comparison.tmaxDelta ?? "—"} °C
-                </p>
-              )}
-              <div className="confidenceBars">
-                {data.confidence.breakdown.map((b) => (
-                  <div key={b.label}>
-                    <span>{b.label}</span>
-                    <em>{b.delta > 0 ? `+${b.delta}` : b.delta}</em>
-                  </div>
-                ))}
-              </div>
+              <p>
+                Confiance interne {data.confidence.score}/100
+                {data.era5
+                  ? ". L’estimation climatique n’est pas une seconde mesure indépendante."
+                  : "."}
+              </p>
             </article>
+          </section>
+
+          <section id="comparaison-sources" className="panel sourceCompare">
+            <div className="panelTitle">
+              <div>
+                <span>COMPARAISON</span>
+                <h2>Mesure et estimation climatique</h2>
+              </div>
+            </div>
+            {data.era5 && data.comparison ? (
+              <>
+                <div className="sourceCompareGrid">
+                  <article>
+                    <OriginBadge kind="OBSERVED" caption={data.preferredStation?.name} />
+                    <p className="sourceTemps">
+                      {data.observation?.tminDisplay} / {data.observation?.tmaxDisplay}
+                    </p>
+                    <p className="sourceNote">Station {data.preferredStation?.name}.</p>
+                  </article>
+                  <article>
+                    <OriginBadge kind="REANALYSIS" caption="Pas une station" />
+                    <p className="sourceTemps">
+                      {data.era5.tminDisplay} / {data.era5.tmaxDisplay}
+                    </p>
+                    <p className="sourceNote">Pas une mesure de station. Pas fusionnée avec la mesure.</p>
+                  </article>
+                </div>
+                <p className="deltaLine">
+                  Écart estimation − mesure : Tmin {formatSignedCelsius(data.comparison.tminDelta)} · Tmax{" "}
+                  {formatSignedCelsius(data.comparison.tmaxDelta)}
+                </p>
+                <p className="yearlyNote">{data.comparison.note}</p>
+                <p className="yearlyNote">
+                  Qualité : aucun flag dans l’import quotidien Météo-France pour cette date. Rien n’est inventé.
+                </p>
+                <p className="yearlyNote">
+                  Confiance interne {data.confidence.score}/100 ({data.confidence.methodVersion}).
+                </p>
+                <div className="confidenceBars">
+                  {data.confidence.breakdown.map((b) => (
+                    <div key={b.label}>
+                      <span>{b.label}</span>
+                      <em>{b.delta > 0 ? `+${b.delta}` : b.delta}</em>
+                    </div>
+                  ))}
+                </div>
+                <details className="techDetails">
+                  <summary>En savoir plus</summary>
+                  <p>
+                    Réanalyse ERA5 (Copernicus C3S / ECMWF), origine technique {data.era5.originLabelTechnical}.
+                    Méthode {data.era5.method}
+                    {data.era5.methodVersion ? ` (${data.era5.methodVersion})` : ""}.
+                    {data.era5.datasetVersion ? ` Version ${data.era5.datasetVersion}.` : ""}
+                    {data.era5.gridLatitude != null && data.era5.gridLongitude != null
+                      ? ` Maille la plus proche ${data.era5.gridLatitude}°N, ${data.era5.gridLongitude}°E.`
+                      : ""}
+                    Min/max = extrêmes des 24 heures UTC de température à 2 m, pas le Tmin/Tmax d’abri.
+                    Maille d’environ 0,25°. Aucune correction d’altitude ni moyenne avec la station.
+                  </p>
+                  {data.attributions.map((line) => (
+                    <p key={line}>{line}</p>
+                  ))}
+                </details>
+              </>
+            ) : (
+              <p className="yearlyNote">
+                Aucune estimation climatique n’est inventée pour cette date. Une comparaison pourra apparaître
+                après extraction d’un point réel, sans fusion avec la mesure officielle.
+              </p>
+            )}
           </section>
 
           <section className="panel chartPanel">
@@ -229,9 +685,8 @@ export default function PlaceExplorer({ slug, initialDate }: { slug: string; ini
             </div>
             {data.recordsObserved && (
               <p className="recordLine">
-                Record Tmin {data.recordsObserved.recordTmin ?? "—"} °C ({data.recordsObserved.recordTminDate || "—"}) · Record Tmax{" "}
-                {data.recordsObserved.recordTmax ?? "—"} °C ({data.recordsObserved.recordTmaxDate || "—"}) — records de station, pas
-                d’ERA5
+                Record de froid {data.recordsObserved.recordTmin ?? "—"} °C ({data.recordsObserved.recordTminDate || "—"}) ·
+                Record de chaleur {data.recordsObserved.recordTmax ?? "—"} °C ({data.recordsObserved.recordTmaxDate || "—"})
               </p>
             )}
             <YearHeatmap series={data.seriesSameDay} selected={date} onSelect={goToDate} />
@@ -242,12 +697,777 @@ export default function PlaceExplorer({ slug, initialDate }: { slug: string; ini
                   <XAxis dataKey="year" tick={{ fill: "#70888f", fontSize: 10 }} />
                   <YAxis tick={{ fill: "#70888f", fontSize: 10 }} unit="°C" />
                   <Tooltip />
-                  <Line type="monotone" dataKey="tmax" stroke="#ff7b36" dot={false} name="Tmax observée" />
-                  <Line type="monotone" dataKey="tmin" stroke="#7ec8ff" dot={false} name="Tmin observée" />
+                  <Line type="monotone" dataKey="tmax" stroke="#ff7b36" dot={false} name="Maximale" />
+                  <Line type="monotone" dataKey="tmin" stroke="#7ec8ff" dot={false} name="Minimale" />
                 </LineChart>
               </ResponsiveContainer>
             </div>
           </section>
+
+          <section className="panel chartPanel">
+            <div className="panelTitle">
+              <div>
+                <span>ÉVOLUTION ANNUELLE</span>
+                <h2>Les années suffisamment observées</h2>
+              </div>
+              {yearly?.station ? (
+                <strong>
+                  {yearly.station.completeYears} année{yearly.station.completeYears > 1 ? "s" : ""} complète
+                  {yearly.station.completeYears > 1 ? "s" : ""}
+                </strong>
+              ) : null}
+            </div>
+            {yearly?.disclaimer ? <p className="stationDisclaimer">{yearly.disclaimer}</p> : null}
+            <p className="yearlyNote">
+              Seules les années avec au moins {yearly?.completeDayThreshold ?? 330} jours de Tmin et Tmax connus sont
+              tracées. Une année incomplète n’est pas une année climatique. La pluie annuelle n’apparaît que si presque
+              tous les jours ont une mesure : un trou n’est pas zéro.
+            </p>
+            {!yearly?.computed ? (
+              <p className="note">Statistiques non calculées. Une visite de page ne lance pas ce calcul.</p>
+            ) : yearlyChart.length === 0 ? (
+              <p className="note">Pas assez d’années complètes pour tracer une évolution.</p>
+            ) : (
+              <div className="chart">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={yearlyChart}>
+                    <CartesianGrid stroke="rgba(255,255,255,.06)" />
+                    <XAxis dataKey="year" tick={{ fill: "#70888f", fontSize: 10 }} />
+                    <YAxis tick={{ fill: "#70888f", fontSize: 10 }} unit="°C" />
+                    <Tooltip />
+                    {yearly.normal?.available && yearly.normal.sameStation && yearly.normal.tmaxMean != null ? (
+                      <ReferenceLine
+                        y={yearly.normal.tmaxMean}
+                        stroke="#ffb35b"
+                        strokeDasharray="4 4"
+                        label={{ value: `Normale max. ${yearly.normal.period}`, fill: "#88a0a8", fontSize: 10 }}
+                      />
+                    ) : null}
+                    <Line type="monotone" dataKey="tmax" stroke="#ff7b36" dot={false} name="Maximale moyenne" />
+                    <Line type="monotone" dataKey="tmin" stroke="#7ec8ff" dot={false} name="Minimale moyenne" />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+            {yearly?.years.some((row) => row.yearComplete && row.precipComplete) ? (
+              <p className="recordLine">
+                Dernière année complète avec pluie connue :{" "}
+                {(() => {
+                  const last = [...yearly.years].reverse().find((row) => row.yearComplete && row.precipComplete);
+                  return last
+                    ? `${last.year} · ${last.precipitationSum ?? "non disponible"} mm · ${last.daysGe30} jour${last.daysGe30 > 1 ? "s" : ""} ≥ 30 °C`
+                    : "non disponible";
+                })()}
+              </p>
+            ) : null}
+          </section>
+
+          {yearly?.warming ? (
+            <section id="rechauffement" className="panel chartPanel">
+              <div className="panelTitle">
+                <div>
+                  <span>MA VILLE SE RÉCHAUFFE-T-ELLE ?</span>
+                  <h2>Un seul poste, années climatiques seulement</h2>
+                </div>
+                {yearly.station ? <strong>{yearly.station.name}</strong> : null}
+              </div>
+              <p className="yearlyNote">{yearly.warming.methodNote}</p>
+              {!yearly.warming.linear.available ? (
+                <p className="yearlyNote">{yearly.warming.linear.reason}</p>
+              ) : (
+                <>
+                  <p className="yearlyNote">
+                    Pente sur {yearly.warming.linear.n} années climatiques de {yearly.warming.linear.from} à{" "}
+                    {yearly.warming.linear.to}
+                    {yearly.warming.linear.shortSeries
+                      ? " — moins de 30 ans : ce n’est pas une climatologie classique, la pente peut encore bouger."
+                      : "."}{" "}
+                    {yearly.normal?.available && yearly.normal.sameStation
+                      ? `Normale ${yearly.normal.period} de ce poste : max. ${formatCelsius(yearly.normal.tmaxMean)}.`
+                      : "Pas de normale 1991-2020 appliquée ici : il faut 24 années climatiques de ce même poste sur la période."}
+                  </p>
+                  <div className="compareMetrics warmingMetrics">
+                    <div>
+                      <span>Maximale</span>
+                      <strong>{formatSignedPerDecade(yearly.warming.linear.tmaxPerDecade, "°C")}</strong>
+                    </div>
+                    <div>
+                      <span>Minimale</span>
+                      <strong>{formatSignedPerDecade(yearly.warming.linear.tminPerDecade, "°C")}</strong>
+                    </div>
+                    <div>
+                      <span>Jours ≥ 30 °C</span>
+                      <strong>{formatSignedPerDecade(yearly.warming.linear.daysGe30PerDecade, "j")}</strong>
+                    </div>
+                    <div>
+                      <span>Jours de gel</span>
+                      <strong>{formatSignedPerDecade(yearly.warming.linear.frostPerDecade, "j")}</strong>
+                    </div>
+                    <div>
+                      <span>Nuits tropicales</span>
+                      <strong>{formatSignedPerDecade(yearly.warming.linear.tropicalNightsPerDecade, "j")}</strong>
+                    </div>
+                  </div>
+                </>
+              )}
+              {!yearly.warming.windows.comparable ? (
+                <p className="yearlyNote">{yearly.warming.windows.reason}</p>
+              ) : (
+                <>
+                  <p className="yearlyNote">
+                    Les {yearly.warming.windows.early.n} premières années climatiques (
+                    {yearly.warming.windows.early.from}–{yearly.warming.windows.early.to}) vs les{" "}
+                    {yearly.warming.windows.late.n} dernières ({yearly.warming.windows.late.from}–
+                    {yearly.warming.windows.late.to}), sans chevauchement. Écart = fin − début.
+                  </p>
+                  <div className="compareMetrics warmingMetrics">
+                    <div>
+                      <span>Maximale moyenne</span>
+                      <strong>
+                        {formatCelsius(yearly.warming.windows.early.tmaxMean)} →{" "}
+                        {formatCelsius(yearly.warming.windows.late.tmaxMean)}
+                      </strong>
+                      <small>{formatSignedCelsius(yearly.warming.windows.tmaxDelta)}</small>
+                    </div>
+                    <div>
+                      <span>Minimale moyenne</span>
+                      <strong>
+                        {formatCelsius(yearly.warming.windows.early.tminMean)} →{" "}
+                        {formatCelsius(yearly.warming.windows.late.tminMean)}
+                      </strong>
+                      <small>{formatSignedCelsius(yearly.warming.windows.tminDelta)}</small>
+                    </div>
+                    <div>
+                      <span>Jours ≥ 30 °C</span>
+                      <strong>
+                        {yearly.warming.windows.early.daysGe30Mean ?? "non disponible"} →{" "}
+                        {yearly.warming.windows.late.daysGe30Mean ?? "non disponible"}
+                      </strong>
+                      <small>
+                        {yearly.warming.windows.daysGe30Delta == null
+                          ? "non disponible"
+                          : `${yearly.warming.windows.daysGe30Delta > 0 ? "+" : ""}${yearly.warming.windows.daysGe30Delta} j`}
+                      </small>
+                    </div>
+                    <div>
+                      <span>Jours de gel</span>
+                      <strong>
+                        {yearly.warming.windows.early.frostMean ?? "non disponible"} →{" "}
+                        {yearly.warming.windows.late.frostMean ?? "non disponible"}
+                      </strong>
+                      <small>
+                        {yearly.warming.windows.frostDelta == null
+                          ? "non disponible"
+                          : `${yearly.warming.windows.frostDelta > 0 ? "+" : ""}${yearly.warming.windows.frostDelta} j`}
+                      </small>
+                    </div>
+                    <div>
+                      <span>Nuits tropicales</span>
+                      <strong>
+                        {yearly.warming.windows.early.tropicalNightsMean ?? "non disponible"} →{" "}
+                        {yearly.warming.windows.late.tropicalNightsMean ?? "non disponible"}
+                      </strong>
+                      <small>
+                        {yearly.warming.windows.tropicalNightsDelta == null
+                          ? "non disponible"
+                          : `${yearly.warming.windows.tropicalNightsDelta > 0 ? "+" : ""}${yearly.warming.windows.tropicalNightsDelta} j`}
+                      </small>
+                    </div>
+                  </div>
+                </>
+              )}
+              <details className="moreMethod">
+                <summary>En savoir plus</summary>
+                <p>
+                  Méthode {yearly.warming.method} : moindres carrés ordinaires, années avec au moins{" "}
+                  {yearly.completeDayThreshold} jours de Tmin et Tmax. Homogénéisation :{" "}
+                  {yearly.warming.homogenized ? "oui" : "non"}. Gel = jours à Tmin &lt; 0 °C. Nuit tropicale = Tmin ≥
+                  20 °C. Compteurs d’une année complète seulement — un trou n’est pas zéro.
+                </p>
+              </details>
+            </section>
+          ) : null}
+
+          {yearly?.computed && yearly.normal ? (
+            <section className="panel chartPanel">
+              <div className="panelTitle">
+                <div>
+                  <span>NORMALE {yearly.normal.period}</span>
+                  <h2>
+                    {yearly.normal.available
+                      ? yearly.normal.sameStation
+                        ? "Même station que la série annuelle"
+                        : "Autre station — pas d’anomalie sur le graphique"
+                      : "Pas assez d’années climatiques"}
+                  </h2>
+                </div>
+                {yearly.normal.available && yearly.normal.station ? (
+                  <strong>
+                    {yearly.normal.station.name}
+                    {yearly.normal.station.distanceKm != null ? ` · ${yearly.normal.station.distanceKm} km` : ""}
+                  </strong>
+                ) : null}
+              </div>
+              {yearly.normal.reason ? <p className="yearlyNote">{yearly.normal.reason}</p> : (
+                <p className="yearlyNote">
+                  Moyenne des années climatiques complètes de {yearly.normal.period} ({yearly.normal.yearsUsed} ans,
+                  seuil {yearly.normal.minYearsRequired}). Anomalie = année − cette normale, même poste, même
+                  variable. Série brute, pas une normale homogénéisée. Ce n’est pas une étude certifiée.
+                </p>
+              )}
+              {yearly.normal.available ? (
+                <div className="compareMetrics">
+                  <div>
+                    <span>Maximale</span>
+                    <strong>{formatCelsius(yearly.normal.tmaxMean)}</strong>
+                  </div>
+                  <div>
+                    <span>Minimale</span>
+                    <strong>{formatCelsius(yearly.normal.tminMean)}</strong>
+                  </div>
+                  <div>
+                    <span>Pluie annuelle moyenne</span>
+                    <strong>
+                      {yearly.normal.precipAvailable ? formatMm(yearly.normal.precipitationMean) : "non disponible"}
+                    </strong>
+                  </div>
+                </div>
+              ) : null}
+            </section>
+          ) : null}
+
+          {yearly?.yearRecords && yearly.yearRecords.yearsUsed > 0 ? (
+            <section className="panel chartPanel">
+              <div className="panelTitle">
+                <div>
+                  <span>RECORDS D’ANNÉE OBSERVÉS</span>
+                  <h2>
+                    {yearly.yearRecords.periodFrom}–{yearly.yearRecords.periodTo} · {yearly.station?.name}
+                  </h2>
+                </div>
+                <strong>{yearly.yearRecords.yearsUsed} années climatiques</strong>
+              </div>
+              <p className="yearlyNote">
+                Parmi les années assez observées de cette station seulement. Ce n’est pas un maximum ERA5, ni le
+                record de la commune, ni une série homogénéisée.
+              </p>
+              <div className="compareMetrics">
+                <div>
+                  <span>Année la plus chaude</span>
+                  <strong>
+                    {yearly.yearRecords.hottest
+                      ? `${yearly.yearRecords.hottest.year} · ${formatCelsius(yearly.yearRecords.hottest.value)}`
+                      : "non disponible"}
+                  </strong>
+                  <small>maximale annuelle moyenne</small>
+                </div>
+                <div>
+                  <span>Année la plus froide</span>
+                  <strong>
+                    {yearly.yearRecords.coldest
+                      ? `${yearly.yearRecords.coldest.year} · ${formatCelsius(yearly.yearRecords.coldest.value)}`
+                      : "non disponible"}
+                  </strong>
+                  <small>minimale annuelle moyenne</small>
+                </div>
+                <div>
+                  <span>Année la plus arrosée</span>
+                  <strong>
+                    {yearly.yearRecords.wettest
+                      ? `${yearly.yearRecords.wettest.year} · ${formatMm(yearly.yearRecords.wettest.value)}`
+                      : "non disponible"}
+                  </strong>
+                  <small>pluie annuelle complète seulement</small>
+                </div>
+              </div>
+              {data.place.insee_code ? (
+                <p className="note">
+                  <Link href={`/comparer?a=${data.place.insee_code}`}>Comparer avec une autre commune</Link>
+                </p>
+              ) : null}
+            </section>
+          ) : null}
+
+          {completeYears.length >= 2 ? (
+            <section className="panel chartPanel">
+              <div className="panelTitle">
+                <div>
+                  <span>COMPARER DEUX ANNÉES</span>
+                  <h2>Même station, années complètes seulement</h2>
+                </div>
+              </div>
+              <p className="yearlyNote">
+                Écart = année B − année A, sur la station climatique ci-dessus. Une année trouée n’entre pas dans la
+                liste. Ce n’est pas une étude certifiée.
+              </p>
+              <div className="compareRow">
+                <label>
+                  <span>Année A</span>
+                  <select
+                    value={yearA ?? ""}
+                    onChange={(e) => setYearA(Number(e.target.value))}
+                  >
+                    {completeYears.map((row) => (
+                      <option key={row.year} value={row.year}>
+                        {row.year}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  <span>Année B</span>
+                  <select
+                    value={yearB ?? ""}
+                    onChange={(e) => setYearB(Number(e.target.value))}
+                  >
+                    {completeYears.map((row) => (
+                      <option key={row.year} value={row.year}>
+                        {row.year}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              {yearCompare && !yearCompare.comparable ? (
+                <p className="note">{yearCompare.reason}</p>
+              ) : yearCompare && yearA != null && yearB != null ? (
+                <>
+                  <div className="compareMetrics">
+                    <div>
+                      <span>Maximale moyenne</span>
+                      <strong>
+                        {formatCelsius(yearly?.years.find((row) => row.year === yearA)?.tmaxMean)} →{" "}
+                        {formatCelsius(yearly?.years.find((row) => row.year === yearB)?.tmaxMean)}
+                      </strong>
+                      <small>{formatSignedCelsius(yearCompare.tmaxDelta)}</small>
+                    </div>
+                    <div>
+                      <span>Minimale moyenne</span>
+                      <strong>
+                        {formatCelsius(yearly?.years.find((row) => row.year === yearA)?.tminMean)} →{" "}
+                        {formatCelsius(yearly?.years.find((row) => row.year === yearB)?.tminMean)}
+                      </strong>
+                      <small>{formatSignedCelsius(yearCompare.tminDelta)}</small>
+                    </div>
+                    <div>
+                      <span>Jours ≥ 30 °C</span>
+                      <strong>
+                        {yearly?.years.find((row) => row.year === yearA)?.daysGe30 ?? "—"} →{" "}
+                        {yearly?.years.find((row) => row.year === yearB)?.daysGe30 ?? "—"}
+                      </strong>
+                      <small>
+                        {yearCompare.daysGe30Delta > 0 ? "+" : ""}
+                        {yearCompare.daysGe30Delta} jour{Math.abs(yearCompare.daysGe30Delta) > 1 ? "s" : ""}
+                      </small>
+                    </div>
+                    <div>
+                      <span>Pluie annuelle</span>
+                      <strong>
+                        {formatMm(yearly?.years.find((row) => row.year === yearA)?.precipitationSum)} →{" "}
+                        {formatMm(yearly?.years.find((row) => row.year === yearB)?.precipitationSum)}
+                      </strong>
+                      <small>{formatSignedMm(yearCompare.precipDelta)}</small>
+                    </div>
+                  </div>
+                  {yearly?.normal?.available && yearly.normal.sameStation ? (
+                    <p className="recordLine">
+                      Anomalie de max. vs {yearly.normal.period} :{" "}
+                      {formatSignedCelsius(yearly.years.find((row) => row.year === yearA)?.tmaxAnomaly ?? null)} →{" "}
+                      {formatSignedCelsius(yearly.years.find((row) => row.year === yearB)?.tmaxAnomaly ?? null)}
+                    </p>
+                  ) : null}
+                </>
+              ) : null}
+            </section>
+          ) : null}
+
+          <section id="mois" className="panel chartPanel">
+            <div className="panelTitle">
+              <div>
+                <span>LES MOIS</span>
+                <h2>Assez observés, un seul poste</h2>
+              </div>
+              {yearly?.monthRecords?.hottest ? (
+                <strong>
+                  Plus chaud : {formatMonthYear(yearly.monthRecords.hottest.year, yearly.monthRecords.hottest.month)} ·{" "}
+                  {formatCelsius(yearly.monthRecords.hottest.value)}
+                </strong>
+              ) : null}
+            </div>
+            <p className="yearlyNote">
+              Un mois est affiché s’il a au moins {yearly?.completeMonthDayThreshold ?? 25} jours de Tmin et Tmax
+              connus. Un mois troué n’est pas une climatologie : la pluie n’est pas zéro. Ce n’est pas une normale
+              mensuelle, ni le record de la commune.
+            </p>
+            {yearly?.monthRecords && (yearly.monthRecords.hottest || yearly.monthRecords.coldest || yearly.monthRecords.wettest) ? (
+              <div className="compareMetrics">
+                <div>
+                  <span>Mois le plus chaud</span>
+                  <strong>
+                    {yearly.monthRecords.hottest
+                      ? `${formatMonthYear(yearly.monthRecords.hottest.year, yearly.monthRecords.hottest.month)} · ${formatCelsius(yearly.monthRecords.hottest.value)}`
+                      : "non disponible"}
+                  </strong>
+                  <small>maximale mensuelle moyenne</small>
+                </div>
+                <div>
+                  <span>Mois le plus froid</span>
+                  <strong>
+                    {yearly.monthRecords.coldest
+                      ? `${formatMonthYear(yearly.monthRecords.coldest.year, yearly.monthRecords.coldest.month)} · ${formatCelsius(yearly.monthRecords.coldest.value)}`
+                      : "non disponible"}
+                  </strong>
+                  <small>minimale mensuelle moyenne</small>
+                </div>
+                <div>
+                  <span>Mois le plus arrosé</span>
+                  <strong>
+                    {yearly.monthRecords.wettest
+                      ? `${formatMonthYear(yearly.monthRecords.wettest.year, yearly.monthRecords.wettest.month)} · ${formatMm(yearly.monthRecords.wettest.value)}`
+                      : "non disponible"}
+                  </strong>
+                  <small>pluie d’un mois complet seulement</small>
+                </div>
+              </div>
+            ) : null}
+            {(monthYearsFull.length || monthYearsAny.length) ? (
+              <>
+                <div className="compareRow">
+                  <label>
+                    <span>Année</span>
+                    <select
+                      value={monthYear ?? ""}
+                      onChange={(e) => setMonthYear(Number(e.target.value))}
+                    >
+                      {(monthYearsFull.length ? monthYearsFull : monthYearsAny).map((year) => (
+                        <option key={year} value={year}>
+                          {year}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+                {monthChart.length ? (
+                  <div className="chart">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={monthChart}>
+                        <CartesianGrid stroke="rgba(255,255,255,.06)" />
+                        <XAxis dataKey="label" tick={{ fill: "#70888f", fontSize: 10 }} />
+                        <YAxis tick={{ fill: "#70888f", fontSize: 10 }} unit="°C" />
+                        <Tooltip />
+                        <Line type="monotone" dataKey="tmax" stroke="#ff7b36" connectNulls={false} name="Maximale moyenne" />
+                        <Line type="monotone" dataKey="tmin" stroke="#7ec8ff" connectNulls={false} name="Minimale moyenne" />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                ) : null}
+              </>
+            ) : (
+              <p className="note">Pas assez de mois complets pour tracer une année.</p>
+            )}
+            {completeMonthPairs.length >= 2 ? (
+              <>
+                <p className="yearlyNote">
+                  Même mois, deux années. Écart = année B − année A, sur {yearly?.station?.name}.
+                </p>
+                <div className="compareRow">
+                  <label>
+                    <span>Mois</span>
+                    <select value={monthKind} onChange={(e) => setMonthKind(Number(e.target.value))}>
+                      {Array.from({ length: 12 }, (_, i) => i + 1).map((month) => (
+                        <option key={month} value={month}>
+                          {monthNameFr(month)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    <span>Année A</span>
+                    <select
+                      value={monthYearA ?? ""}
+                      onChange={(e) => setMonthYearA(Number(e.target.value))}
+                    >
+                      {completeMonthPairs.map((row) => (
+                        <option key={row.year} value={row.year}>
+                          {row.year}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    <span>Année B</span>
+                    <select
+                      value={monthYearB ?? ""}
+                      onChange={(e) => setMonthYearB(Number(e.target.value))}
+                    >
+                      {completeMonthPairs.map((row) => (
+                        <option key={row.year} value={row.year}>
+                          {row.year}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+                {monthCompare && !monthCompare.comparable ? (
+                  <p className="note">{monthCompare.reason}</p>
+                ) : monthCompare && monthCompare.comparable ? (
+                  <p className="recordLine">
+                    Maximale moyenne {formatSignedCelsius(monthCompare.tmaxDelta)} · jours ≥ 30 °C{" "}
+                    {monthCompare.daysGe30Delta > 0 ? "+" : ""}
+                    {monthCompare.daysGe30Delta} · pluie {formatSignedMm(monthCompare.precipDelta)}
+                  </p>
+                ) : null}
+              </>
+            ) : null}
+          </section>
+
+          <section id="saisons" className="panel chartPanel">
+            <div className="panelTitle">
+              <div>
+                <span>{seasonCopy.eyebrow}</span>
+                <h2>{seasonCopy.title}</h2>
+              </div>
+              {seasonRecord ? (
+                <strong>
+                  {seasonCopy.recordKind === "coldest" ? "Plus froid" : "Plus chaud"} : {seasonRecord.year} ·{" "}
+                  {formatCelsius(seasonCopy.recordKind === "coldest" ? seasonRecord.tminMean : seasonRecord.tmaxMean)}
+                </strong>
+              ) : null}
+            </div>
+            <p className="yearlyNote">
+              {seasonCopy.months} Une saison est tracée s’il y a au moins {yearly?.completeSeasonDayThreshold ?? 75}{" "}
+              jours de Tmin et Tmax connus. La pluie d’une saison trouée n’est pas zéro. On ne compare pas un hiver à
+              un été. Ce n’est pas le record de la commune, seulement de cette station.
+            </p>
+            <div className="compareRow">
+              <label>
+                <span>Saison</span>
+                <select
+                  value={seasonKind}
+                  onChange={(e) => setSeasonKind(e.target.value as SeasonCode)}
+                >
+                  {SEASON_CODES.map((code) => (
+                    <option key={code} value={code}>
+                      {seasonSelectLabel(code)}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            {!yearly?.computed ? (
+              <p className="note">Statistiques non calculées. Une visite de page ne lance pas ce calcul.</p>
+            ) : seasonChart.length === 0 ? (
+              <p className="note">Pas assez de saisons complètes pour tracer une évolution.</p>
+            ) : (
+              <div className="chart">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={seasonChart}>
+                    <CartesianGrid stroke="rgba(255,255,255,.06)" />
+                    <XAxis dataKey="year" tick={{ fill: "#70888f", fontSize: 10 }} />
+                    <YAxis tick={{ fill: "#70888f", fontSize: 10 }} unit="°C" />
+                    <Tooltip />
+                    <Line type="monotone" dataKey="tmax" stroke="#ff7b36" dot={false} name="Maximale moyenne" />
+                    <Line type="monotone" dataKey="tmin" stroke="#7ec8ff" dot={false} name="Minimale moyenne" />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+            {completeSeasons.length >= 2 ? (
+              <>
+                <div className="compareRow">
+                  <label>
+                    <span>{seasonSelectLabel(seasonKind)} A</span>
+                    <select
+                      value={seasonYearA ?? ""}
+                      onChange={(e) => setSeasonYearA(Number(e.target.value))}
+                    >
+                      {completeSeasons.map((row) => (
+                        <option key={row.year} value={row.year}>
+                          {row.year}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    <span>{seasonSelectLabel(seasonKind)} B</span>
+                    <select
+                      value={seasonYearB ?? ""}
+                      onChange={(e) => setSeasonYearB(Number(e.target.value))}
+                    >
+                      {completeSeasons.map((row) => (
+                        <option key={row.year} value={row.year}>
+                          {row.year}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+                {seasonCompare && !seasonCompare.comparable ? (
+                  <p className="note">{seasonCompare.reason}</p>
+                ) : seasonCompare && seasonCompare.comparable ? (
+                  <p className="recordLine">
+                    {seasonCopy.recordKind === "coldest" ? "Minimale" : "Maximale"} moyenne{" "}
+                    {formatSignedCelsius(
+                      seasonCopy.recordKind === "coldest" ? seasonCompare.tminDelta : seasonCompare.tmaxDelta
+                    )}{" "}
+                    · jours ≥ 30 °C {seasonCompare.daysGe30Delta > 0 ? "+" : ""}
+                    {seasonCompare.daysGe30Delta} · pluie {formatSignedMm(seasonCompare.precipDelta)}
+                  </p>
+                ) : null}
+              </>
+            ) : null}
+          </section>
+
+          <section id="chaleur" className="panel chartPanel">
+            <div className="panelTitle">
+              <div>
+                <span>LES FORTES CHALEURS</span>
+                <h2>Jours consécutifs, un seul poste</h2>
+              </div>
+              {heatBand30?.longest ? (
+                <strong>
+                  Plus long ≥ 30 °C : {heatBand30.longest.durationDays} j · {heatBand30.longest.startDate} →{" "}
+                  {heatBand30.longest.endDate}
+                </strong>
+              ) : null}
+            </div>
+            <p className="yearlyNote">
+              Au moins {yearly?.heat?.minDays ?? 3} jours calendaires d’affilée avec une maximale mesurée ≥ le seuil,
+              sur {yearly?.station?.name ?? "ce poste"}. Un trou n’est pas un jour chaud.{" "}
+              <strong>Ce n’est pas une canicule officielle</strong> Météo-France (seuils départementaux de Tmin et
+              Tmax).
+            </p>
+            {!yearly?.computed ? (
+              <p className="note">Statistiques non calculées. Une visite de page ne lance pas ce calcul.</p>
+            ) : !heatBand30 || heatBand30.episodeCount === 0 ? (
+              <p className="note">Aucun épisode de 3 jours consécutifs à Tmax ≥ 30 °C sur ce poste.</p>
+            ) : (
+              <>
+                <div className="compareMetrics heatMetrics">
+                  <div>
+                    <span>Plus long ≥ 30 °C</span>
+                    <strong>{heatBand30.longest ? `${heatBand30.longest.durationDays} jours` : "aucun"}</strong>
+                    <small>{heatEpisodeRange(heatBand30.longest)}</small>
+                  </div>
+                  <div>
+                    <span>Plus chaud ≥ 30 °C</span>
+                    <strong>{heatBand30.hottest ? formatCelsius(heatBand30.hottest.tmaxMean) : "aucun"}</strong>
+                    <small>
+                      {heatEpisodeRange(heatBand30.hottest)}
+                      {heatBand30.hottest ? ` · pic ${formatCelsius(heatBand30.hottest.tmaxMax)}` : ""}
+                    </small>
+                  </div>
+                  <div>
+                    <span>Épisodes ≥ 30 °C</span>
+                    <strong>{heatBand30.episodeCount}</strong>
+                    <small>{heatBand30.totalDays} jours concernés</small>
+                  </div>
+                  <div>
+                    <span>Plus long ≥ 35 °C</span>
+                    <strong>
+                      {heatBand35?.longest ? `${heatBand35.longest.durationDays} jours` : "aucun"}
+                    </strong>
+                    <small>
+                      {heatBand35?.episodeCount
+                        ? `${heatBand35.episodeCount} épisode${heatBand35.episodeCount > 1 ? "s" : ""}`
+                        : "pas 3 jours d’affilée"}
+                    </small>
+                  </div>
+                  <div>
+                    <span>Plus long ≥ 40 °C</span>
+                    <strong>
+                      {heatBand40?.longest ? `${heatBand40.longest.durationDays} jours` : "aucun"}
+                    </strong>
+                    <small>
+                      {heatBand40?.episodeCount
+                        ? `${heatBand40.episodeCount} épisode${heatBand40.episodeCount > 1 ? "s" : ""}`
+                        : "pas 3 jours d’affilée"}
+                    </small>
+                  </div>
+                </div>
+                {heatBand30.longestList.length ? (
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>Début</th>
+                        <th>Fin</th>
+                        <th>Durée</th>
+                        <th>Max. moy.</th>
+                        <th>Pic</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {heatBand30.longestList.map((episode) => (
+                        <tr key={`${episode.startDate}-${episode.endDate}`}>
+                          <td>{episode.startDate}</td>
+                          <td>{episode.endDate}</td>
+                          <td>{episode.durationDays} j</td>
+                          <td>{formatCelsius(episode.tmaxMean)}</td>
+                          <td>{formatCelsius(episode.tmaxMax)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : null}
+              </>
+            )}
+            {yearly?.heat ? (
+              <details className="moreMethod">
+                <summary>En savoir plus</summary>
+                <p>
+                  Méthode {yearly.heat.method}. {yearly.heat.methodNote} Canicule officielle :{" "}
+                  {yearly.heat.officialHeatwave ? "oui" : "non"}.
+                </p>
+              </details>
+            ) : null}
+          </section>
+
+          {histoire && childhood ? (
+            <section className="panel chartPanel">
+              <div className="panelTitle">
+                <div>
+                  <span>QUAND J’ÉTAIS ENFANT</span>
+                  <h2>Moyenne des années climatiques, sans chevauchement</h2>
+                </div>
+                {childhood.station ? <strong>{childhood.station.name}</strong> : null}
+              </div>
+              {childhood.disclaimer ? <p className="stationDisclaimer">{childhood.disclaimer}</p> : null}
+              {!childhood.comparison.comparable ? (
+                <p className="yearlyNote">{childhood.comparison.reason}</p>
+              ) : (
+                <>
+                  <p className="yearlyNote">
+                    Moyenne des maximales et minimales <strong>annuelles</strong> des années complètes — pas une
+                    température quotidienne de l’enfance, pas une tendance certifiée, pas une concaténation de
+                    stations.
+                  </p>
+                  <div className="compareMetrics">
+                    <div>
+                      <span>
+                        Enfance {childhood.comparison.childhood.from}–{childhood.comparison.childhood.to} (
+                        {childhood.comparison.childhood.n} ans)
+                      </span>
+                      <strong>{formatCelsius(childhood.comparison.childhood.tmaxMean)}</strong>
+                      <small>max. annuelle moyenne</small>
+                    </div>
+                    <div>
+                      <span>
+                        Récent {childhood.comparison.recent.from}–{childhood.comparison.recent.to} (
+                        {childhood.comparison.recent.n} ans)
+                      </span>
+                      <strong>{formatCelsius(childhood.comparison.recent.tmaxMean)}</strong>
+                      <small>max. annuelle moyenne</small>
+                    </div>
+                    <div>
+                      <span>Écart des max.</span>
+                      <strong>{formatSignedCelsius(childhood.comparison.tmaxDelta)}</strong>
+                      <small>min. {formatSignedCelsius(childhood.comparison.tminDelta)}</small>
+                    </div>
+                  </div>
+                </>
+              )}
+            </section>
+          ) : null}
 
           <section className="panel chartPanel">
             <div className="panelTitle">
@@ -278,8 +1498,7 @@ export default function PlaceExplorer({ slug, initialDate }: { slug: string; ini
               </tbody>
             </table>
             <p className="note">
-              Matching : uniquement les postes avec Tmin/Tmax ce jour-là, puis distance / altitude / couverture.{" "}
-              {data.attributions[0]}
+              {data.stationDisclaimer} {data.attributions[0]}
             </p>
             <p className="note">
               <Link href="/sources">Registre des sources</Link>
@@ -289,4 +1508,11 @@ export default function PlaceExplorer({ slug, initialDate }: { slug: string; ini
       )}
     </main>
   );
+}
+
+function heatEpisodeRange(episode: HeatEpisode | null | undefined): string {
+  if (!episode) return "aucun épisode";
+  const start = frenchLongDate(episode.startDate) || episode.startDate;
+  const end = frenchLongDate(episode.endDate) || episode.endDate;
+  return `${start} → ${end}`;
 }

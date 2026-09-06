@@ -7,10 +7,13 @@ alwaysApply: true
 
 Lire `skills/00-track-development/SKILL.md` **avant de coder** et **avant de terminer**.
 
+Cadre d’exécution : `docs/ROADMAP.md` V1 France. Constitution long terme : `docs/PROMPT_MAITRE_V2.md` (mot pour mot, PARK pour le monde).
+
 Tout changement (code, UI, pipeline, doc produit, licence) doit mettre à jour, dans le même lot :
 
 1. `docs/STATUS.md`
 2. `docs/ROADMAP.md` (cases `[x]` seulement avec preuve)
-3. `DATA_CHANGELOG.md` si ingestion, version de source, ou extrait de données
+3. `docs/PROMPT_INDEX.md` (ne pas effacer une section ; PARK = backlog V2)
+4. `DATA_CHANGELOG.md` si ingestion, version de source, ou extrait de données
 
 Une case n’est pas cochée parce que le fichier existe. ERA5 / NOAA / océan / prévision : non faits tant que la base est vide. E-OBS interdit.
