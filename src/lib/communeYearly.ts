@@ -129,7 +129,10 @@ export type CommuneYearlyPayload = {
   heat: HeatStreakResult;
 };
 
-export function getCommuneYearly(insee: string): CommuneYearlyPayload | null {
+export function getCommuneYearly(
+  insee: string,
+  options?: { includeMonthRows?: boolean }
+): CommuneYearlyPayload | null {
   const place = getPlaceByInsee(insee);
   if (!place) return null;
 
@@ -215,6 +218,7 @@ export function getCommuneYearly(insee: string): CommuneYearlyPayload | null {
     climateDistanceKm: roundToPrecision(preferred.distanceKm, 1),
     ownMonths: months
   });
+  const includeMonthRows = options?.includeMonthRows !== false;
 
   return {
     computed: true,
@@ -234,10 +238,10 @@ export function getCommuneYearly(insee: string): CommuneYearlyPayload | null {
     disclaimer: `Évolution d’après la station ${preferred.name} à ${roundToPrecision(preferred.distanceKm, 1)} km. Ce n’est pas une concaténation de plusieurs postes, ni une moyenne de la commune.`,
     years,
     seasons,
-    summers,
+    summers: includeMonthRows ? summers : [],
     hottestSummer: hottestCompleteSeason(summers),
     coldestWinter: coldestCompleteSeasonOf(seasons, "DJF"),
-    months,
+    months: includeMonthRows ? months : [],
     monthRecords: observedMonthRecords(months),
     normal,
     monthNormal,

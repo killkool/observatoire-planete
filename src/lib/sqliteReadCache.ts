@@ -28,6 +28,13 @@ export const getCommuneYearlyCached = unstable_cache(
   { revalidate: 3600 }
 );
 
+/** Sans les ~300 mois-station : premier HTML plus léger. L’API /yearly reste complète. */
+export const getCommuneYearlyPageCached = unstable_cache(
+  async (insee: string) => getCommuneYearly(insee, { includeMonthRows: false }),
+  ["commune-yearly-page-v1"],
+  { revalidate: 3600 }
+);
+
 export const getCommuneChildhoodCached = unstable_cache(
   async (insee: string, birthYear: number) => getCommuneChildhood(insee, birthYear),
   ["commune-childhood-v1"],

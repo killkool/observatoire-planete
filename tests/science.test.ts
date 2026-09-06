@@ -760,6 +760,13 @@ if (obsCount === 0) {
   assert.ok(yearly.computed, "yearly climate must not depend on the selected day");
   assert.ok(yearly.years.filter((row) => row.yearComplete).length >= 10);
   assert.ok(yearly.years.length <= 150, "yearly API must not dump daily rows");
+  assert.ok((yearly.months || []).length >= 50, "full yearly keeps month rows for the API");
+  const pageYearly = getCommuneYearly("38185", { includeMonthRows: false });
+  assert.ok(pageYearly, "page yearly payload must resolve");
+  assert.equal(pageYearly.months.length, 0, "first HTML must not serialize every month-station row");
+  assert.equal(pageYearly.summers.length, 0, "first HTML must not duplicate JJA already in seasons");
+  assert.ok(pageYearly.years.filter((row) => row.yearComplete).length >= 10);
+  assert.ok(pageYearly.monthRecords.hottest, "month records stay even without dumping month rows");
   assert.ok((yearly.summers || []).length <= 80, "summers must not dump daily rows");
   assert.ok((yearly.seasons || []).length <= 4 * 80, "seasonal API must not dump daily rows");
   const winters = (yearly.seasons || []).filter((row) => row.season === "DJF");

@@ -402,23 +402,43 @@ export default function PlaceExplorer({
 
   const insee = data?.place?.insee_code;
   useEffect(() => {
-    if (initialYearly) {
-      setYearly(initialYearly);
-      return;
-    }
+    if (initialYearly) setYearly(initialYearly);
+  }, [initialYearly]);
+
+  useEffect(() => {
     if (!insee) return;
+    const needsMonthRows =
+      !initialYearly || (initialYearly.computed && !(initialYearly.months && initialYearly.months.length));
+    if (!needsMonthRows) return;
+    const target = document.getElementById("mois");
+    if (!target) return;
     const controller = new AbortController();
-    fetch(`/api/v1/communes/${insee}/yearly`, { signal: controller.signal })
-      .then(async (r) => {
-        const j = await r.json();
-        if (!r.ok) throw new Error(j.error || "Erreur statistiques");
-        return j as YearlyPayload;
-      })
-      .then(setYearly)
-      .catch((e) => {
-        if (e.name !== "AbortError") setYearly(null);
-      });
-    return () => controller.abort();
+    const load = () => {
+      fetch(`/api/v1/communes/${insee}/yearly`, { signal: controller.signal })
+        .then(async (r) => {
+          const j = await r.json();
+          if (!r.ok) throw new Error(j.error || "Erreur statistiques");
+          return j as YearlyPayload;
+        })
+        .then(setYearly)
+        .catch((e) => {
+          if (e.name !== "AbortError" && !initialYearly) setYearly(null);
+        });
+    };
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          load();
+          io.disconnect();
+        }
+      },
+      { rootMargin: "480px" }
+    );
+    io.observe(target);
+    return () => {
+      io.disconnect();
+      controller.abort();
+    };
   }, [insee, initialYearly]);
 
   useEffect(() => {
@@ -1279,7 +1299,7 @@ export default function PlaceExplorer({
                 </div>
               </div>
             ) : null}
-            {!yearly ? (
+            {!yearly || (yearly.computed && !(yearly.months && yearly.months.length)) ? (
               <p className="note">Chargement du climat observé…</p>
             ) : (monthYearsFull.length || monthYearsAny.length) ? (
               <>
