@@ -16,7 +16,7 @@ import xarray as xr
 ARCO_ZARR = "gs://gcp-public-data-arco-era5/ar/full_37-1h-0p25deg-chunk-1.zarr-v3"
 SOURCE_ID = "copernicus.c3s.era5.single-levels-hourly"
 METHOD = "nearest"
-METHOD_VERSION = "era5-point-nearest-hourly-2t-d2m-tp-uv10-msl-v1"
+METHOD_VERSION = "era5-point-nearest-hourly-2t-d2m-tp-uv10-msl-sp-sd-ssrd-i10fg-v1"
 FRANCE_DAILY_METHOD = "bbox_daily_minmax"
 FRANCE_DAILY_METHOD_VERSION = "era5-france-daily-2t-minmax-v1"
 DOI = "10.24381/cds.adbb2d47"
@@ -29,6 +29,12 @@ TP_NAMES = ("total_precipitation", "tp")
 U10_NAMES = ("10m_u_component_of_wind",)
 V10_NAMES = ("10m_v_component_of_wind",)
 MSL_NAMES = ("mean_sea_level_pressure", "msl")
+SP_NAMES = ("surface_pressure", "sp")
+SNOW_NAMES = ("snow_depth", "sd")
+SSRD_NAMES = ("surface_solar_radiation_downwards", "ssrd")
+GUST_NAMES = ("instantaneous_10m_wind_gust",)
+ZS_NAMES = ("geopotential_at_surface",)
+G0 = 9.80665
 CALM_MS = 0.05
 # Preuve déjà extraite (même miroir, même jour, maille 45,25 / 5,75). Échec si ARCO diverge.
 GRENOBLE_GRID = (45.25, 5.75)
@@ -118,6 +124,33 @@ def load_day_point(da: xr.DataArray, lat: float, lon: float, date: str, label: s
     return point_from_day(load_day(da, date, label), lat, lon, label)
 
 
+def load_orography_point(da: xr.DataArray, lat: float, lon: float, date: str) -> tuple[float, float, float]:
+    """geopotential_at_surface est 2D (ou constant dans le temps). Un pas suffit ; pas 24 chunks globaux."""
+    lat_name = coord_name(da, "latitude", "lat")
+    lon_name = coord_name(da, "longitude", "lon")
+    work = da
+    time_name = next((n for n in ("time", "valid_time") if n in da.coords or n in da.dims), None)
+    if time_name:
+        sliced = da.sel(
+            {
+                time_name: slice(
+                    np.datetime64(f"{date}T00:00:00"),
+                    np.datetime64(f"{date}T23:59:59"),
+                )
+            }
+        )
+        if sliced[time_name].size == 0:
+            raise SystemExit("Aucune heure ERA5 zs pour l'orographie.")
+        work = sliced.isel({time_name: 0})
+    point = work.sel({lat_name: lat, lon_name: lon}, method="nearest").load()
+    values = [float(v) for v in np.ravel(np.asarray(point.astype("float64").values)) if np.isfinite(v)]
+    if not values:
+        raise SystemExit("Orographie modèle vide : aucune valeur.")
+    grid_lat = float(point[lat_name].values)
+    grid_lon = float(signed_longitude(float(point[lon_name].values)))
+    return sum(values) / len(values), grid_lat, grid_lon
+
+
 def daily_points(date: str, hours_k: list[float], vmin_id: str, vmax_id: str, vmean_id: str) -> list[dict]:
     return [
         {"date": date, "variable_id": vmin_id, "value": min(hours_k), "unit": "K"},
@@ -166,6 +199,32 @@ def daily_msl_point(date: str, hours_pa: list[float]) -> dict:
         "value": sum(hours_pa) / len(hours_pa),
         "unit": "Pa",
     }
+
+
+def daily_sp_point(date: str, hours_pa: list[float]) -> dict:
+    if any(v < 30000 or v > 110000 for v in hours_pa):
+        raise SystemExit("surface_pressure hors plage : extraction refusée.")
+    return {"date": date, "variable_id": "pressure", "value": sum(hours_pa) / len(hours_pa), "unit": "Pa"}
+
+
+def daily_snow_point(date: str, hours_m: list[float]) -> dict:
+    if any(v < -1e-12 for v in hours_m):
+        raise SystemExit("snow_depth négatif : extraction refusée.")
+    # ARCO snow_depth = mètres d'équivalent en eau, pas une hauteur de manteau.
+    return {"date": date, "variable_id": "snow_depth", "value": sum(hours_m) / len(hours_m), "unit": "m"}
+
+
+def daily_ssrd_point(date: str, hours_j: list[float]) -> dict:
+    if any(v < -1e-6 for v in hours_j):
+        raise SystemExit("SSRD négatif : extraction refusée.")
+    # Comme TP : accumulation horaire ARCO, non monotone, last−first = 0. Somme des 24 pas.
+    return {"date": date, "variable_id": "solar_radiation", "value": float(sum(hours_j)), "unit": "J m-2"}
+
+
+def daily_gust_point(date: str, hours_ms: list[float]) -> dict:
+    if any(v < -1e-12 for v in hours_ms):
+        raise SystemExit("rafale 10 m négative : extraction refusée.")
+    return {"date": date, "variable_id": "wind_gust", "value": max(hours_ms), "unit": "m s-1"}
 
 
 def france_daily_2t(day_2t: xr.DataArray, date: str, hours_2t: list[float], grid_lat: float, grid_lon: float) -> dict:
@@ -295,6 +354,11 @@ def main() -> None:
     u10 = pick_var(ds, U10_NAMES, "10m_u_component_of_wind")
     v10 = pick_var(ds, V10_NAMES, "10m_v_component_of_wind")
     msl = pick_var(ds, MSL_NAMES, "mean_sea_level_pressure")
+    sp = pick_var(ds, SP_NAMES, "surface_pressure")
+    snow = pick_var(ds, SNOW_NAMES, "snow_depth")
+    ssrd = pick_var(ds, SSRD_NAMES, "surface_solar_radiation_downwards")
+    gust = pick_var(ds, GUST_NAMES, "instantaneous_10m_wind_gust")
+    zs = pick_var(ds, ZS_NAMES, "geopotential_at_surface")
 
     day_2t = load_day(t2m, args.date, "2t")
     hours_2t, times, grid_lat, grid_lon = point_from_day(day_2t, args.lat, args.lon, "2t")
@@ -303,17 +367,37 @@ def main() -> None:
     hours_u, times_u, grid_lat_u, grid_lon_u = load_day_point(u10, args.lat, args.lon, args.date, "10u")
     hours_v, times_v, grid_lat_v, grid_lon_v = load_day_point(v10, args.lat, args.lon, args.date, "10v")
     hours_msl, times_msl, grid_lat_m, grid_lon_m = load_day_point(msl, args.lat, args.lon, args.date, "msl")
+    hours_sp, times_sp, grid_lat_sp, grid_lon_sp = load_day_point(sp, args.lat, args.lon, args.date, "sp")
+    hours_snow, times_snow, grid_lat_sd, grid_lon_sd = load_day_point(snow, args.lat, args.lon, args.date, "sd")
+    hours_ssrd, times_ssrd, grid_lat_ss, grid_lon_ss = load_day_point(ssrd, args.lat, args.lon, args.date, "ssrd")
+    hours_gust, times_gust, grid_lat_g, grid_lon_g = load_day_point(gust, args.lat, args.lon, args.date, "i10fg")
+    phi_zs, grid_lat_z, grid_lon_z = load_orography_point(zs, args.lat, args.lon, args.date)
     grids = {
         "d2m": (grid_lat_d, grid_lon_d),
         "tp": (grid_lat_p, grid_lon_p),
         "10u": (grid_lat_u, grid_lon_u),
         "10v": (grid_lat_v, grid_lon_v),
         "msl": (grid_lat_m, grid_lon_m),
+        "sp": (grid_lat_sp, grid_lon_sp),
+        "sd": (grid_lat_sd, grid_lon_sd),
+        "ssrd": (grid_lat_ss, grid_lon_ss),
+        "i10fg": (grid_lat_g, grid_lon_g),
+        "zs": (grid_lat_z, grid_lon_z),
     }
     for label, grid in grids.items():
         if grid != (grid_lat, grid_lon):
             raise SystemExit(f"Maille 2t {grid_lat},{grid_lon} ≠ {label} {grid[0]},{grid[1]}")
-    for label, series_times in (("d2m", times_d2m), ("tp", times_tp), ("10u", times_u), ("10v", times_v), ("msl", times_msl)):
+    for label, series_times in (
+        ("d2m", times_d2m),
+        ("tp", times_tp),
+        ("10u", times_u),
+        ("10v", times_v),
+        ("msl", times_msl),
+        ("sp", times_sp),
+        ("sd", times_snow),
+        ("ssrd", times_ssrd),
+        ("i10fg", times_gust),
+    ):
         if series_times != times:
             raise SystemExit(f"Heures UTC 2t / {label} différentes : pas de mélange.")
     if round(min(hours_2t), 4) != GRENOBLE_TMIN_K or round(max(hours_2t), 4) != GRENOBLE_TMAX_K:
@@ -322,6 +406,11 @@ def main() -> None:
     precip = daily_precip_point(args.date, hours_tp)
     wind_points = daily_wind_points(args.date, hours_u, hours_v)
     msl_point = daily_msl_point(args.date, hours_msl)
+    sp_point = daily_sp_point(args.date, hours_sp)
+    snow_point = daily_snow_point(args.date, hours_snow)
+    ssrd_point = daily_ssrd_point(args.date, hours_ssrd)
+    gust_point = daily_gust_point(args.date, hours_gust)
+    model_alt_m = phi_zs / G0
     dataset_version = dataset_version_for(ds, args.date)
 
     payload = {
@@ -338,7 +427,11 @@ def main() -> None:
                 "total_precipitation ARCO = mètres par pas horaire (non monotone) ; "
                 "cumul journalier UTC = somme des 24 pas, pas last−first. "
                 "Vent 10 m = hypot(u,v) horaire puis moyenne ; direction = d'où vient le vent, "
-                "moyenne vectorielle u/v (pas moyenne des angles). MSL = moyenne 24 h UTC en Pa."
+                "moyenne vectorielle u/v (pas moyenne des angles). MSL = moyenne 24 h UTC en Pa. "
+                "SP = moyenne 24 h UTC à la surface du modèle (geopotential_at_surface / g0), pas l'altitude commune. "
+                "snow_depth ARCO = mètres d'équivalent en eau, pas une hauteur de manteau. "
+                "SSRD = somme des 24 pas horaires en J m-2 (comme TP, pas last−first). "
+                "Rafale = max des instantaneous_10m_wind_gust, pas une rafale officielle."
             ),
         },
         "latitude": args.lat,
@@ -354,12 +447,18 @@ def main() -> None:
         "hourly_10u_ms": [float(v) for v in hours_u],
         "hourly_10v_ms": [float(v) for v in hours_v],
         "hourly_msl_Pa": [float(v) for v in hours_msl],
+        "hourly_sp_Pa": [float(v) for v in hours_sp],
+        "hourly_snow_swe_m": [float(v) for v in hours_snow],
+        "hourly_ssrd_Jm2": [float(v) for v in hours_ssrd],
+        "hourly_i10fg_ms": [float(v) for v in hours_gust],
+        "model_surface_geopotential_m2s2": float(phi_zs),
+        "model_surface_altitude_m": round(model_alt_m, 1),
         "extracted_at": datetime.now(timezone.utc).isoformat(),
         "points": daily_points(args.date, hours_2t, "air_temperature_min", "air_temperature_max", "air_temperature")
         + daily_points(args.date, hours_d2m, "dew_point_min", "dew_point_max", "dew_point")
         + [precip]
         + wind_points
-        + [msl_point],
+        + [msl_point, sp_point, snow_point, ssrd_point, gust_point],
     }
 
     checksum = write_json(out_path, payload)
@@ -376,6 +475,10 @@ def main() -> None:
     if wind_dir is not None:
         print(f"wind_from_deg={wind_dir:.1f}", flush=True)
     print(f"msl_mean_Pa={msl_point['value']:.2f} msl_hPa={msl_point['value'] / 100:.0f}", flush=True)
+    print(f"sp_mean_Pa={sp_point['value']:.2f} sp_hPa={sp_point['value'] / 100:.0f} model_alt_m={model_alt_m:.1f}", flush=True)
+    print(f"snow_swe_m={snow_point['value']:.6f} snow_swe_mm={snow_point['value'] * 1000:.1f}", flush=True)
+    print(f"ssrd_sum_Jm2={ssrd_point['value']:.1f} ssrd_MJm2={ssrd_point['value'] / 1e6:.1f}", flush=True)
+    print(f"gust_max_ms={gust_point['value']:.4f} gust_kmh={gust_point['value'] * 3.6:.1f}", flush=True)
     print(f"sha256 {checksum}", flush=True)
 
     if not args.skip_france_daily:

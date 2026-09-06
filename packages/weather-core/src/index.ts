@@ -14,6 +14,8 @@ export {
   formatKmhFromMs,
   formatHpaFromPa,
   formatWindFromDeg,
+  formatMmWaterFromM,
+  formatMjFromJm2,
   kelvinToCelsius,
   celsiusToKelvin,
   windFromUv,

@@ -1,7 +1,7 @@
 import db from "./db";
 import { rankStationsForPlace } from "../../packages/source-engine/src/stationMatch";
 import { scoreConfidence } from "../../packages/confidence-engine/src/score";
-import { formatCelsius, formatHpaFromPa, formatKmhFromMs, formatMm, formatWindFromDeg, roundToPrecision } from "../../packages/weather-core/src/units";
+import { formatCelsius, formatHpaFromPa, formatKmhFromMs, formatMm, formatMmWaterFromM, formatMjFromJm2, formatWindFromDeg, roundToPrecision } from "../../packages/weather-core/src/units";
 import { ORIGIN_LABEL_FR, ORIGIN_LABEL_PUBLIC_FR } from "../../packages/weather-core/src/origin";
 import { describeSameDayLead, meanOfKnown, warmerThanPercent } from "../../packages/weather-core/src/sameDayStats";
 import { getSource } from "../../packages/licensing/src/gate";
@@ -227,7 +227,8 @@ export function getPlaceHistory(slug: string, date: string) {
         'dew_point_min', 'dew_point_max', 'dew_point',
         'precipitation',
         'wind_speed', 'wind_direction',
-        'sea_level_pressure'
+        'sea_level_pressure', 'pressure',
+        'snow_depth', 'solar_radiation', 'wind_gust'
       )
       AND pe.source_id = 'copernicus.c3s.era5.single-levels-hourly'
       AND abs(pe.latitude - ?) < 0.0001 AND abs(pe.longitude - ?) < 0.0001
@@ -263,6 +264,10 @@ export function getPlaceHistory(slug: string, date: string) {
   const era5WindMs = toMetresPerSecond(era5ByVar.wind_speed);
   const era5WindFromDeg = toWindFromDeg(era5ByVar.wind_direction);
   const era5MslHpa = toHectopascals(era5ByVar.sea_level_pressure);
+  const era5SpHpa = toHectopascals(era5ByVar.pressure);
+  const era5SnowSweMm = toMillimetres(era5ByVar.snow_depth);
+  const era5SsrdMj = toMegaJoulesPerM2(era5ByVar.solar_radiation);
+  const era5GustMs = toMetresPerSecond(era5ByVar.wind_gust);
   const era5HasTemp = era5TminC != null || era5TmaxC != null;
   const precipDelta =
     rr != null && era5PrecipMm != null ? roundToPrecision(era5PrecipMm - rr, 1) : null;
@@ -284,7 +289,7 @@ export function getPlaceHistory(slug: string, date: string) {
 
   const mfSource = getSource("meteo-france.climatologie.quotidienne.bulk");
   const era5Source = getSource("copernicus.c3s.era5.single-levels-hourly");
-  const era5Grid = era5GridFromSteps(era5[0]?.steps ?? null);
+  const era5Meta = era5MetaFromSteps(era5[0]?.steps ?? null);
 
   const seriesTmin = series.map((s) => roundToPrecision(s.tmin, 1));
   const seriesTmax = series.map((s) => roundToPrecision(s.tmax, 1));
@@ -372,8 +377,9 @@ export function getPlaceHistory(slug: string, date: string) {
           method: era5[0]?.method ?? "nearest",
           methodVersion: era5[0]?.method_version ?? null,
           datasetVersion: era5[0]?.dataset_version ?? null,
-          gridLatitude: era5Grid.lat,
-          gridLongitude: era5Grid.lon,
+          gridLatitude: era5Meta.lat,
+          gridLongitude: era5Meta.lon,
+          modelSurfaceAltitudeM: era5Meta.modelSurfaceAltitudeM,
           tmin: era5TminC,
           tmax: era5TmaxC,
           tmean: era5TmeanC,
@@ -391,7 +397,15 @@ export function getPlaceHistory(slug: string, date: string) {
           windFromDeg: era5WindFromDeg,
           windFromDisplay: formatWindFromDeg(era5WindFromDeg),
           mslHpa: era5MslHpa,
-          mslDisplay: era5ByVar.sea_level_pressure ? formatHpaFromPa(era5ByVar.sea_level_pressure.value) : "non disponible"
+          mslDisplay: era5ByVar.sea_level_pressure ? formatHpaFromPa(era5ByVar.sea_level_pressure.value) : "non disponible",
+          spHpa: era5SpHpa,
+          spDisplay: era5ByVar.pressure ? formatHpaFromPa(era5ByVar.pressure.value) : "non disponible",
+          snowSweMm: era5SnowSweMm,
+          snowSweDisplay: era5ByVar.snow_depth ? formatMmWaterFromM(era5ByVar.snow_depth.value) : "non disponible",
+          ssrdMj: era5SsrdMj,
+          ssrdDisplay: era5ByVar.solar_radiation ? formatMjFromJm2(era5ByVar.solar_radiation.value) : "non disponible",
+          gustMs: era5GustMs,
+          gustDisplay: formatKmhFromMs(era5GustMs)
         }
       : null,
     comparison,
@@ -433,14 +447,27 @@ export function getPlaceHistory(slug: string, date: string) {
   };
 }
 
-function era5GridFromSteps(stepsJson: string | null): { lat: number | null; lon: number | null } {
-  if (!stepsJson) return { lat: null, lon: null };
+function era5MetaFromSteps(stepsJson: string | null): {
+  lat: number | null;
+  lon: number | null;
+  modelSurfaceAltitudeM: number | null;
+} {
+  if (!stepsJson) return { lat: null, lon: null, modelSurfaceAltitudeM: null };
   try {
-    const steps = JSON.parse(stepsJson) as { grid_latitude?: number; grid_longitude?: number }[];
+    const steps = JSON.parse(stepsJson) as {
+      grid_latitude?: number;
+      grid_longitude?: number;
+      model_surface_altitude_m?: number;
+    }[];
     const step = steps.find((s) => s.grid_latitude != null && s.grid_longitude != null);
-    return { lat: step?.grid_latitude ?? null, lon: step?.grid_longitude ?? null };
+    const alt = step?.model_surface_altitude_m;
+    return {
+      lat: step?.grid_latitude ?? null,
+      lon: step?.grid_longitude ?? null,
+      modelSurfaceAltitudeM: typeof alt === "number" && Number.isFinite(alt) ? alt : null
+    };
   } catch {
-    return { lat: null, lon: null };
+    return { lat: null, lon: null, modelSurfaceAltitudeM: null };
   }
 }
 
@@ -475,6 +502,13 @@ function toHectopascals(row?: { value: number | null; unit: string }): number | 
   if (!row || row.value == null) return null;
   if (row.unit === "Pa") return roundToPrecision(row.value / 100, 0);
   if (row.unit === "hPa") return roundToPrecision(row.value, 0);
+  return null;
+}
+
+function toMegaJoulesPerM2(row?: { value: number | null; unit: string }): number | null {
+  if (!row || row.value == null) return null;
+  if (row.unit === "J m-2" || row.unit === "J m**-2") return roundToPrecision(row.value / 1e6, 1);
+  if (row.unit === "MJ/m2" || row.unit === "MJ m-2") return roundToPrecision(row.value, 1);
   return null;
 }
 

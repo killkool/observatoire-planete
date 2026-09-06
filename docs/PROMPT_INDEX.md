@@ -20,7 +20,7 @@ Source : sections 0 à 187 du prompt maître.
 | 5 | HIÉRARCHIE GÉNÉRALE DES SOURCES | [ ] *partiel* |
 | 6 | SOURCE NATIONALE PRIORITAIRE | [ ] |
 | 7 | SOURCE FRANCE : MÉTÉO-FRANCE | [x] |
-| 8 | ERA5 | [ ] *partiel* (point Grenoble 2t + d2m + TP + 10u/v + MSL 1983-05-12 ; quotidien 2t un jour ; pas 1940–2026, pas mondial) |
+| 8 | ERA5 | [ ] *partiel* (point Grenoble 2t + d2m + TP + 10u/v + MSL + SP + neige SWE + SSRD + rafale 1983-05-12 ; quotidien 2t un jour ; pas 1940–2026, pas mondial) |
 | 9 | ERA5-LAND | [ ] |
 | 10 | NOAA GHCN DAILY | [ ] |
 | 11 | NOAA ISD | [ ] |
@@ -36,7 +36,7 @@ Source : sections 0 à 187 du prompt maître.
 | 21 | DÉPENDANCE DES SOURCES | [ ] *partiel* (ERA5 assimilée ≠ indépendante) |
 | 22 | CONFIDENCE ENGINE | [ ] *partiel* (`confidence-v1-draft` ; pas de bonus d’indépendance ERA5) |
 | 23 | NE PAS INVENTER UNE PRÉCISION | [x] |
-| 24 | GESTION ALTITUDE | [ ] *partiel* |
+| 24 | GESTION ALTITUDE | [ ] *partiel* (orographie maille ERA5 985,5 m stockée ; pas de correction lapse) |
 | 25 | ARCHITECTURE DE STOCKAGE | [ ] *partiel* (SQLite + schéma stats ; Postgres/R2 = cible ADR-0002) |
 | 26 | FORMAT DATA LAKE | [ ] |
 | 27 | FORMATS | [ ] |
@@ -115,14 +115,14 @@ Source : sections 0 à 187 du prompt maître.
 | 100 | PHASE 2 — SOURCE REGISTRY | [ ] *partiel* |
 | 101 | PHASE 3 — FRANCE MVP | [ ] *partiel* |
 | 102 | PHASE 4 — PREMIÈRE PAGE HISTORIQUE | [ ] *partiel* (recherche Isère + page date + climat annuel + comparateur d’années et de communes Isère) |
-| 103 | PHASE 5 — ERA5 FRANCE | [ ] *partiel* (point Grenoble 2t + d2m + TP + vent 10 m + MSL ; quotidien 2t un jour JSON ; pas 1940–2026) |
+| 103 | PHASE 5 — ERA5 FRANCE | [ ] *partiel* (point Grenoble 2t + d2m + TP + vent 10 m + MSL + SP + neige SWE + SSRD + rafale ; quotidien 2t un jour JSON ; pas 1940–2026) |
 | 104 | PHASE 6 — SOURCE FUSION ENGINE | [ ] |
 | 105 | PHASE 7 — CONFIDENCE ENGINE | [ ] *partiel* |
 | 106 | PHASE 8 — NOAA | [ ] |
 | 107 | PHASE 9 — FRANCE COMPLETE | [ ] |
 | 108 | PHASE 10 — WORLD STATIONS | [ ] |
 | 109 | PHASE 11 — ERA5 WORLD | [ ] |
-| 110 | VARIABLES ERA5 PRIORITAIRES | [ ] *partiel* (2t + rosée + TP + 10u/v + MSL un jour ; pas SP / neige / SSRD / rafale) |
+| 110 | VARIABLES ERA5 PRIORITAIRES | [ ] *partiel* (2t + rosée + TP + 10u/v + MSL + SP + neige SWE + SSRD + rafale un jour ; pas 1940–2026) |
 | 111 | PHASE 12 — OCEAN MVP | [ ] |
 | 112 | PHASE 13 — GLOBAL OCEAN | [ ] |
 | 113 | PHASE 14 — ECMWF FORECAST | [ ] |

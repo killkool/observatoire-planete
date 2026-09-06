@@ -2,6 +2,15 @@
 
 Journal des sources, versions et recalculs. Pas de remplacement silencieux d’un dataset.
 
+## 2026-09-07 (ERA5 SP / neige / SSRD / rafale Grenoble)
+
+- Même maille ARCO 45,25°N, 5,75°E, 1983-05-12, 24 h UTC. 2t / rosée / TP / vent 10 m / MSL inchangés (3,4 / 14,2 °C ; 2,0 / 6,9 °C ; 0,3 mm ; 8,8 km/h, 169° ; 1005 hPa).
+- `surface_pressure` : moyenne 24 h UTC **89517,36 Pa** → **895 hPa**. Orographie `geopotential_at_surface` / g0 = **985,5 m** (maille, pas Grenoble 212 m). Pas fusionné avec le MSL.
+- `snow_depth` ARCO : mètres d’**équivalent en eau**, moyenne 24 h **0,027251 m** → **27,3 mm d’eau**. Pas une hauteur de manteau en ville (pas ×100 en cm).
+- `surface_solar_radiation_downwards` : accumulation horaire en J m⁻², non monotone (comme TP). Somme 24 h UTC **20768388,375 J m⁻²** → **20,8 MJ/m²**. Pas un pyranomètre.
+- `instantaneous_10m_wind_gust` : max des 24 pas **19,2916 m/s** → **69,4 km/h**. Pas une rafale officielle. Pas fusionné (le quotidien Météo-France importé n’a pas ces champs).
+- Fichier point SHA-256 `eece40036986b49aaab3e70d9e53ec8ae7fcfc1af8110ab5fa39b96d44062e82`. `method_version=era5-point-nearest-hourly-2t-d2m-tp-uv10-msl-sp-sd-ssrd-i10fg-v1`. Import : **14** lignes `point_extractions`. Quotidien France 2t JSON inchangé (pas réécrit).
+
 ## 2026-09-07 (ERA5 vent 10 m + MSL Grenoble)
 
 - Même maille ARCO 45,25°N, 5,75°E, 1983-05-12, 24 h UTC. 2t / rosée / TP inchangés (3,4 / 14,2 °C ; 2,0 / 6,9 °C ; 0,3 mm).

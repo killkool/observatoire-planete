@@ -55,6 +55,18 @@ export function formatWindFromDeg(deg: number | null | undefined): string {
   return n == null ? "non disponible" : `${n}°`;
 }
 
+export function formatMmWaterFromM(valueM: number | null | undefined): string {
+  if (valueM == null || !Number.isFinite(valueM)) return "non disponible";
+  const n = roundToPrecision(valueM * 1000, 1);
+  return n == null ? "non disponible" : `${n.toFixed(1)} mm d’eau`;
+}
+
+export function formatMjFromJm2(valueJm2: number | null | undefined): string {
+  if (valueJm2 == null || !Number.isFinite(valueJm2)) return "non disponible";
+  const n = roundToPrecision(valueJm2 / 1e6, 1);
+  return n == null ? "non disponible" : `${n.toFixed(1)} MJ/m²`;
+}
+
 export function kelvinToCelsius(k: number): number {
   return k - 273.15;
 }

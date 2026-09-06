@@ -15,13 +15,16 @@ DOI : `10.24381/cds.adbb2d47`. `source_id` : `copernicus.c3s.era5.single-levels-
 
 Extraire **un point en France** (bbox V1 ~41–51,5°N, 5,5°W–10°E) pour des jours demandés. Un point hors bbox est refusé (pas d’extraction mondiale).
 
-Méthode point : `nearest` (`method_version` `era5-point-nearest-hourly-2t-d2m-tp-uv10-msl-v1`).
+Méthode point : `nearest` (`method_version` `era5-point-nearest-hourly-2t-d2m-tp-uv10-msl-sp-sd-ssrd-i10fg-v1`).
 
 - Min/max quotidien 2t et point de rosée = extrêmes des 24 heures UTC, **pas** Tmin/Tmax/Td d’abri.
 - Pluie = **somme** des 24 pas horaires de `total_precipitation` en **mètres**. Sur le miroir ARCO `ar/full`, la série n’est pas un cumul de step CDS (non monotone ; last−first = 0). Un 0 horaire est un zéro du modèle, pas un NULL.
 - Affichage mm = × 1000, 1 décimale. Pas fusionné avec la pluie de station.
 - Vent 10 m : `10m_u_component_of_wind` / `10m_v_component_of_wind` (m s⁻¹). Vitesse quotidienne = **moyenne** des hypot(u,v) horaires. Direction = d’où vient le vent, **moyenne vectorielle** de u et v (pas la moyenne des angles). Pas une rafale, pas un anémomètre. Affichage km/h = × 3,6.
-- Pression : `mean_sea_level_pressure` moyenne 24 h UTC en **Pa**, affichage hPa. Ce n’est pas la pression au sol de Grenoble. Pas de `surface_pressure` tant que l’orographie modèle n’est pas extraite.
+- Pression mer : `mean_sea_level_pressure` moyenne 24 h UTC en **Pa**, affichage hPa. Pression surface : `surface_pressure` moyenne 24 h, avec orographie `geopotential_at_surface / 9,80665` (altitude de la **maille**, pas de la commune).
+- Neige : `snow_depth` ARCO = mètres d’**équivalent en eau**, moyenne 24 h. Affichage mm d’eau = × 1000. Pas une hauteur de manteau (`×100` en cm interdit).
+- SSRD : `surface_solar_radiation_downwards` en J m⁻², **somme** des 24 pas (comme TP, pas last−first). Affichage MJ/m² = / 1e6.
+- Rafale : `instantaneous_10m_wind_gust`, **max** des 24 pas, m s⁻¹, affichage km/h. Pas une rafale officielle.
 
 Quotidien bbox France (`method_version` `era5-france-daily-2t-minmax-v1`) : **un jour**, 2t min/max seulement, mailles ~0,25° dans la bbox. Les longitudes ARCO sont 0–360° (5,5°W = 354,5°). Fichier JSON, **pas** importé en SQLite.
 
@@ -31,7 +34,7 @@ Accès : miroir public **ARCO ERA5**
 `gs://gcp-public-data-arco-era5/ar/full_37-1h-0p25deg-chunk-1.zarr-v3`  
 (anonyme GCS). Même produit ERA5, même DOI — pas une autre réanalyse. Compte CDS non requis pour ce miroir.
 
-Pas d’ERA5-Land. Pas de neige / SSRD / rafale tant qu’ils ne sont pas extraits réellement.
+Pas d’ERA5-Land. Le point Grenoble un jour couvre 2t, rosée, TP, vent 10 m, MSL, SP, neige SWE, SSRD et rafale. Pas l’archive 1940–2026.
 
 ## Comment extraire puis ingérer
 
@@ -53,7 +56,7 @@ Schéma JSON point (valeurs illustratives sauf consigne) :
   "source_id": "copernicus.c3s.era5.single-levels-hourly",
   "dataset_version": "ERA5",
   "method": "nearest",
-  "method_version": "era5-point-nearest-hourly-2t-d2m-tp-uv10-msl-v1",
+  "method_version": "era5-point-nearest-hourly-2t-d2m-tp-uv10-msl-sp-sd-ssrd-i10fg-v1",
   "latitude": 45.1885,
   "longitude": 5.7245,
   "grid_latitude": 45.25,
@@ -62,7 +65,11 @@ Schéma JSON point (valeurs illustratives sauf consigne) :
     { "date": "1983-05-12", "variable_id": "air_temperature_min", "value": 280.1, "unit": "K" },
     { "date": "1983-05-12", "variable_id": "precipitation", "value": 0.0003, "unit": "m" },
     { "date": "1983-05-12", "variable_id": "wind_speed", "value": 2.0, "unit": "m s-1" },
-    { "date": "1983-05-12", "variable_id": "sea_level_pressure", "value": 101325, "unit": "Pa" }
+    { "date": "1983-05-12", "variable_id": "sea_level_pressure", "value": 101325, "unit": "Pa" },
+    { "date": "1983-05-12", "variable_id": "pressure", "value": 90000, "unit": "Pa" },
+    { "date": "1983-05-12", "variable_id": "snow_depth", "value": 0.02, "unit": "m" },
+    { "date": "1983-05-12", "variable_id": "solar_radiation", "value": 2e7, "unit": "J m-2" },
+    { "date": "1983-05-12", "variable_id": "wind_gust", "value": 15, "unit": "m s-1" }
   ]
 }
 ```

@@ -32,6 +32,7 @@ const payload = JSON.parse(raw.toString("utf8")) as {
   grid_latitude?: number;
   grid_longitude?: number;
   hours_used?: number;
+  model_surface_altitude_m?: number;
   points: { date: string; variable_id: string; value: number; unit: string }[];
 };
 
@@ -62,13 +63,25 @@ for (const p of payload.points) {
     if (p.unit !== "Pa") {
       throw new Error(`Pression ERA5 attendue en Pa (canonique), pas ${p.unit}`);
     }
+  } else if (p.variable_id === "snow_depth") {
+    if (p.unit !== "m") {
+      throw new Error(`Neige ERA5 attendue en mètres d'équivalent en eau (canonique), pas ${p.unit}`);
+    }
+  } else if (p.variable_id === "solar_radiation") {
+    if (p.unit !== "J m-2") {
+      throw new Error(`SSRD ERA5 attendu en J m-2 (canonique), pas ${p.unit}`);
+    }
+  } else if (p.variable_id === "wind_gust") {
+    if (p.unit !== "m s-1") {
+      throw new Error(`Rafale ERA5 attendue en m s-1 (canonique), pas ${p.unit}`);
+    }
   } else if (p.unit !== "K" && p.unit !== "degC" && p.unit !== "Celsius") {
     throw new Error(`Unité inattendue ${p.unit} pour ${p.variable_id}`);
   }
 }
 
 const dates = [...new Set(payload.points.map((p) => p.date))];
-const methodVersion = payload.method_version || "era5-point-nearest-hourly-2t-d2m-tp-uv10-msl-v1";
+const methodVersion = payload.method_version || "era5-point-nearest-hourly-2t-d2m-tp-uv10-msl-sp-sd-ssrd-i10fg-v1";
 const lineageId = randomUUID();
 
 db.prepare(`
@@ -85,7 +98,8 @@ db.prepare(`
       longitude: payload.longitude,
       grid_latitude: payload.grid_latitude ?? null,
       grid_longitude: payload.grid_longitude ?? null,
-      hours_used: payload.hours_used ?? null
+      hours_used: payload.hours_used ?? null,
+      model_surface_altitude_m: payload.model_surface_altitude_m ?? null
     },
     { step: "import_json", file: absFile }
   ]),

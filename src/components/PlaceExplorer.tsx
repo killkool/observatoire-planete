@@ -132,6 +132,15 @@ type HistoryPayload = {
     windFromDisplay?: string;
     mslHpa?: number | null;
     mslDisplay?: string;
+    spHpa?: number | null;
+    spDisplay?: string;
+    modelSurfaceAltitudeM?: number | null;
+    snowSweMm?: number | null;
+    snowSweDisplay?: string;
+    ssrdMj?: number | null;
+    ssrdDisplay?: string;
+    gustMs?: number | null;
+    gustDisplay?: string;
   } | null;
   comparison: { tminDelta: number | null; tmaxDelta: number | null; note: string } | null;
   recordsObserved: {
@@ -830,7 +839,25 @@ export default function PlaceExplorer({
                       ? ` Vent à 10 m (moyenne des vitesses horaires, dérivé de u et v, pas un anémomètre) : ${data.era5.windSpeedDisplay}${data.era5.windFromDeg != null ? `, d’où il vient ${data.era5.windFromDisplay}` : ""}.`
                       : ""}
                     {data.era5.mslHpa != null
-                      ? ` Pression au niveau de la mer (moyenne 24 h UTC) : ${data.era5.mslDisplay}. Ce n’est pas la pression au sol de Grenoble.`
+                      ? ` Pression au niveau de la mer (moyenne 24 h UTC) : ${data.era5.mslDisplay}. Ce n’est pas la pression au sol de ${data.place.name}.`
+                      : ""}
+                    {data.era5.spHpa != null
+                      ? ` Pression à la surface du modèle (moyenne 24 h UTC) : ${data.era5.spDisplay}${
+                          data.era5.modelSurfaceAltitudeM != null
+                            ? ` (altitude de cette maille : ${data.era5.modelSurfaceAltitudeM} m)`
+                            : ""
+                        }. Ce n’est pas la pression au sol de ${data.place.name}${
+                          data.place.altitude_m != null ? ` (${data.place.altitude_m} m)` : ""
+                        }.`
+                      : ""}
+                    {data.era5.snowSweMm != null
+                      ? ` Équivalent en eau de la neige du modèle (moyenne 24 h, pas une hauteur de manteau en ville) : ${data.era5.snowSweDisplay}.`
+                      : ""}
+                    {data.era5.ssrdMj != null
+                      ? ` Rayonnement solaire descendant (somme 24 h UTC, pas un pyranomètre) : ${data.era5.ssrdDisplay}.`
+                      : ""}
+                    {data.era5.gustMs != null
+                      ? ` Rafale instantanée maximale à 10 m (pas une rafale officielle) : ${data.era5.gustDisplay}.`
                       : ""}
                     {" "}
                     Maille d’environ 0,25°. Aucune correction d’altitude ni moyenne avec la station.
