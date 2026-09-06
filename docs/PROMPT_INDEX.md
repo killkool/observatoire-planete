@@ -137,7 +137,7 @@ Source : sections 0 à 187 du prompt maître.
 | 122 | UX ACCUEIL | [ ] *partiel* (recherche commune + CTAs 390 px ; pas France entière) |
 | 123 | DESIGN | [ ] *partiel* |
 | 124 | HOME HERO | [ ] *partiel* (hero compact 390 px, JPEG, `decoding=sync`, `quality=70`, sizes ≤ 1480 px) |
-| 125 | PAGE MOBILE | [ ] *partiel* (390 px ; HTML page 78 Ko sans mois-station ; Lighthouse lab LCP 2508 ms ; pas de bottom sheet GIS) |
+| 125 | PAGE MOBILE | [ ] *partiel* (390 px ; HTML page 56 Ko sans mois/saisons/chaleur ; Lighthouse lab LCP 2535 ms ; pas de bottom sheet GIS) |
 | 126 | SEO | [ ] *partiel* (titres + sitemap filtré + OG + hreflang fr + JSON-LD + score v1 ; pas de pages en) |
 | 127 | INTERNATIONALISATION | [ ] *partiel* (html lang=fr, hreflang fr/x-default ; routage `en` = V2) |
 | 128 | PARTAGE SOCIAL | [ ] |
@@ -150,7 +150,7 @@ Source : sections 0 à 187 du prompt maître.
 | 135 | FINOPS | [ ] |
 | 136 | NE PAS STOCKER L'INUTILE | [ ] |
 | 137 | HOT/WARM/COLD DATA | [ ] |
-| 138 | CACHE | [ ] *partiel* (`unstable_cache` 1 h ; yearly **page** sans mois-station ; `/yearly` complet à la demande ; pas CDN) |
+| 138 | CACHE | [ ] *partiel* (`unstable_cache` 1 h ; yearly **page** `detailRows: false` ; `/yearly` complet à la demande ; pas CDN) |
 | 139 | PRECOMPUTATION | [ ] |
 | 140 | POSTGRES PARTITIONING | [ ] |
 | 141 | INDEXATION SPATIALE | [ ] |

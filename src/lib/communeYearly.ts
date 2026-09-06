@@ -97,6 +97,8 @@ export type CommuneMonthNormalPayload = {
 
 export type CommuneYearlyPayload = {
   computed: boolean;
+  /** false = page HTML sans mois / saisons / chaleur ; l’API /yearly reste complète. */
+  detailRows: boolean;
   methodVersion: string;
   completeDayThreshold: number;
   completeMonthDayThreshold: number;
@@ -131,7 +133,7 @@ export type CommuneYearlyPayload = {
 
 export function getCommuneYearly(
   insee: string,
-  options?: { includeMonthRows?: boolean }
+  options?: { includeMonthRows?: boolean; includeDetailRows?: boolean }
 ): CommuneYearlyPayload | null {
   const place = getPlaceByInsee(insee);
   if (!place) return null;
@@ -218,10 +220,11 @@ export function getCommuneYearly(
     climateDistanceKm: roundToPrecision(preferred.distanceKm, 1),
     ownMonths: months
   });
-  const includeMonthRows = options?.includeMonthRows !== false;
+  const includeDetailRows = options?.includeDetailRows ?? options?.includeMonthRows ?? true;
 
   return {
     computed: true,
+    detailRows: includeDetailRows,
     methodVersion: STATS_METHOD,
     completeDayThreshold: COMPLETE_DAY_THRESHOLD,
     completeMonthDayThreshold: COMPLETE_MONTH_DAY_THRESHOLD,
@@ -237,17 +240,17 @@ export function getCommuneYearly(
     },
     disclaimer: `Évolution d’après la station ${preferred.name} à ${roundToPrecision(preferred.distanceKm, 1)} km. Ce n’est pas une concaténation de plusieurs postes, ni une moyenne de la commune.`,
     years,
-    seasons,
-    summers: includeMonthRows ? summers : [],
+    seasons: includeDetailRows ? seasons : [],
+    summers: includeDetailRows ? summers : [],
     hottestSummer: hottestCompleteSeason(summers),
     coldestWinter: coldestCompleteSeasonOf(seasons, "DJF"),
-    months: includeMonthRows ? months : [],
+    months: includeDetailRows ? months : [],
     monthRecords: observedMonthRecords(months),
     normal,
     monthNormal,
     yearRecords: observedYearRecords(years),
     warming,
-    heat: stationHeatStreaks(listStationDailyTemps(preferred.id))
+    heat: includeDetailRows ? stationHeatStreaks(listStationDailyTemps(preferred.id)) : emptyHeatStreaks()
   };
 }
 
@@ -704,6 +707,7 @@ function resolveCommuneNormal(input: {
 function emptyPayload(place: PlaceRow, computed: boolean): CommuneYearlyPayload {
   return {
     computed,
+    detailRows: true,
     methodVersion: STATS_METHOD,
     completeDayThreshold: COMPLETE_DAY_THRESHOLD,
     completeMonthDayThreshold: COMPLETE_MONTH_DAY_THRESHOLD,

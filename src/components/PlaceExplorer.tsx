@@ -64,6 +64,14 @@ function ClimateLineChart(props: ComponentProps<typeof ClimateLineChartCanvas>) 
   );
 }
 
+/** Page HTML lite : mois/saisons/chaleur absents, pas « aucune donnée ». */
+function climateDetailsPending(yearly: YearlyPayload | null): boolean {
+  if (!yearly?.computed) return false;
+  if (yearly.detailRows === false) return true;
+  if (yearly.detailRows === true) return false;
+  return !(yearly.months && yearly.months.length);
+}
+
 type HistoryPayload = {
   date: string;
   place: { name: string; insee_code: string; latitude: number; longitude: number; altitude_m: number | null; timezone: string; department_slug?: string };
@@ -170,6 +178,7 @@ type MonthRow = {
 
 type YearlyPayload = {
   computed: boolean;
+  detailRows?: boolean;
   methodVersion: string;
   completeDayThreshold: number;
   completeMonthDayThreshold: number;
@@ -407,9 +416,8 @@ export default function PlaceExplorer({
 
   useEffect(() => {
     if (!insee) return;
-    const needsMonthRows =
-      !initialYearly || (initialYearly.computed && !(initialYearly.months && initialYearly.months.length));
-    if (!needsMonthRows) return;
+    const needsDetailRows = !initialYearly || climateDetailsPending(initialYearly);
+    if (!needsDetailRows) return;
     const target = document.getElementById("mois");
     if (!target) return;
     const controller = new AbortController();
@@ -609,7 +617,7 @@ export default function PlaceExplorer({
           alt={place ? `Vue aérienne IGN de ${place.name}` : ""}
           fill
           priority
-          quality={70}
+          quality={60}
           decoding="sync"
           sizes={HERO_IMAGE_SIZES}
         />
@@ -1299,7 +1307,7 @@ export default function PlaceExplorer({
                 </div>
               </div>
             ) : null}
-            {!yearly || (yearly.computed && !(yearly.months && yearly.months.length)) ? (
+            {!yearly || climateDetailsPending(yearly) ? (
               <p className="note">Chargement du climat observé…</p>
             ) : (monthYearsFull.length || monthYearsAny.length) ? (
               <>
@@ -1491,6 +1499,8 @@ export default function PlaceExplorer({
               <p className="note">Chargement du climat observé…</p>
             ) : !yearly.computed ? (
               <p className="note">Statistiques non calculées. Une visite de page ne lance pas ce calcul.</p>
+            ) : climateDetailsPending(yearly) ? (
+              <p className="note">Chargement du climat observé…</p>
             ) : seasonChart.length === 0 ? (
               <p className="note">Pas assez de saisons complètes pour tracer une évolution.</p>
             ) : (
@@ -1572,6 +1582,8 @@ export default function PlaceExplorer({
               <p className="note">Chargement du climat observé…</p>
             ) : !yearly.computed ? (
               <p className="note">Statistiques non calculées. Une visite de page ne lance pas ce calcul.</p>
+            ) : climateDetailsPending(yearly) ? (
+              <p className="note">Chargement du climat observé…</p>
             ) : !heatBand30 || heatBand30.episodeCount === 0 ? (
               <p className="note">Aucun épisode de 3 jours consécutifs à Tmax ≥ 30 °C sur ce poste.</p>
             ) : (

@@ -2,6 +2,10 @@
 
 Journal des sources, versions et recalculs. Pas de remplacement silencieux d’un dataset.
 
+## 2026-09-07 (extrait IGN Grenoble recompressé)
+
+- Même fichier `public/images/places/grenoble.jpg` (extrait IGN déjà présent, pas une nouvelle tuile). JPEG mozjpeg qualité 58 : **201 Ko → 174 Ko**. Ce n’est pas une observation météo. Crolles / La Pierre inchangés.
+
 ## 2026-09-06 (visuels UI recompressés)
 
 - Mêmes fichiers d’ambiance et extraits IGN déjà présents : convertis JPEG (qualité 68), sans nouvelle tuile IGN, sans autre photo. `hero-earth` 2247 → 89 Ko ; `origin-observed` 1366 → 59 Ko ; `place-alps` 2903 → 133 Ko ; `places/grenoble.jpg` 273 → 196 Ko. PNG sources retirés. Ce ne sont pas des observations météo.

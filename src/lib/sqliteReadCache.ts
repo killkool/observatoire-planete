@@ -28,10 +28,10 @@ export const getCommuneYearlyCached = unstable_cache(
   { revalidate: 3600 }
 );
 
-/** Sans les ~300 mois-station : premier HTML plus léger. L’API /yearly reste complète. */
+/** Sans mois / saisons / chaleur : premier HTML plus léger. L’API /yearly reste complète. */
 export const getCommuneYearlyPageCached = unstable_cache(
-  async (insee: string) => getCommuneYearly(insee, { includeMonthRows: false }),
-  ["commune-yearly-page-v1"],
+  async (insee: string) => getCommuneYearly(insee, { includeDetailRows: false }),
+  ["commune-yearly-page-v2"],
   { revalidate: 3600 }
 );
 
