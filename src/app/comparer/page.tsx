@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import CompareCities from "@/components/CompareCities";
+import { frenchLanguageAlternates } from "@/lib/seoContent";
 
 export const metadata: Metadata = {
   title: "Comparer deux communes — Observatoire Planète",
   description:
-    "Comparez le climat observé de deux communes Isère. Chaque ville garde sa station. On ne mélange pas les postes, on n’invente pas d’écart."
+    "Comparez le climat observé de deux communes Isère. Chaque ville garde sa station. On ne mélange pas les postes, on n’invente pas d’écart.",
+  alternates: frenchLanguageAlternates("/comparer")
 };
 
 export default function ComparerPage() {

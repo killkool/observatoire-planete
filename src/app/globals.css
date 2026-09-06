@@ -114,6 +114,7 @@
 .tempFill{position:absolute;top:-4px;height:22px;border-radius:99px;background:#fff;opacity:.92;box-shadow:0 0 18px rgba(255,255,255,.35)}
 .tempScale{display:flex;justify-content:space-between;color:var(--muted);font-size:11px}
 .metricRow{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.sameDayMetrics{grid-template-columns:repeat(3,minmax(0,1fr));margin:12px 0}
 .metricRow span{display:block;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
 .metricRow strong{font-size:20px}
 .sameDayStory,.stationDisclaimer{color:#d7e6ea;line-height:1.5}
@@ -151,7 +152,9 @@
 .compareFeatured a{color:var(--accent2)}
 .compareMetrics a{color:var(--accent2)}
 .warmingMetrics,.heatMetrics{grid-template-columns:repeat(3,minmax(0,1fr))}
-.moreMethod{margin:12px 0 0;color:var(--muted);font-size:13px;line-height:1.5}
+.monthNormalBlock{margin:22px 0 8px}
+.monthNormalBlock .subh{margin:0 0 8px}
+.monthNormalMetrics{grid-template-columns:repeat(2,minmax(0,1fr))}
 .moreMethod summary{cursor:pointer;color:var(--accent2)}
 .moreMethod p{margin:8px 0 0}
 
@@ -159,7 +162,7 @@
   .placeCards,.originStory,.storyGrid,.methodSteps,.placeSearch{grid-template-columns:1fr}
   .placeSearch .btnPrimary{justify-content:center}
   .metricRow{grid-template-columns:1fr 1fr}
-  .compareRow,.compareMetrics,.comparePickers,.warmingMetrics,.heatMetrics,.sourceCompareGrid{grid-template-columns:1fr}
+  .sameDayMetrics,.compareRow,.compareMetrics,.comparePickers,.warmingMetrics,.heatMetrics,.sourceCompareGrid{grid-template-columns:1fr}
   .earthHero{min-height:70vh}
   .mapCanvas,.mapPlaceholder{height:320px}
 }

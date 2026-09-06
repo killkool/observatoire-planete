@@ -8,6 +8,8 @@ Anomalie = valeur − normale **de la même variable, même grain, même source 
 
 Normale V1 affichable : au moins **24** années climatiques complètes dans la période (80 % de 30 ans). Défaut **1991-2020**. C’est la moyenne des **moyennes annuelles** des années complètes — pas une normale homogénéisée LSH. Si la station climatique de la commune n’atteint pas 24 ans sur 1991-2020, on n’invente pas la période : on l’indique, et on peut montrer la normale d’**un autre poste unique** sans l’appliquer en anomalie sur la première série.
 
+Normale **mensuelle** V1 (`month-normal-1991-2020-v1`) : même période et même seuil **24**, mais par mois calendaire, à partir des `monthly_statistics` déjà calculées (mois complet ≥ 25 jours). Les 12 mois doivent chacun atteindre 24 mois complets pour afficher le profil. LVD Grenoble n’a que 21–22 mois complets sur 1991-2020 → profil **CHATTE_SAPC**, sans anomalie sur LVD. Ce n’est pas la normale officielle Météo-France.
+
 Records d’année : parmi les années climatiques de **cette** station (période de la série). Record observé ≠ maximum ERA5 de cellule.
 
 ## Agrégats
@@ -16,7 +18,7 @@ Records d’année : parmi les années climatiques de **cette** station (périod
 - Mensuel : Tmin/Tmax/Tmoy moyennes, RR, jours de pluie, seuils 25/30/35/40 °C, gel, nuits tropicales — **si la donnée existe**. Mois complet V1 = au moins **25** jours de Tmin **et** Tmax connus. Pluie mensuelle stockée seulement si ≥ 25 jours de précipitation connus (sinon `NULL`, jamais 0).
 - Saisonnier : saisons météorologiques **nord** pour la V1 France (DJF / MAM / JJA / SON). L’hiver DJF est étiqueté par l’année de janvier (décembre compte pour l’hiver suivant). Saison complète V1 = au moins **75** jours de Tmin **et** Tmax connus. Pluie saisonnière : même seuil, sinon `NULL`.
 - Annuel : année complète V1 = au moins **330** jours de Tmin **et** Tmax. Pluie annuelle : `NULL` si < 330 jours connus.
-- UI mois : mêmes seuils. Records de mois = mois complets d’**un** poste. Pas de normale mensuelle tant qu’elle n’est pas calculée. Un mois incomplet n’est pas tracé comme 0.
+- UI mois : mêmes seuils. Records de mois = mois complets d’**un** poste. Normale mensuelle 1991-2020 : moyenne des mois complets, ≥ 24 par calendrier, un seul poste ; pas d’anomalie croisée. Un mois incomplet n’est pas tracé comme 0.
 - UI saisons : DJF / MAM / JJA / SON à l’écran, **un** poste, saisons complètes seulement. On ne compare pas un hiver à un été.
 - Une page vue ne calcule pas ces agrégats (`npm run stats:compute` seulement).
 - Tendances **avec méthode** (pas une pente unique silencieuse). « Quand j’étais enfant » = moyenne des **maximales/minimales annuelles** d’années complètes, fenêtres sans chevauchement — ce n’est pas une température quotidienne d’enfance ni une expertise certifiée.
@@ -26,6 +28,16 @@ Records d’année : parmi les années climatiques de **cette** station (périod
 Record **observé** (station) ≠ maximum **ERA5** de cellule. Classements séparés, source sur chaque record.
 
 Outlier : flag. Un record réel peut paraître aberrant. Pas de suppression silencieuse.
+
+## Ce jour dans l’histoire
+
+Un **seul** poste (la station du jour). Tous les mêmes jour-mois observés.
+
+- Moyenne Tmin / Tmax et percentile Tmax seulement si **≥ 5** valeurs **connues**. Un trou n’est pas 0.
+- Records = min Tmin / max Tmax de ces jours, à cette station.
+- Ce n’est **pas** une normale climatique 1991-2020.
+
+Preuve Grenoble 12 mai (CORENC, n=8) : moyenne 7,3 / 21,6 °C ; 1983 plus chaud que 50 % ; records 5,1 °C (1982) / 32,1 °C (1986).
 
 ## Épisodes de forte chaleur
 

@@ -2,6 +2,13 @@
 
 Journal des sources, versions et recalculs. Pas de remplacement silencieux d’un dataset.
 
+## 2026-09-06 (normales mensuelles 1991-2020)
+
+- Dérivé uniquement des `monthly_statistics` déjà calculées (`precompute-v2`). Aucune valeur inventée, pas de second téléchargement, une page vue ne lance pas `stats:compute`.
+- Méthode `month-normal-1991-2020-v1` : moyenne des mois complets (≥ 25 j Tmin et Tmax) par calendrier, seuil **24** mois (80 % de 30 ans). Pluie seulement si ≥ 24 mois à précipitation complète (`NULL` sinon).
+- 16 postes Isère ont les 12 mois affichables. GRENOBLE - LVD : 21–22 mois complets sur 1991-2020 → pas une normale LVD. Profil affiché pour Grenoble : **CHATTE_SAPC** (29–30 mois), sans anomalie croisée.
+- Preuve CHATTE : janvier −0,5 / 7,2 °C, 66,4 mm ; juillet **14,3 / 28,3 °C**, 68,3 mm ; mai 9,1 / 21,2 °C, 95,8 mm.
+
 ## 2026-09-06 (ERA5 point Grenoble)
 
 - Source : ERA5 hourly single levels (C3S / ECMWF), DOI `10.24381/cds.adbb2d47`, CC-BY-4.0, `origin_type=REANALYSIS`. Accès : miroir public ARCO `gs://gcp-public-data-arco-era5/ar/full_37-1h-0p25deg-chunk-1.zarr-v3` (même jeu, pas une autre réanalyse).

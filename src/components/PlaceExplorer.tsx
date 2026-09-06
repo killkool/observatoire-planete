@@ -34,6 +34,7 @@ import {
   formatMonthYear,
   monthChartRows,
   monthNameFr,
+  monthShortFr,
   yearsWithAnyCompleteMonth,
   yearsWithTwelveCompleteMonths
 } from "@/lib/climateMonths";
@@ -96,7 +97,13 @@ type HistoryPayload = {
     yearsOnThisDay: number;
   } | null;
   seriesSameDay: { date: string; tmin: number | null; tmax: number | null }[];
-  sameDayContext: { tmaxPercentile: number | null; label: string } | null;
+  sameDayContext: {
+    tmaxPercentile: number | null;
+    tminMean: number | null;
+    tmaxMean: number | null;
+    n: number;
+    label: string | null;
+  } | null;
   stationDisclaimer: string | null;
   confidence: { score: number; methodVersion: string; breakdown: { label: string; delta: number }[] };
   attributions: string[];
@@ -154,6 +161,25 @@ type YearlyPayload = {
     hottest: { year: number; month: number; value: number } | null;
     coldest: { year: number; month: number; value: number } | null;
     wettest: { year: number; month: number; value: number } | null;
+  };
+  monthNormal?: {
+    period: string;
+    methodVersion: string;
+    minYearsRequired: number;
+    available: boolean;
+    sameStation: boolean;
+    yearsUsed: number;
+    station: { id: string; name: string; distanceKm: number | null } | null;
+    reason: string | null;
+    months: {
+      month: number;
+      yearsUsed: number;
+      available: boolean;
+      precipAvailable: boolean;
+      tminMean: number | null;
+      tmaxMean: number | null;
+      precipitationMean: number | null;
+    }[];
   };
   normal: {
     period: string;
@@ -402,8 +428,24 @@ export default function PlaceExplorer({ slug, initialDate }: { slug: string; ini
     [yearly]
   );
   const monthChart = useMemo(
-    () => (monthYear != null ? monthChartRows(yearly?.months || [], monthYear) : []),
+    () =>
+      monthYear != null
+        ? monthChartRows(
+            yearly?.months || [],
+            monthYear,
+            yearly?.monthNormal?.available && yearly.monthNormal.sameStation ? yearly.monthNormal.months : null
+          )
+        : [],
     [yearly, monthYear]
+  );
+  const monthNormalChart = useMemo(
+    () =>
+      (yearly?.monthNormal?.available ? yearly.monthNormal.months : []).map((row) => ({
+        label: monthShortFr(row.month),
+        tmin: row.tminMean,
+        tmax: row.tmaxMean
+      })),
+    [yearly]
   );
   const completeMonthPairs = useMemo(
     () => (yearly?.months || []).filter((row) => row.monthComplete && row.month === monthKind),
@@ -673,7 +715,7 @@ export default function PlaceExplorer({ slug, initialDate }: { slug: string; ini
             )}
           </section>
 
-          <section className="panel chartPanel">
+          <section id="ce-jour" className="panel chartPanel">
             <div className="panelTitle">
               <div>
                 <span>CE JOUR DANS L’HISTOIRE</span>
@@ -681,8 +723,33 @@ export default function PlaceExplorer({ slug, initialDate }: { slug: string; ini
                   Tous les {date.slice(8, 10)}/{date.slice(5, 7)} observés
                 </h2>
               </div>
-              {data.recordsObserved && <strong>n={data.recordsObserved.yearsOnThisDay} années</strong>}
+              {data.sameDayContext ? (
+                <strong>n={data.sameDayContext.n} année{data.sameDayContext.n > 1 ? "s" : ""}</strong>
+              ) : data.recordsObserved ? (
+                <strong>n={data.recordsObserved.yearsOnThisDay} années</strong>
+              ) : null}
             </div>
+            {data.sameDayContext?.label ? <p className="sameDayStory">{data.sameDayContext.label}</p> : null}
+            {data.sameDayContext ? (
+              <div className="metricRow sameDayMetrics">
+                <div>
+                  <span>Maximale moyenne</span>
+                  <strong>{formatCelsius(data.sameDayContext.tmaxMean)}</strong>
+                </div>
+                <div>
+                  <span>Minimale moyenne</span>
+                  <strong>{formatCelsius(data.sameDayContext.tminMean)}</strong>
+                </div>
+                <div>
+                  <span>Plus chaude que</span>
+                  <strong>
+                    {data.sameDayContext.tmaxPercentile != null
+                      ? `${data.sameDayContext.tmaxPercentile} %`
+                      : "non disponible"}
+                  </strong>
+                </div>
+              </div>
+            ) : null}
             {data.recordsObserved && (
               <p className="recordLine">
                 Record de froid {data.recordsObserved.recordTmin ?? "—"} °C ({data.recordsObserved.recordTminDate || "—"}) ·
@@ -690,18 +757,30 @@ export default function PlaceExplorer({ slug, initialDate }: { slug: string; ini
               </p>
             )}
             <YearHeatmap series={data.seriesSameDay} selected={date} onSelect={goToDate} />
-            <div className="chart">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chart}>
-                  <CartesianGrid stroke="rgba(255,255,255,.06)" />
-                  <XAxis dataKey="year" tick={{ fill: "#70888f", fontSize: 10 }} />
-                  <YAxis tick={{ fill: "#70888f", fontSize: 10 }} unit="°C" />
-                  <Tooltip />
-                  <Line type="monotone" dataKey="tmax" stroke="#ff7b36" dot={false} name="Maximale" />
-                  <Line type="monotone" dataKey="tmin" stroke="#7ec8ff" dot={false} name="Minimale" />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
+            {chart.length ? (
+              <div className="chart">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={chart}>
+                    <CartesianGrid stroke="rgba(255,255,255,.06)" />
+                    <XAxis dataKey="year" tick={{ fill: "#70888f", fontSize: 10 }} />
+                    <YAxis tick={{ fill: "#70888f", fontSize: 10 }} unit="°C" />
+                    <Tooltip />
+                    <Line type="monotone" dataKey="tmax" stroke="#ff7b36" dot={false} name="Maximale" />
+                    <Line type="monotone" dataKey="tmin" stroke="#7ec8ff" dot={false} name="Minimale" />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <p className="yearlyNote">Aucun {date.slice(8, 10)}/{date.slice(5, 7)} observé à cette station. Rien n’est inventé.</p>
+            )}
+            <details className="techDetails">
+              <summary>En savoir plus</summary>
+              <p>
+                Moyennes et percentile calculés seulement s’il y a au moins 5 {date.slice(8, 10)}/{date.slice(5, 7)} avec
+                une mesure. Une année sans Tmin ou Tmax n’entre pas dans la moyenne correspondante (pas un 0). Ce n’est
+                pas une normale climatique. Station du jour : {data.preferredStation?.name}.
+              </p>
+            </details>
           </section>
 
           <section className="panel chartPanel">
@@ -1095,9 +1174,9 @@ export default function PlaceExplorer({ slug, initialDate }: { slug: string; ini
               ) : null}
             </div>
             <p className="yearlyNote">
-              Un mois est affiché s’il a au moins {yearly?.completeMonthDayThreshold ?? 25} jours de Tmin et Tmax
-              connus. Un mois troué n’est pas une climatologie : la pluie n’est pas zéro. Ce n’est pas une normale
-              mensuelle, ni le record de la commune.
+              Un mois d’une année est affiché s’il a au moins {yearly?.completeMonthDayThreshold ?? 25} jours de Tmin et
+              Tmax connus. Un mois troué n’est pas une climatologie : la pluie n’est pas zéro. Ce n’est pas le record de
+              la commune.
             </p>
             {yearly?.monthRecords && (yearly.monthRecords.hottest || yearly.monthRecords.coldest || yearly.monthRecords.wettest) ? (
               <div className="compareMetrics">
@@ -1157,6 +1236,28 @@ export default function PlaceExplorer({ slug, initialDate }: { slug: string; ini
                         <Tooltip />
                         <Line type="monotone" dataKey="tmax" stroke="#ff7b36" connectNulls={false} name="Maximale moyenne" />
                         <Line type="monotone" dataKey="tmin" stroke="#7ec8ff" connectNulls={false} name="Minimale moyenne" />
+                        {yearly?.monthNormal?.available && yearly.monthNormal.sameStation ? (
+                          <>
+                            <Line
+                              type="monotone"
+                              dataKey="normalTmax"
+                              stroke="#ff7b36"
+                              strokeDasharray="5 5"
+                              dot={false}
+                              connectNulls={false}
+                              name={`Normale max. ${yearly.monthNormal.period}`}
+                            />
+                            <Line
+                              type="monotone"
+                              dataKey="normalTmin"
+                              stroke="#7ec8ff"
+                              strokeDasharray="5 5"
+                              dot={false}
+                              connectNulls={false}
+                              name={`Normale min. ${yearly.monthNormal.period}`}
+                            />
+                          </>
+                        ) : null}
                       </LineChart>
                     </ResponsiveContainer>
                   </div>
@@ -1165,6 +1266,60 @@ export default function PlaceExplorer({ slug, initialDate }: { slug: string; ini
             ) : (
               <p className="note">Pas assez de mois complets pour tracer une année.</p>
             )}
+            {yearly?.monthNormal ? (
+              <div id="normale-mensuelle" className="monthNormalBlock">
+                <h3 className="subh">Normale mensuelle {yearly.monthNormal.period}</h3>
+                {yearly.monthNormal.reason ? <p className="yearlyNote">{yearly.monthNormal.reason}</p> : (
+                  <p className="yearlyNote">
+                    Moyenne des mois complets {yearly.monthNormal.period} sur {yearly.monthNormal.station?.name}
+                    {yearly.monthNormal.station?.distanceKm != null ? ` (${yearly.monthNormal.station.distanceKm} km)` : ""}
+                    , au moins {yearly.monthNormal.minYearsRequired} mois de chaque calendrier. Série brute, pas une
+                    normale homogénéisée. Méthode {yearly.monthNormal.methodVersion}.
+                  </p>
+                )}
+                {yearly.monthNormal.available && monthNormalChart.length ? (
+                  <>
+                    <div className="chart">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={monthNormalChart}>
+                          <CartesianGrid stroke="rgba(255,255,255,.06)" />
+                          <XAxis dataKey="label" tick={{ fill: "#70888f", fontSize: 10 }} />
+                          <YAxis tick={{ fill: "#70888f", fontSize: 10 }} unit="°C" />
+                          <Tooltip />
+                          <Line type="monotone" dataKey="tmax" stroke="#ff7b36" connectNulls={false} name="Maximale normale" />
+                          <Line type="monotone" dataKey="tmin" stroke="#7ec8ff" connectNulls={false} name="Minimale normale" />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                    <div className="compareMetrics monthNormalMetrics">
+                      {yearly.monthNormal.months.filter((row) => row.month === 1 || row.month === 7).map((row) => (
+                        <div key={row.month}>
+                          <span>{monthNameFr(row.month)}</span>
+                          <strong>
+                            {formatCelsius(row.tminMean)} / {formatCelsius(row.tmaxMean)}
+                          </strong>
+                          <small>
+                            {row.precipAvailable ? formatMm(row.precipitationMean) : "pluie non disponible"} · n=
+                            {row.yearsUsed}
+                          </small>
+                        </div>
+                      ))}
+                    </div>
+                    <details className="techDetails">
+                      <summary>En savoir plus</summary>
+                      <p>
+                        Chaque mois est la moyenne des mois complets (≥ 25 jours de Tmin et Tmax) de{" "}
+                        {yearly.monthNormal.period}. Un mois incomplet n’entre pas. La pluie n’est moyennée que s’il y
+                        a au moins {yearly.monthNormal.minYearsRequired} mois à précipitation complète. Pas d’ERA5.
+                        {yearly.monthNormal.sameStation
+                          ? " Même poste que la série annuelle : les pointillés du graphique d’année sont cette normale."
+                          : " Autre poste que la série annuelle : aucune anomalie mensuelle n’est calculée."}
+                      </p>
+                    </details>
+                  </>
+                ) : null}
+              </div>
+            ) : null}
             {completeMonthPairs.length >= 2 ? (
               <>
                 <p className="yearlyNote">

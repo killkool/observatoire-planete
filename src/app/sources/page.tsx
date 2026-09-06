@@ -1,7 +1,16 @@
+import type { Metadata } from "next";
 import db from "@/lib/db";
 import Link from "next/link";
 import OriginKinds from "@/components/OriginKinds";
 import PageBanner from "@/components/PageBanner";
+import { frenchLanguageAlternates } from "@/lib/seoContent";
+
+export const metadata: Metadata = {
+  title: "Sources et licences — Observatoire Planète",
+  description:
+    "Registre des sources météo : licences, origines, ce qui peut entrer dans le produit. E-OBS est désactivé.",
+  alternates: frenchLanguageAlternates("/sources")
+};
 
 export default function SourcesPage() {
   const sources = db.prepare(`SELECT * FROM data_sources`).all() as {

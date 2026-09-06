@@ -21,12 +21,14 @@ France : slugs stables + INSEE en donnée, pas comme seul URL si le nom change. 
 - `sitemap.xml` : accueil, comparer, naissance, sources, méthode + 512 communes du référentiel Isère (identité officielle + page date). Pas de millions de coquilles.
 - `robots.txt` : `/dashboard` et `/api/` non indexés.
 - Origine des URL : `NEXT_PUBLIC_SITE_URL` si défini, sinon `http://localhost:3000`.
-- Pas encore : hreflang en, `seo_content_score` riche par volume de texte.
+- Hreflang V1 : `fr` + `x-default` vers la même URL française. **Pas** de lien `en` tant qu’il n’existe pas de page anglaise (routage `en` = [BACKLOG_V2_GLOBAL.md](./BACKLOG_V2_GLOBAL.md)).
+- JSON-LD : `WebSite` (accueil), `WebPage` + `City` (INSEE, geo) + `BreadcrumbList` sur la commune. `WeatherObservation` seulement si une mesure **OBSERVED** existe pour la date ; Tmin/Tmax/pluie omises si NULL, jamais inventées. Pas d’ERA5 dans le graphe.
+- Pas encore : `seo_content_score` riche par volume de texte, pages `en`, SearchAction (la recherche est un GET `/api/` non indexé).
 - Cartes de partage : `/og/{slug}/{date}` (PNG serveur). Températures seulement si une observation existe. Pas d’ERA5 sur la carte.
 
 ## Langues
 
-`fr` + `en` dès le routage. Hreflang. Unités selon locale.
+`fr` dès le HTML (`lang="fr"`) et les balises hreflang. `en` dès qu’il y aura un vrai routage bilingue — pas avant. Unités selon locale quand `en` existera.
 
 ## Contenu minimum d’une page lieu
 

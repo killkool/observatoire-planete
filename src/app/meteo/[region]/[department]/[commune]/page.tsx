@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
+import JsonLd from "@/components/JsonLd";
 import PlaceExplorer from "@/components/PlaceExplorer";
 import { isIsoDate } from "@/lib/birthDay";
-import { defaultDateForPlace, getPlaceByPath } from "@/lib/placeHistory";
+import { defaultDateForPlace, getPlaceByPath, getPlaceDayObservation } from "@/lib/placeHistory";
 import { communePath, departmentLabel } from "@/lib/placeUrl";
+import { frenchLanguageAlternates } from "@/lib/seoContent";
+import { communeJsonLd } from "@/lib/seoJsonLd";
 import { shareCardPath } from "@/lib/shareCard";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
@@ -31,7 +34,7 @@ export async function generateMetadata({
   return {
     title,
     description,
-    alternates: { canonical: path },
+    alternates: frenchLanguageAlternates(path),
     openGraph: {
       title,
       description,
@@ -60,9 +63,33 @@ export default async function CommunePage({
   const place = getPlaceByPath(region, department, commune);
   if (!place) notFound();
   const date = query.date || defaultDateForPlace(commune);
+  const path = communePath(place);
+  const title = `${place.name} — histoire météo | Observatoire Planète`;
+  const description = `Températures, pluie et records observés à ${place.name} (${departmentLabel(place.department_slug)}). La station et la source sont indiquées. Ce n’est pas une prévision.`;
+  const day = isIsoDate(date) ? getPlaceDayObservation(commune, date) : null;
   return (
-    <Suspense fallback={<p className="note loadingNote">Chargement des observations…</p>}>
-      <PlaceExplorer slug={commune} initialDate={date} />
-    </Suspense>
+    <>
+      <JsonLd
+        data={communeJsonLd({
+          place,
+          path,
+          title,
+          description,
+          observation: day
+            ? {
+                originType: day.originType,
+                date,
+                tmin: day.tmin,
+                tmax: day.tmax,
+                precipitationMm: day.precipitationMm,
+                station: { id: day.station.id, name: day.station.name }
+              }
+            : null
+        })}
+      />
+      <Suspense fallback={<p className="note loadingNote">Chargement des observations…</p>}>
+        <PlaceExplorer slug={commune} initialDate={date} />
+      </Suspense>
+    </>
   );
 }

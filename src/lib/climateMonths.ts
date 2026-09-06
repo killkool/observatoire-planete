@@ -54,6 +54,58 @@ export type ObservedMonthRecords = {
   wettest: ObservedMonthRecord | null;
 };
 
+export const MONTH_NORMAL_METHOD = "month-normal-1991-2020-v1";
+
+export type MonthNormalPoint = {
+  month: number;
+  yearsUsed: number;
+  yearsPrecip: number;
+  available: boolean;
+  precipAvailable: boolean;
+  tminMean: number | null;
+  tmaxMean: number | null;
+  precipitationMean: number | null;
+};
+
+function meanOf(values: Array<number | null>): number | null {
+  const known = values.filter((v): v is number => v != null && Number.isFinite(v));
+  if (!known.length) return null;
+  return roundToPrecision(known.reduce((sum, v) => sum + v, 0) / known.length, 1);
+}
+
+export function monthNormalsFromStats(
+  rows: MonthClimatePoint[],
+  periodStart: number,
+  periodEnd: number,
+  minYears: number
+): MonthNormalPoint[] {
+  return MONTH_NAMES_FR.map((_, i) => {
+    const month = i + 1;
+    const inPeriod = rows.filter((row) => row.month === month && row.year >= periodStart && row.year <= periodEnd);
+    const complete = inPeriod.filter((row) => row.monthComplete);
+    const precipOk = inPeriod.filter((row) => row.precipComplete && row.precipitationSum != null);
+    const tminMean = meanOf(complete.map((row) => row.tminMean));
+    const tmaxMean = meanOf(complete.map((row) => row.tmaxMean));
+    const available = complete.length >= minYears && tminMean != null && tmaxMean != null;
+    const precipitationMean = meanOf(precipOk.map((row) => row.precipitationSum));
+    const precipAvailable = precipOk.length >= minYears && precipitationMean != null;
+    return {
+      month,
+      yearsUsed: complete.length,
+      yearsPrecip: precipOk.length,
+      available,
+      precipAvailable,
+      tminMean: available ? tminMean : null,
+      tmaxMean: available ? tmaxMean : null,
+      precipitationMean: precipAvailable ? precipitationMean : null
+    };
+  });
+}
+
+export function monthNormalProfileComplete(points: MonthNormalPoint[]): boolean {
+  return points.length === 12 && points.every((row) => row.available);
+}
+
 export function monthNameFr(month: number): string {
   if (month < 1 || month > 12) return "mois inconnu";
   return MONTH_NAMES_FR[month - 1];
@@ -118,18 +170,30 @@ export function yearsWithAnyCompleteMonth(rows: MonthClimatePoint[]): number[] {
 
 export function monthChartRows(
   rows: MonthClimatePoint[],
-  year: number
-): Array<{ month: number; label: string; tmin: number | null; tmax: number | null }> {
+  year: number,
+  normals?: MonthNormalPoint[] | null
+): Array<{
+  month: number;
+  label: string;
+  tmin: number | null;
+  tmax: number | null;
+  normalTmin: number | null;
+  normalTmax: number | null;
+}> {
   const byMonth = new Map(rows.filter((row) => row.year === year).map((row) => [row.month, row]));
+  const normalsByMonth = new Map((normals || []).map((row) => [row.month, row]));
   return MONTH_NAMES_FR.map((_, i) => {
     const month = i + 1;
     const row = byMonth.get(month);
     const complete = Boolean(row?.monthComplete);
+    const normal = normalsByMonth.get(month);
     return {
       month,
       label: monthShortFr(month),
       tmin: complete ? row?.tminMean ?? null : null,
-      tmax: complete ? row?.tmaxMean ?? null : null
+      tmax: complete ? row?.tmaxMean ?? null : null,
+      normalTmin: normal?.available ? normal.tminMean : null,
+      normalTmax: normal?.available ? normal.tmaxMean : null
     };
   });
 }

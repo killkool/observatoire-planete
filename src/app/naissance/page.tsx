@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import PlaceSearch from "@/components/PlaceSearch";
+import { frenchLanguageAlternates } from "@/lib/seoContent";
 
 export const metadata: Metadata = {
   title: "Jour de naissance — Observatoire Planète",
-  description: "Quel temps faisait-il le jour de votre naissance ? Mesure officielle s’il y en a une, jamais une valeur inventée."
+  description: "Quel temps faisait-il le jour de votre naissance ? Mesure officielle s’il y en a une, jamais une valeur inventée.",
+  alternates: frenchLanguageAlternates("/naissance")
 };
 
 export default function NaissancePage() {

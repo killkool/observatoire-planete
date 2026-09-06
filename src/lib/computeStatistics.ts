@@ -367,3 +367,34 @@ export function listCompleteNormalStations(period = DEFAULT_NORMAL_PERIOD): (Sta
     altitude: number | null;
   })[];
 }
+
+export function listCompleteMonthNormalStations(
+  periodStart = DEFAULT_NORMAL_START,
+  periodEnd = DEFAULT_NORMAL_END,
+  minYears = MIN_NORMAL_COMPLETE_YEARS
+): { station_id: string; name: string; latitude: number | null; longitude: number | null; altitude: number | null }[] {
+  return db.prepare(
+    `
+    SELECT s.id AS station_id, s.name, s.latitude, s.longitude, s.altitude
+    FROM (
+      SELECT station_id
+      FROM (
+        SELECT station_id, month
+        FROM monthly_statistics
+        WHERE year BETWEEN ? AND ?
+        GROUP BY station_id, month
+        HAVING SUM(month_complete) >= ?
+      )
+      GROUP BY station_id
+      HAVING COUNT(*) = 12
+    ) ok
+    JOIN stations s ON s.id = ok.station_id
+  `
+  ).all(periodStart, periodEnd, minYears) as {
+    station_id: string;
+    name: string;
+    latitude: number | null;
+    longitude: number | null;
+    altitude: number | null;
+  }[];
+}

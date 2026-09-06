@@ -1,12 +1,12 @@
 import assert from "node:assert/strict";
 import { currentTowardsUv, formatCelsius, roundToPrecision, windFromUv } from "../packages/weather-core/src/units";
 import { ORIGIN_LABEL_PUBLIC_FR } from "../packages/weather-core/src/origin";
-import { warmerThanPercent } from "../packages/weather-core/src/sameDayStats";
+import { warmerThanPercent, meanOfKnown, describeSameDayLead } from "../packages/weather-core/src/sameDayStats";
 import { scoreConfidence } from "../packages/confidence-engine/src/score";
 import { stationMatchScore } from "../packages/source-engine/src/stationMatch";
 import { assertCommercialSource } from "../packages/licensing/src/gate";
 import { communePath } from "../src/lib/placeUrl";
-import { searchPlaces, getPlaceHistory, getPlaceByInsee } from "../src/lib/placeHistory";
+import { searchPlaces, getPlaceHistory, getPlaceByInsee, getPlaceDayObservation } from "../src/lib/placeHistory";
 import { computeStationStatistics, isMonthComplete, isPrecipComplete, isSeasonComplete, isYearComplete } from "../src/lib/computeStatistics";
 import { getCommuneYearCompare, getCommuneChildhood, getCommuneCityCompare, getCommuneYearly } from "../src/lib/communeYearly";
 import {
@@ -23,11 +23,14 @@ import {
   formatMonthYear,
   hottestCompleteMonth,
   monthChartRows,
+  monthNormalsFromStats,
+  monthNormalProfileComplete,
   observedMonthRecords,
   wettestCompleteMonth,
   yearsWithTwelveCompleteMonths
 } from "../src/lib/climateMonths";
-import { seoContentScore } from "../src/lib/seoContent";
+import { seoContentScore, frenchLanguageAlternates, publicAbsoluteUrl } from "../src/lib/seoContent";
+import { communeJsonLd, websiteJsonLd } from "../src/lib/seoJsonLd";
 import { coldestCompleteSeason, seasonPublicLabel } from "../src/lib/climateSeasons";
 import { buildShareCardModel, shareCardPath } from "../src/lib/shareCard";
 import { heatEpisodesAt, stationHeatStreaks } from "../src/lib/climateHeatStreaks";
@@ -87,6 +90,22 @@ assert.ok(!shareMissing.includes("0 °C"));
 
 assert.equal(warmerThanPercent(null, [1, 2, 3, 4, 5]), null);
 assert.equal(warmerThanPercent(21.6, [10, 12, 15, 18, 20, 21.6, 22]), 71);
+assert.equal(meanOfKnown([1, 2, 3, 4, null]), null, "mean needs at least 5 known values");
+assert.equal(meanOfKnown([10, 20, 30, 40, 50, null])?.mean, 30);
+assert.equal(meanOfKnown([10, 20, 30, 40, 50, null])?.n, 5);
+assert.ok(meanOfKnown([0, 0, 0, 0, 0]), "measured zero remains zero; null is not zero");
+assert.equal(
+  describeSameDayLead({
+    dayMonthLabel: "12 mai",
+    yearCount: 8,
+    thisTmin: 6.6,
+    thisTmax: 32.1,
+    percentile: 87,
+    isHottest: true,
+    isColdestMorning: false
+  }),
+  "C’est le 12 mai le plus chaud observé ici (8 années)."
+);
 
 assert.equal(searchPlaces("99999").length, 0);
 
@@ -213,10 +232,119 @@ assert.equal(chartHoles[1].tmax, null, "incomplete February must not plot 99");
 assert.equal(yearsWithTwelveCompleteMonths(monthSample).length, 0);
 assert.equal(compareCompleteMonths(monthSample[0], monthSample[3]).comparable, true);
 assert.equal(compareCompleteMonths(monthSample[0], monthSample[2]).comparable, false);
+const janNormals = Array.from({ length: 24 }, (_, i) => ({
+  year: 1991 + i,
+  month: 1,
+  tminMean: 1,
+  tmaxMean: 2,
+  precipitationSum: i === 0 ? null : 10,
+  daysGe30: 0,
+  monthComplete: true,
+  precipComplete: i !== 0
+}));
+const janProfile = monthNormalsFromStats(janNormals, 1991, 2020, 24);
+assert.equal(janProfile[0].available, true);
+assert.equal(janProfile[0].tminMean, 1);
+assert.equal(janProfile[0].tmaxMean, 2);
+assert.equal(janProfile[0].precipAvailable, false);
+assert.equal(janProfile[0].precipitationMean, null);
+assert.equal(janProfile[1].available, false);
+assert.equal(monthNormalProfileComplete(janProfile), false);
+const shortJan = monthNormalsFromStats(janNormals.slice(0, 23), 1991, 2020, 24);
+assert.equal(shortJan[0].available, false);
 assert.equal(seoContentScore({ hasPlace: false, completeClimateYears: 0, hasDistinctiveHistory: false }).indexable, false);
 assert.equal(seoContentScore({ hasPlace: true, completeClimateYears: 0, hasDistinctiveHistory: false }).indexable, false);
 assert.equal(seoContentScore({ hasPlace: true, completeClimateYears: 0, hasDistinctiveHistory: true }).indexable, true);
 assert.equal(seoContentScore({ hasPlace: true, completeClimateYears: 10, hasDistinctiveHistory: false }).indexable, true);
+const hreflang = frenchLanguageAlternates("/meteo/auvergne-rhone-alpes/isere/grenoble");
+assert.equal(hreflang.languages.fr, hreflang.canonical);
+assert.equal(hreflang.languages["x-default"], hreflang.canonical);
+assert.equal(hreflang.canonical, publicAbsoluteUrl("/meteo/auvergne-rhone-alpes/isere/grenoble"));
+assert.equal("en" in hreflang.languages, false, "no English URL until an English page exists");
+const siteLd = JSON.stringify(websiteJsonLd());
+assert.ok(siteLd.includes("Observatoire Planète"));
+assert.equal(siteLd.includes("SearchAction"), false);
+const grenobleLd = communeJsonLd({
+  place: {
+    name: "Grenoble",
+    slug: "grenoble",
+    insee_code: "38185",
+    latitude: 45.1885,
+    longitude: 5.7245,
+    region_slug: "auvergne-rhone-alpes",
+    department_slug: "isere"
+  },
+  path: "/meteo/auvergne-rhone-alpes/isere/grenoble",
+  title: "Grenoble — histoire météo | Observatoire Planète",
+  description: "Températures observées à Grenoble.",
+  observation: {
+    originType: "OBSERVED",
+    date: "1983-05-12",
+    tmin: 6.6,
+    tmax: 21.6,
+    precipitationMm: 0.1,
+    station: { id: "38126001", name: "CORENC LA REVIREE" }
+  }
+});
+const grenobleLdText = JSON.stringify(grenobleLd);
+assert.ok(grenobleLdText.includes("WeatherObservation"));
+assert.ok(grenobleLdText.includes("38185"));
+assert.ok(grenobleLdText.includes("6.6"));
+assert.ok(grenobleLdText.includes("0.1"));
+assert.equal(grenobleLdText.includes("ERA5"), false);
+assert.equal(grenobleLdText.includes("REANALYSIS"), false);
+const era5Rejected = JSON.stringify(
+  communeJsonLd({
+    place: {
+      name: "Grenoble",
+      slug: "grenoble",
+      insee_code: "38185",
+      latitude: 45.1885,
+      longitude: 5.7245,
+      region_slug: "auvergne-rhone-alpes",
+      department_slug: "isere"
+    },
+    path: "/meteo/auvergne-rhone-alpes/isere/grenoble",
+    title: "Grenoble",
+    description: "test",
+    observation: {
+      originType: "REANALYSIS",
+      date: "1983-05-12",
+      tmin: 3.4,
+      tmax: 14.2,
+      precipitationMm: null,
+      station: { id: "era5", name: "ERA5" }
+    }
+  })
+);
+assert.equal(era5Rejected.includes("WeatherObservation"), false);
+assert.equal(era5Rejected.includes("3.4"), false);
+const missingPrecip = JSON.stringify(
+  communeJsonLd({
+    place: {
+      name: "Grenoble",
+      slug: "grenoble",
+      insee_code: "38185",
+      latitude: 45.1885,
+      longitude: 5.7245,
+      region_slug: "auvergne-rhone-alpes",
+      department_slug: "isere"
+    },
+    path: "/meteo/auvergne-rhone-alpes/isere/grenoble",
+    title: "Grenoble",
+    description: "test",
+    observation: {
+      originType: "OBSERVED",
+      date: "1900-01-01",
+      tmin: 1.1,
+      tmax: 2.2,
+      precipitationMm: null,
+      station: { id: "x", name: "x" }
+    }
+  })
+);
+assert.equal(missingPrecip.includes("precipitation"), false);
+assert.ok(missingPrecip.includes("1.1"));
 assert.ok(isSeasonComplete(75, 75));
 assert.equal(isSeasonComplete(74, 92), false);
 assert.ok(isNormalComplete(24));
@@ -530,6 +658,19 @@ if (obsCount === 0) {
   assert.equal(grenoble.observation?.precipitationMm, 0.1);
   assert.equal(grenoble.observation?.originType, "OBSERVED");
   assert.equal(grenoble.observation?.originLabel, "Mesure officielle");
+  const daySeo = getPlaceDayObservation("grenoble", "1983-05-12");
+  assert.ok(daySeo);
+  assert.equal(daySeo.originType, "OBSERVED");
+  assert.equal(daySeo.station.id, "38126001");
+  assert.equal(daySeo.tmin, 6.6);
+  assert.equal(daySeo.tmax, 21.6);
+  assert.equal(daySeo.precipitationMm, 0.1);
+  assert.ok(grenoble.sameDayContext);
+  assert.equal(grenoble.sameDayContext.n, 8);
+  assert.equal(grenoble.sameDayContext.tminMean, 7.3);
+  assert.equal(grenoble.sameDayContext.tmaxMean, 21.6);
+  assert.equal(grenoble.sameDayContext.tmaxPercentile, 50);
+  assert.ok(grenoble.sameDayContext.label?.includes("plus chaude que 50 %"));
   assert.ok(grenoble.era5, "ERA5 point for Grenoble 1983-05-12 must be ingested (no invented Kelvin)");
   assert.equal(grenoble.era5.originType, "REANALYSIS");
   assert.equal(grenoble.era5.originLabel, "Estimation climatique");
@@ -591,6 +732,18 @@ if (obsCount === 0) {
     assert.equal(wet?.precipComplete, true);
     assert.equal(wet?.monthComplete, true);
   }
+  assert.ok(yearly.monthNormal);
+  assert.equal(yearly.monthNormal.period, "1991-2020");
+  assert.equal(yearly.monthNormal.sameStation, false, "LVD has < 24 complete months in 1991-2020");
+  assert.equal(yearly.monthNormal.available, true);
+  assert.equal(yearly.monthNormal.station?.id, "38095001");
+  const mayNormal = yearly.monthNormal.months.find((row) => row.month === 5);
+  const julyNormal = yearly.monthNormal.months.find((row) => row.month === 7);
+  assert.equal(mayNormal?.tminMean, 9.1);
+  assert.equal(mayNormal?.tmaxMean, 21.2);
+  assert.equal(julyNormal?.tminMean, 14.3);
+  assert.equal(julyNormal?.tmaxMean, 28.3);
+  assert.equal(julyNormal?.precipitationMean, 68.3);
   assert.ok(yearly.station, "climate series must map to one station, not copy observations per commune");
   assert.equal(yearly.normal.period, "1991-2020");
   assert.equal(yearly.normal.minYearsRequired, 24);

@@ -11,7 +11,7 @@ Nom de travail. Les fournisseurs (Météo-France, Copernicus, NOAA, ECMWF, IGN) 
 **Priorité :** utilité → simplicité → fiabilité → rapidité → beauté → complexité technique.  
 Les cases `[x]` = livré **et** vérifié (preuve). Un fichier vide ne compte pas.
 
-Dernière mise à jour : 2026-09-06 (PoC ERA5 point Grenoble, comparaison sans fusion). Tableau : [STATUS.md](./STATUS.md).
+Dernière mise à jour : 2026-09-06 (hreflang fr + JSON-LD). Tableau : [STATUS.md](./STATUS.md).
 
 ---
 
@@ -30,7 +30,10 @@ Dernière mise à jour : 2026-09-06 (PoC ERA5 point Grenoble, comparaison sans f
 11. [x] Phase R7 suite — mois à l’écran (seuil 25 j) + SEO titres/sitemap Isère
 12. [x] Phase R7/R6 — quatre saisons à l’écran + carte PNG `/og/{slug}/{date}`
 13. [x] Phase R7 — épisodes de forte chaleur (Tmax consécutives, un poste ; pas canicule officielle)
-14. Ne **pas** extraire ERA5 mondial. Ne **pas** activer océan / NOAA / API commerciale. Ne **pas** feindre Vercel/Supabase. Ne **pas** extraire massivement les tuiles IGN.
+14. [x] Phase R6 — ce jour dans l’histoire (moyenne + percentile + records, un poste)
+15. [x] Phase R7 — normale mensuelle 1991-2020 (≥ 24 mois complets / calendrier, un poste)
+16. [x] Phase R11 — hreflang `fr` + `x-default` + JSON-LD lieu/mesure (pas de pages `en`)
+17. Ne **pas** extraire ERA5 mondial. Ne **pas** activer océan / NOAA / API commerciale. Ne **pas** feindre Vercel/Supabase. Ne **pas** extraire massivement les tuiles IGN.
 
 Héritage déjà vérifié (ne pas recommencer) : licences Phase 0, import Isère 1 208 439 obs, Grenoble 1983-05-12 (CORENC, 6,6 / 21,6 °C), matching station v1, carte IGN, provenance. Runtime encore SQLite. Cible prod : [ARCHITECTURE_PRODUCTION.md](./ARCHITECTURE_PRODUCTION.md).
 
@@ -122,23 +125,23 @@ Reste : France entière (autres départements) en R10. Isère : 512 communes imp
 ## PHASE R6 — Fonctions grand public
 
 - [x] jour de ma naissance + partage (copie du texte + URL + carte PNG serveur ; pas de SDK social)
-- [ ] ce jour dans l’histoire (déjà heatmap ; storytelling à simplifier)
+- [x] ce jour dans l’histoire (heatmap + moyenne du jour-mois + percentile + records + courbe ; pas une normale)
 - [x] quand j’étais enfant (moyenne des années climatiques complètes, un seul poste, fenêtre récente = 10 dernières années civiles ; pas une T quotidienne)
 - [x] ma ville se réchauffe-t-elle ? (OLS `ols-complete-years-v1`, un poste, ≥ 15 années climatiques, série brute pas LSH)
 - [x] partage social (carte PNG `/og/{slug}/{date}`, mesures réelles seulement)
 
-**État :** `/naissance` + page commune `?histoire=naissance` + carte de partage. Pas de SDK Facebook/Twitter. Pas d’homogénéisation.
+**État :** `/naissance` + page commune `?histoire=naissance` + carte de partage + « ce jour » (moyenne si ≥ 5 années, pas une normale). Pas de SDK Facebook/Twitter. Pas d’homogénéisation.
 
 ---
 
 ## PHASE R7 — Statistiques
 
-- [x] mois / saisons / années (mois + DJF/MAM/JJA/SON + annuel à l’écran ; pas de normale mensuelle)
+- [x] mois / saisons / années (mois + DJF/MAM/JJA/SON + annuel à l’écran + normale mensuelle 1991-2020)
 - [x] normales (défaut 1991-2020, ≥ 24 années climatiques, même station ; sinon autre poste unique sans anomalie croisée)
 - [x] anomalies (année − normale **du même poste** seulement)
 - [x] records d’année observés (plus chaude / plus froide / plus arrosée, station + période) ; records jour déjà en R5. Records de **mois** livrés. Épisodes Tmax consécutifs livrés (`heat-streak-tmax-v1`) — **pas** la canicule officielle Météo-France
 
-**État :** quatre saisons à l’écran (seuil 75 j, un poste). Hiver DJF étiqueté par l’année de janvier. Pas de comparaison hiver vs été. Pas de LSH. Pas de canicule officielle.
+**État :** quatre saisons à l’écran (seuil 75 j, un poste). Hiver DJF étiqueté par l’année de janvier. Pas de comparaison hiver vs été. Pas de LSH. Pas de canicule officielle. Normale mensuelle 1991-2020 : ≥ 24 mois complets par calendrier, un poste ; LVD Grenoble insuffisant → CHATTE_SAPC sans anomalie croisée.
 
 ---
 
@@ -177,10 +180,10 @@ Reste : France entière (autres départements) en R10. Isère : 512 communes imp
 ## PHASE R11 — SEO
 
 - [x] pages communes (contenu réel seulement, Isère)
-- [x] métadonnées / sitemap / canonical / carte OG PNG (pas hreflang en, pas JSON-LD)
+- [x] métadonnées / sitemap / canonical / carte OG PNG / hreflang `fr` + `x-default` / JSON-LD (City + mesure officielle si OBSERVED)
 - [ ] `seo_content_score` — helper seuil 50 au sitemap ; pas un scorer éditorial
 
-**État :** titres et descriptions issus du nom officiel. Sitemap = référentiel Isère + pages utiles. Pas de millions de coquilles.
+**État :** titres et descriptions issus du nom officiel. Sitemap = référentiel Isère + pages utiles. Hreflang français seulement (pas d’URL anglaise fantôme). JSON-LD : lieu INSEE + WeatherObservation Météo-France si une mesure existe ; pas d’ERA5. Pas de millions de coquilles.
 
 ---
 

@@ -20,3 +20,24 @@ export function publicSiteOrigin(): string {
   if (raw) return raw.replace(/\/$/, "");
   return "http://localhost:3000";
 }
+
+export function publicAbsoluteUrl(path: string): string {
+  const origin = publicSiteOrigin();
+  if (!path || path === "/") return `${origin}/`;
+  return `${origin}${path.startsWith("/") ? path : `/${path}`}`;
+}
+
+/** V1 France : une seule langue publiée. Pas d’URL `en` fantôme. Routage anglais = backlog V2. */
+export function frenchLanguageAlternates(path: string): {
+  canonical: string;
+  languages: { fr: string; "x-default": string };
+} {
+  const url = publicAbsoluteUrl(path);
+  return {
+    canonical: url,
+    languages: {
+      fr: url,
+      "x-default": url
+    }
+  };
+}

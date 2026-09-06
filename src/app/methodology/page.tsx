@@ -1,6 +1,15 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import OriginKinds from "@/components/OriginKinds";
 import PageBanner from "@/components/PageBanner";
+import { frenchLanguageAlternates } from "@/lib/seoContent";
+
+export const metadata: Metadata = {
+  title: "Méthode — Observatoire Planète",
+  description:
+    "Comment les valeurs sont calculées : mesure, matching de station, comparaison sans fusion. Une IA n’invente jamais une donnée manquante.",
+  alternates: frenchLanguageAlternates("/methodology")
+};
 
 export default function MethodologyPage() {
   return (

@@ -3,7 +3,7 @@ import { rankStationsForPlace } from "../../packages/source-engine/src/stationMa
 import { scoreConfidence } from "../../packages/confidence-engine/src/score";
 import { formatCelsius, formatMm, roundToPrecision } from "../../packages/weather-core/src/units";
 import { ORIGIN_LABEL_FR, ORIGIN_LABEL_PUBLIC_FR } from "../../packages/weather-core/src/origin";
-import { describeSameDayTmax, warmerThanPercent } from "../../packages/weather-core/src/sameDayStats";
+import { describeSameDayLead, meanOfKnown, warmerThanPercent } from "../../packages/weather-core/src/sameDayStats";
 import { getSource } from "../../packages/licensing/src/gate";
 
 export type PlaceRow = {
@@ -113,14 +113,11 @@ function candidatesForDate(date: string) {
   return withTemp.map((s) => ({ ...s, days: daysById.get(s.id) || 0, hasTemp: 1 }));
 }
 
-export function getPlaceHistory(slug: string, date: string) {
-  const place = getPlaceBySlug(slug);
-  if (!place) return null;
-
+function rankStationsOnDate(place: PlaceRow, date: string) {
   const all = candidatesForDate(date);
   const withTemp = all.filter((s) => s.hasTemp === 1);
   const pool = withTemp.length ? withTemp : all;
-  const ranked = rankStationsForPlace(
+  return rankStationsForPlace(
     place.latitude,
     place.longitude,
     place.altitude_m,
@@ -134,11 +131,57 @@ export function getPlaceHistory(slug: string, date: string) {
       hasTempOnDate: s.hasTemp === 1
     }))
   );
+}
+
+function observationOnDate(stationId: string, date: string): ObsRow | undefined {
+  return db.prepare(
+    `SELECT date, tmin, tmax, tmean, precipitation, origin_type, source_id FROM observations WHERE station_id = ? AND date = ?`
+  ).get(stationId, date) as ObsRow | undefined;
+}
+
+export type PlaceDayObservation = {
+  originType: string;
+  sourceId: string;
+  tmin: number | null;
+  tmax: number | null;
+  precipitationMm: number | null;
+  station: {
+    id: string;
+    name: string;
+    distanceKm: number | null;
+  };
+};
+
+/** Mesure officielle du jour pour le SEO. Pas d’ERA5. NULL reste NULL. */
+export function getPlaceDayObservation(slug: string, date: string): PlaceDayObservation | null {
+  const place = getPlaceBySlug(slug);
+  if (!place) return null;
+  const preferred = rankStationsOnDate(place, date)[0];
+  if (!preferred) return null;
+  const observation = observationOnDate(preferred.id, date);
+  if (!observation || observation.origin_type !== "OBSERVED") return null;
+  if (observation.tmin == null && observation.tmax == null && observation.precipitation == null) return null;
+  return {
+    originType: observation.origin_type,
+    sourceId: observation.source_id,
+    tmin: roundToPrecision(observation.tmin, 1),
+    tmax: roundToPrecision(observation.tmax, 1),
+    precipitationMm: roundToPrecision(observation.precipitation, 1),
+    station: {
+      id: preferred.id,
+      name: preferred.name,
+      distanceKm: roundToPrecision(preferred.distanceKm, 2)
+    }
+  };
+}
+
+export function getPlaceHistory(slug: string, date: string) {
+  const place = getPlaceBySlug(slug);
+  if (!place) return null;
+
+  const ranked = rankStationsOnDate(place, date);
   const preferred = ranked[0] ?? null;
-  const observation = preferred
-    ? (db.prepare(`SELECT date, tmin, tmax, tmean, precipitation, origin_type, source_id FROM observations WHERE station_id = ? AND date = ?`)
-        .get(preferred.id, date) as ObsRow | undefined)
-    : undefined;
+  const observation = preferred ? observationOnDate(preferred.id, date) : undefined;
 
   const dayOfYear = date.slice(5);
   const records = preferred
@@ -228,17 +271,28 @@ export function getPlaceHistory(slug: string, date: string) {
   const era5Source = getSource("copernicus.c3s.era5.single-levels-hourly");
   const era5Grid = era5GridFromSteps(era5[0]?.steps ?? null);
 
-  const tmaxPercent = warmerThanPercent(
-    tmax,
-    series.map((s) => roundToPrecision(s.tmax, 1))
-  );
+  const seriesTmin = series.map((s) => roundToPrecision(s.tmin, 1));
+  const seriesTmax = series.map((s) => roundToPrecision(s.tmax, 1));
+  const tmaxPercent = warmerThanPercent(tmax, seriesTmax);
+  const tminMeanRow = meanOfKnown(seriesTmin);
+  const tmaxMeanRow = meanOfKnown(seriesTmax);
   const dayMonthLabel = new Intl.DateTimeFormat("fr-FR", {
     day: "numeric",
     month: "long",
     timeZone: "UTC"
   }).format(new Date(`${date}T00:00:00Z`));
   const yearsOnThisDay = records?.yearsOnThisDay ?? series.length;
-  const sameDayStory = describeSameDayTmax(tmax, tmaxPercent, dayMonthLabel, yearsOnThisDay);
+  const recordTmin = records?.recordTmin != null ? roundToPrecision(records.recordTmin, 1) : null;
+  const recordTmax = records?.recordTmax != null ? roundToPrecision(records.recordTmax, 1) : null;
+  const sameDayStory = describeSameDayLead({
+    dayMonthLabel,
+    yearCount: yearsOnThisDay,
+    thisTmin: tmin,
+    thisTmax: tmax,
+    percentile: tmaxPercent,
+    isHottest: tmax != null && recordTmax != null && tmax === recordTmax,
+    isColdestMorning: tmin != null && recordTmin != null && tmin === recordTmin
+  });
 
   const comparison = observation && (era5TminC != null || era5TmaxC != null)
     ? {
@@ -316,8 +370,8 @@ export function getPlaceHistory(slug: string, date: string) {
     recordsObserved: records
       ? {
           originLabel: "Record observé par station",
-          recordTmin: roundToPrecision(records.recordTmin, 1),
-          recordTmax: roundToPrecision(records.recordTmax, 1),
+          recordTmin,
+          recordTmax,
           recordTminDate: records.recordTminDate,
           recordTmaxDate: records.recordTmaxDate,
           yearsOnThisDay: records.yearsOnThisDay
@@ -330,9 +384,12 @@ export function getPlaceHistory(slug: string, date: string) {
       tmean: roundToPrecision(s.tmean, 1),
       precipitation: roundToPrecision(s.precipitation, 1)
     })),
-    sameDayContext: sameDayStory
+    sameDayContext: series.length
       ? {
           tmaxPercentile: tmaxPercent,
+          tminMean: tminMeanRow ? roundToPrecision(tminMeanRow.mean, 1) : null,
+          tmaxMean: tmaxMeanRow ? roundToPrecision(tmaxMeanRow.mean, 1) : null,
+          n: yearsOnThisDay,
           label: sameDayStory
         }
       : null,

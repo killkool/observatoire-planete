@@ -69,10 +69,10 @@ Source : sections 0 à 187 du prompt maître.
 | 54 | COMPARATEUR | [ ] *partiel* (année vs année + même saison + ville vs ville Isère ; pas France, pas hiver vs été) |
 | 55 | SOURCE COMPARISON | [ ] *partiel* (Grenoble 1983-05-12, écart sans fusion) |
 | 56 | BIAS ANALYSIS | [ ] |
-| 57 | NORMALES CLIMATIQUES | [ ] *partiel* (1991-2020, ≥ 24 années ; 16 postes Isère) |
+| 57 | NORMALES CLIMATIQUES | [ ] *partiel* (1991-2020 annuelle + mensuelle, ≥ 24 ; 16 postes Isère) |
 | 58 | ANOMALIES | [ ] *partiel* (même station que la normale seulement) |
 | 59 | STATISTIQUES QUOTIDIENNES | [ ] |
-| 60 | STATISTIQUES MENSUELLES | [ ] *partiel* (UI mois complets + records ; pas de normale mensuelle) |
+| 60 | STATISTIQUES MENSUELLES | [ ] *partiel* (UI mois complets + records + normale 1991-2020 ; pas LSH) |
 | 61 | STATISTIQUES SAISONNIÈRES | [ ] *partiel* (DJF/MAM/JJA/SON à l’écran, un poste ; pas de normale saisonnière) |
 | 62 | STATISTIQUES ANNUELLES | [x] |
 | 63 | RECORD ENGINE | [ ] *partiel* (jour + année + mois + épisodes Tmax ; pas ERA5, pas canicule officielle) |
@@ -90,7 +90,7 @@ Source : sections 0 à 187 du prompt maître.
 | 75 | PAGE DATE | [x] |
 | 76 | PAGE OCÉAN | [ ] |
 | 77 | FEATURE "LE JOUR DE MA NAISSANCE" | [ ] *partiel* (page /naissance + copie + carte PNG ; pas de SDK social) |
-| 78 | FEATURE "CE JOUR DANS L'HISTOIRE" | [x] |
+| 78 | FEATURE "CE JOUR DANS L'HISTOIRE" | [x] (moyenne + percentile + records + courbe, un poste ; pas une normale) |
 | 79 | FEATURE "QUAND J'ÉTAIS ENFANT" | [ ] *partiel* (moyennes d’années complètes, un poste, fenêtre 2016–2025 pour un né en 1983) |
 | 80 | FEATURE "MA VILLE SE RÉCHAUFFE-T-ELLE ?" | [ ] *partiel* (OLS Isère, un poste, ≥ 15 ans ; pas LSH, pas France) |
 | 81 | FEATURE "100 ANS EN 30 SECONDES" | [ ] |
@@ -138,8 +138,8 @@ Source : sections 0 à 187 du prompt maître.
 | 123 | DESIGN | [ ] *partiel* |
 | 124 | HOME HERO | [ ] *partiel* |
 | 125 | PAGE MOBILE | [ ] *partiel* |
-| 126 | SEO | [ ] *partiel* (titres + sitemap Isère + carte OG PNG ; pas hreflang) |
-| 127 | INTERNATIONALISATION | [ ] |
+| 126 | SEO | [ ] *partiel* (titres + sitemap + OG + hreflang fr + JSON-LD ; pas de pages en) |
+| 127 | INTERNATIONALISATION | [ ] *partiel* (html lang=fr, hreflang fr/x-default ; routage `en` = V2) |
 | 128 | PARTAGE SOCIAL | [ ] |
 | 129 | BUSINESS MODEL | [ ] |
 | 130 | OCEAN BUSINESS | [ ] |

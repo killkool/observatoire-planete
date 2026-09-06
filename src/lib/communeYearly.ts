@@ -13,6 +13,8 @@ import {
 import {
   anomaly,
   DEFAULT_NORMAL_PERIOD,
+  DEFAULT_NORMAL_END,
+  DEFAULT_NORMAL_START,
   MIN_NORMAL_COMPLETE_YEARS,
   observedYearRecords,
   type ObservedYearRecords
@@ -21,13 +23,18 @@ import { stationWarmingTrend, type WarmingResult } from "./climateTrend";
 import { emptyHeatStreaks, stationHeatStreaks, type DailyTmax, type HeatStreakResult } from "./climateHeatStreaks";
 import { coldestCompleteSeasonOf } from "./climateSeasons";
 import {
+  monthNormalProfileComplete,
+  monthNormalsFromStats,
+  MONTH_NORMAL_METHOD,
   observedMonthRecords,
   type MonthClimatePoint,
+  type MonthNormalPoint,
   type ObservedMonthRecords
 } from "./climateMonths";
 import {
   listAnnualStats,
   listCompleteNormalStations,
+  listCompleteMonthNormalStations,
   listMonthlyStats,
   listSeasonalStats,
   getStationNormal,
@@ -80,6 +87,22 @@ export type CommuneNormalPayload = {
   reason: string | null;
 };
 
+export type CommuneMonthNormalPayload = {
+  period: string;
+  methodVersion: string;
+  minYearsRequired: number;
+  available: boolean;
+  sameStation: boolean;
+  yearsUsed: number;
+  station: {
+    id: string;
+    name: string;
+    distanceKm: number | null;
+  } | null;
+  reason: string | null;
+  months: MonthNormalPoint[];
+};
+
 export type CommuneYearlyPayload = {
   computed: boolean;
   methodVersion: string;
@@ -108,6 +131,7 @@ export type CommuneYearlyPayload = {
   months: MonthClimatePoint[];
   monthRecords: ObservedMonthRecords;
   normal: CommuneNormalPayload;
+  monthNormal: CommuneMonthNormalPayload;
   yearRecords: ObservedYearRecords;
   warming: WarmingResult;
   heat: HeatStreakResult;
@@ -218,6 +242,13 @@ export function getCommuneYearly(insee: string): CommuneYearlyPayload | null {
     climateDistanceKm: roundToPrecision(preferred.distanceKm, 1),
     ownRow: ownNormalRow
   });
+  const monthNormal = resolveCommuneMonthNormal({
+    place,
+    climateStationId: preferred.id,
+    climateStationName: preferred.name,
+    climateDistanceKm: roundToPrecision(preferred.distanceKm, 1),
+    ownMonths: months
+  });
 
   return {
     computed: true,
@@ -243,6 +274,7 @@ export function getCommuneYearly(insee: string): CommuneYearlyPayload | null {
     months,
     monthRecords: observedMonthRecords(months),
     normal,
+    monthNormal,
     yearRecords: observedYearRecords(years),
     warming,
     heat: stationHeatStreaks(listStationDailyTemps(preferred.id))
@@ -498,6 +530,128 @@ function emptyNormal(): CommuneNormalPayload {
   };
 }
 
+function emptyMonthNormal(computed: boolean): CommuneMonthNormalPayload {
+  return {
+    period: DEFAULT_NORMAL_PERIOD,
+    methodVersion: MONTH_NORMAL_METHOD,
+    minYearsRequired: MIN_NORMAL_COMPLETE_YEARS,
+    available: false,
+    sameStation: false,
+    yearsUsed: 0,
+    station: null,
+    reason: computed
+      ? "Aucune série mensuelle précalculée n’est disponible pour une station proche."
+      : "Statistiques non calculées. Lancer npm run stats:compute — une page vue ne déclenche pas ce calcul.",
+    months: monthNormalsFromStats([], DEFAULT_NORMAL_START, DEFAULT_NORMAL_END, MIN_NORMAL_COMPLETE_YEARS)
+  };
+}
+
+function monthNormalPayload(
+  points: MonthNormalPoint[],
+  station: { id: string; name: string; distanceKm: number | null },
+  sameStation: boolean,
+  reason: string | null
+): CommuneMonthNormalPayload {
+  return {
+    period: DEFAULT_NORMAL_PERIOD,
+    methodVersion: MONTH_NORMAL_METHOD,
+    minYearsRequired: MIN_NORMAL_COMPLETE_YEARS,
+    available: true,
+    sameStation,
+    yearsUsed: Math.min(...points.map((row) => row.yearsUsed)),
+    station,
+    reason,
+    months: points
+  };
+}
+
+function resolveCommuneMonthNormal(input: {
+  place: PlaceRow;
+  climateStationId: string;
+  climateStationName: string;
+  climateDistanceKm: number | null;
+  ownMonths: MonthClimatePoint[];
+}): CommuneMonthNormalPayload {
+  const ownPoints = monthNormalsFromStats(
+    input.ownMonths,
+    DEFAULT_NORMAL_START,
+    DEFAULT_NORMAL_END,
+    MIN_NORMAL_COMPLETE_YEARS
+  );
+  const ownOk = monthNormalProfileComplete(ownPoints);
+  if (ownOk) {
+    return monthNormalPayload(
+      ownPoints,
+      {
+        id: input.climateStationId,
+        name: input.climateStationName,
+        distanceKm: input.climateDistanceKm
+      },
+      true,
+      null
+    );
+  }
+
+  const missingReason = `La station ${input.climateStationName} n’a pas 12 mois avec chacun ${MIN_NORMAL_COMPLETE_YEARS} mois complets entre ${DEFAULT_NORMAL_START} et ${DEFAULT_NORMAL_END} (minimum observé : ${Math.min(...ownPoints.map((row) => row.yearsUsed))} mois). Ce n’est pas une normale mensuelle ${DEFAULT_NORMAL_PERIOD}.`;
+
+  const eligible = listCompleteMonthNormalStations().filter((row) => row.station_id !== input.climateStationId);
+  const ranked = rankStationsForPlace(
+    input.place.latitude,
+    input.place.longitude,
+    input.place.altitude_m,
+    eligible.map((row) => ({
+      id: row.station_id,
+      name: row.name,
+      latitude: row.latitude,
+      longitude: row.longitude,
+      altitude: row.altitude,
+      coverageDays: 10000,
+      hasTempOnDate: true
+    }))
+  );
+  const nearby = ranked[0];
+  if (!nearby) {
+    return {
+      ...emptyMonthNormal(true),
+      yearsUsed: Math.min(...ownPoints.map((row) => row.yearsUsed)),
+      reason: missingReason
+    };
+  }
+  const nearbyMonths: MonthClimatePoint[] = listMonthlyStats(nearby.id).map((row) => ({
+    year: row.year,
+    month: row.month,
+    tminMean: roundToPrecision(row.tmin_mean, 1),
+    tmaxMean: roundToPrecision(row.tmax_mean, 1),
+    precipitationSum: row.precip_complete ? roundToPrecision(row.precipitation_sum, 1) : null,
+    daysGe30: row.days_ge_30,
+    monthComplete: row.month_complete === 1,
+    precipComplete: row.precip_complete === 1
+  }));
+  const nearbyPoints = monthNormalsFromStats(
+    nearbyMonths,
+    DEFAULT_NORMAL_START,
+    DEFAULT_NORMAL_END,
+    MIN_NORMAL_COMPLETE_YEARS
+  );
+  if (!monthNormalProfileComplete(nearbyPoints)) {
+    return {
+      ...emptyMonthNormal(true),
+      yearsUsed: Math.min(...ownPoints.map((row) => row.yearsUsed)),
+      reason: missingReason
+    };
+  }
+  return monthNormalPayload(
+    nearbyPoints,
+    {
+      id: nearby.id,
+      name: nearby.name,
+      distanceKm: roundToPrecision(nearby.distanceKm, 1)
+    },
+    false,
+    `${missingReason} Normale mensuelle affichée : ${nearby.name} à ${roundToPrecision(nearby.distanceKm, 1)} km. Pas d’anomalie croisée sur ${input.climateStationName}.`
+  );
+}
+
 function resolveCommuneNormal(input: {
   place: PlaceRow;
   climateStationId: string;
@@ -611,6 +765,7 @@ function emptyPayload(place: PlaceRow, computed: boolean): CommuneYearlyPayload 
           reason: "Aucune série annuelle précalculée n’est disponible pour une station proche."
         }
       : emptyNormal(),
+    monthNormal: emptyMonthNormal(computed),
     yearRecords: { periodFrom: null, periodTo: null, yearsUsed: 0, hottest: null, coldest: null, wettest: null },
     warming: stationWarmingTrend([]),
     heat: emptyHeatStreaks()
