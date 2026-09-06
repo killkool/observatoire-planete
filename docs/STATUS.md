@@ -1,6 +1,6 @@
 # Avancement — Observatoire Planète
 
-**Date de revue :** 2026-09-06 (enfance SSR + Lighthouse lab localhost)  
+**Date de revue :** 2026-09-06 (héros JPEG + Lighthouse LCP 2,5 s lab)  
 **Constitution définitive :** [PROMPT_MAITRE_V2.md](./PROMPT_MAITRE_V2.md) — mot pour mot, sections 0–187.  
 **Livraison V1 :** [V1_FRANCE_REFOCUS.md](./V1_FRANCE_REFOCUS.md) + [ROADMAP.md](./ROADMAP.md).  
 **Stack cible :** [ARCHITECTURE_PRODUCTION.md](./ARCHITECTURE_PRODUCTION.md) — [ADR-0002](./adr/ADR-0002-production-stack-v1.md). Runtime encore SQLite.
@@ -11,11 +11,11 @@ Les fournisseurs sont des **sources**, jamais des partenaires.
 
 ## En une phrase
 
-Le parcours **Isère → Météo-France → Grenoble → 1983-05-12 → ERA5 point → comparaison sans fusion → provenance → confiance** est livré. Accueil, naissance, comparer et page commune tiennent à 390 px. Jour, climat annuel **et** enfance (si `histoire=naissance`) sont dans le HTML initial. MapLibre et Recharts ne se chargent qu’à l’approche du viewport. Lighthouse lab mobile localhost : perf **95**, LCP **3,0 s** — pas un pass Core Web Vitals, pas du CrUX.
+Le parcours **Isère → Météo-France → Grenoble → 1983-05-12 → ERA5 point → comparaison sans fusion → provenance → confiance** est livré. Jour, climat et enfance sont dans le HTML initial. MapLibre/Recharts hors écran. Visuels d’ambiance et extraits IGN en JPEG (mêmes photos). Lighthouse lab mobile localhost : perf **97**, LCP **2,5 s** (2523 ms) — encore juste au-dessus du seuil 2,50 s, pas du CrUX.
 
 ## Prochaine action
 
-1. **Produit :** ramener le LCP lab sous 2,5 s (héros IGN) puis confirmer sur un `next start` ; CDN ou vues matérialisées si besoin démontré.  
+1. **Produit :** passer le LCP lab sous 2500 ms (payload HTML climat encore lourd) puis CrUX si hébergé ; pas de CDN tant que le besoin n’est pas démontré.  
 2. **Science / R9 remainder :** subset ERA5 France (pas mondial) — pas de téléchargement grille entière.
 
 Ne pas : E-OBS, ERA5 mondial, océan, extract massif IGN, migrer vers un faux Supabase, déclencher un import à la page vue.
@@ -32,7 +32,7 @@ Ne pas : E-OBS, ERA5 mondial, océan, extract massif IGN, migrer vers un faux Su
 | R8 comparateur | **Partiel** | année vs année + saison vs **même** saison + ville vs ville Isère ; pas hiver vs été, pas France entière |
 | R9 ERA5 | **Partiel** | point Grenoble 1983-05-12 ; pas de subset France |
 | R11 SEO | **Fait (Isère)** | titres + sitemap filtré + OG + hreflang fr/x-default + JSON-LD + `seo-content-v1` ; pas de pages en |
-| R12 mobile | **Partiel** | 390 px ; HTML initial = jour + climat + enfance ; MapLibre/Recharts hors écran ; Lighthouse lab LCP 3,0 s ; pas CDN, pas CrUX |
+| R12 mobile | **Partiel** | 390 px ; HTML initial = jour + climat + enfance ; JPEG héros ; Lighthouse lab LCP 2523 ms ; pas CDN, pas CrUX |
 | PoC 1 ERA5 | **Fait** | `point_extractions` = 3 |
 
 ## Preuve statistiques `precompute-v2`
@@ -62,7 +62,7 @@ Seuils : année 330 j ; mois 25 j ; saison 75 j ; normale 24 années climatiques
 - Accueil / naissance / comparer 390×844 : recherche et CTA pleine largeur, 1 colonne, overflow-x absent, cibles ≥ 44 px. Comparer Grenoble vs Voiron : LVD vs COUBLEVIE, 21 années, écarts inchangés.
 - Graphiques commune : Recharts **et** MapLibre chargés seulement près du viewport (`DeferInView`). HTML initial Grenoble naissance : placeholder « Carte IGN… », **sans** `maplibre` / `recharts` dans le premier HTML. Après scroll : Photo IGN + pins CORENC.
 - Cache Next `unstable_cache` 1 h : accueil + sitemap **517** URL + historique d’un jour + climat annuel + **enfance**. HTML Grenoble 1983-05-12 : jour CORENC **et** climat LVD (26 années, 2025 · 901,1 mm). Naissance : **QUAND J’ÉTAIS ENFANT** CHATTE_SAPC 1988–1995 (7 ans), max. annuelle moyenne **17,4 °C** — un seul poste, pas LVD (couverture enfance insuffisante). Date 1900-01-01 : **Aucune mesure officielle**, climat LVD conservé. Changer de date rappelle `/api/v1/history`.
-- Lighthouse **13.4.1** mobile, `next start` :3002, Grenoble `?date=1983-05-12`, 2026-09-06T21:55Z : performance **0,95** ; FCP **0,9 s** ; LCP **3,0 s** (score 0,78) ; TBT **40 ms** ; CLS **0** ; Speed Index **0,9 s**. First Load JS page commune **126 kB** (dashboard prototype **223 kB**). Lab localhost, pas CrUX. LCP > 2,5 s → case Core Web Vitals **non** cochée.
+- Lighthouse **13.4.1** mobile, `next start` :3002, Grenoble `?date=1983-05-12`, 2026-09-06T22:04Z : performance **0,97** ; FCP **0,9 s** ; LCP **2,5 s** (**2523 ms**, score 0,89) ; TBT **10 ms** ; CLS **0**. Avant recompression JPEG : LCP 3,0 s. Lab localhost, pas CrUX. 2523 ms > 2500 ms → case Core Web Vitals **non** cochée. HTML `decoding=sync`, `grenoble.jpg`, pas les PNG d’ambiance.
 
 Ville vs ville (preuve 2026-09-06) :
 

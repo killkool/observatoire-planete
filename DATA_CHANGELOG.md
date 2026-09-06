@@ -2,6 +2,10 @@
 
 Journal des sources, versions et recalculs. Pas de remplacement silencieux d’un dataset.
 
+## 2026-09-06 (visuels UI recompressés)
+
+- Mêmes fichiers d’ambiance et extraits IGN déjà présents : convertis JPEG (qualité 68), sans nouvelle tuile IGN, sans autre photo. `hero-earth` 2247 → 89 Ko ; `origin-observed` 1366 → 59 Ko ; `place-alps` 2903 → 133 Ko ; `places/grenoble.jpg` 273 → 196 Ko. PNG sources retirés. Ce ne sont pas des observations météo.
+
 ## 2026-09-06 (normales mensuelles 1991-2020)
 
 - Dérivé uniquement des `monthly_statistics` déjà calculées (`precompute-v2`). Aucune valeur inventée, pas de second téléchargement, une page vue ne lance pas `stats:compute`.
@@ -68,7 +72,7 @@ Journal des sources, versions et recalculs. Pas de remplacement silencieux d’u
 
 - Constitution figée **mot pour mot** : [docs/PROMPT_MAITRE_V2.md](docs/PROMPT_MAITRE_V2.md). Index anti-oubli 0–187 : [docs/PROMPT_INDEX.md](docs/PROMPT_INDEX.md). Skills `00-prompt-maitre` + `00-track-development` lus à chaque prompt.
 - Accueil visuel (héros Terre) + pages lieu avec carte IGN Géoplateforme (orthophoto / plan) et heatmap annuelle.
-- Les visuels d’ambiance (`public/images/hero-earth.png`, `origin-*.png`) sont des illustrations de marque, **pas** des photos du lieu.
+- Les visuels d’ambiance (`public/images/hero-earth.jpg`, `origin-*.jpg`) sont des illustrations de marque, **pas** des photos du lieu.
 - Extraits UI IGN WMS dans `public/images/places/{grenoble,crolles,la-pierre}.jpg` (affichage, pas extract massif). Attribution : © IGN — Géoplateforme.
 
 - Phase 0 : création du registre licences / sources.

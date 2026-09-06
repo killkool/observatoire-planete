@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import OriginKinds from "./OriginKinds";
 import PlaceSearch from "./PlaceSearch";
-import { IGN_PHOTO_CREDIT, placePhotoSrc } from "@/lib/placeMedia";
+import { IGN_PHOTO_CREDIT, HERO_IMAGE_SIZES, placePhotoSrc } from "@/lib/placeMedia";
 import { communePath, departmentLabel } from "@/lib/placeUrl";
 
 type Place = {
@@ -20,12 +20,13 @@ export default function ObservatoryHome({ places }: { places: Place[] }) {
     <main className="homeVisual">
       <section className="earthHero">
         <Image
-          src="/images/hero-earth.png"
+          src="/images/hero-earth.jpg"
           alt="La France et les Alpes vues du ciel, illustration d’ambiance"
           fill
           priority
           quality={70}
-          sizes="100vw"
+          decoding="sync"
+          sizes={HERO_IMAGE_SIZES}
         />
         <div className="earthHeroContent">
           <p className="eyebrow">LA MÉMOIRE MÉTÉO DE LA FRANCE</p>

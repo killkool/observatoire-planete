@@ -11,7 +11,7 @@ Nom de travail. Les fournisseurs (Météo-France, Copernicus, NOAA, ECMWF, IGN) 
 **Priorité :** utilité → simplicité → fiabilité → rapidité → beauté → complexité technique.  
 Les cases `[x]` = livré **et** vérifié (preuve). Un fichier vide ne compte pas.
 
-Dernière mise à jour : 2026-09-06 (enfance SSR + Lighthouse lab). Tableau : [STATUS.md](./STATUS.md).
+Dernière mise à jour : 2026-09-06 (JPEG héros, LCP lab 2523 ms). Tableau : [STATUS.md](./STATUS.md).
 
 ---
 
@@ -39,7 +39,8 @@ Dernière mise à jour : 2026-09-06 (enfance SSR + Lighthouse lab). Tableau : [S
 20. [x] Phase R12 suite — mesure du jour dans le HTML initial (plus de waterfall `/api/v1/history` pour le premier écran)
 21. [x] Phase R12 suite — climat annuel dans le HTML initial ; date sans poste ≠ import manquant
 22. [x] Phase R12 suite — MapLibre/Recharts hors écran ; enfance dans le HTML ; Lighthouse lab localhost (LCP 3,0 s, pas un pass)
-23. Ne **pas** extraire ERA5 mondial. Ne **pas** activer océan / NOAA / API commerciale. Ne **pas** feindre Vercel/Supabase. Ne **pas** extraire massivement les tuiles IGN.
+23. [x] Phase R12 suite — JPEG des visuels déjà présents (pas une nouvelle photo) ; héros `decoding=sync` ; LCP lab 2523 ms
+24. Ne **pas** extraire ERA5 mondial. Ne **pas** activer océan / NOAA / API commerciale. Ne **pas** feindre Vercel/Supabase. Ne **pas** extraire massivement les tuiles IGN.
 
 Héritage déjà vérifié (ne pas recommencer) : licences Phase 0, import Isère 1 208 439 obs, Grenoble 1983-05-12 (CORENC, 6,6 / 21,6 °C), matching station v1, carte IGN, provenance. Runtime encore SQLite. Cible prod : [ARCHITECTURE_PRODUCTION.md](./ARCHITECTURE_PRODUCTION.md).
 
@@ -200,12 +201,12 @@ Reste : France entière (autres départements) en R10. Isère : 512 communes imp
 - [ ] Core Web Vitals
 - [ ] cache Next.js / CDN / vues matérialisées
 - [x] cache local tuiles IGN affichées (`data/tiles/ign/`, pas d’extract massif)
-- [x] optimisation charts / images (Recharts et MapLibre seulement près du viewport ; `quality={70}` héros ; pas un pass LCP)
+- [x] optimisation charts / images (Recharts/MapLibre hors écran ; JPEG des visuels déjà présents ; héros `decoding=sync` ; LCP lab 2523 ms, pas un pass)
 - [x] HTML initial de la page commune = mesure du jour (SSR `getPlaceHistory`, pas d’attente API pour Tmin/Tmax)
 - [x] HTML initial = climat annuel (SSR `getCommuneYearly`) ; date sans observation ≠ « import manquant »
 - [x] HTML initial = enfance si `histoire=naissance` (SSR `getCommuneChildhood`)
 
-**État :** pages grand public utilisables au téléphone. Cache Next 1 h (accueil, sitemap, jour, climat, enfance). Premier HTML Grenoble naissance : CORENC 6,6 / 21,6 °C, LVD 26 années, enfance CHATTE_SAPC 1988–1995. MapLibre après scroll. Lighthouse lab mobile localhost 2026-09-06 : perf 95, LCP **3,0 s**, CLS 0, TBT 40 ms — pas CrUX, LCP encore au-dessus de 2,5 s. Pas de bottom sheet GIS. Pas de CDN.
+**État :** pages grand public utilisables au téléphone. Cache Next 1 h. JPEG d’ambiance (`hero-earth` 89 Ko, `origin-observed` 59 Ko) et extraits IGN inchangés en motif. Lighthouse lab mobile localhost 2026-09-06T22:04Z : perf 97, LCP **2523 ms**, CLS 0, TBT 10 ms — pas CrUX, seuil « good » 2500 ms non tenu. Pas de bottom sheet GIS. Pas de CDN.
 
 ---
 

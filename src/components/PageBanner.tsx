@@ -16,7 +16,7 @@ export default function PageBanner({
 }) {
   return (
     <section className="pageBanner">
-      <Image src={image} alt="" fill priority sizes="100vw" />
+      <Image src={image} alt="" fill priority quality={70} decoding="sync" sizes="(max-width: 650px) 100vw, 1480px" />
       <div className="pageBannerContent">
         <p className="eyebrow">{eyebrow}</p>
         <h1>{title}</h1>

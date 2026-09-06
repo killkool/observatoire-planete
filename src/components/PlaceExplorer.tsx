@@ -9,7 +9,7 @@ import DeferInView from "./DeferInView";
 import TempRange from "./TempRange";
 import YearHeatmap from "./YearHeatmap";
 import OriginBadge from "./OriginBadge";
-import { IGN_PHOTO_CREDIT, placePhotoSrc } from "@/lib/placeMedia";
+import { IGN_PHOTO_CREDIT, HERO_IMAGE_SIZES, placePhotoSrc } from "@/lib/placeMedia";
 import { departmentLabel } from "@/lib/placeUrl";
 import { buildShareText, frenchLongDate, yearsElapsed } from "@/lib/birthDay";
 import {
@@ -590,7 +590,8 @@ export default function PlaceExplorer({
           fill
           priority
           quality={70}
-          sizes="100vw"
+          decoding="sync"
+          sizes={HERO_IMAGE_SIZES}
         />
         <div className="placeHeroContent">
           <p className="crumb">
@@ -680,7 +681,14 @@ export default function PlaceExplorer({
           <section className="storyGrid">
             <article className="panel storyMain">
               <div className="storyPhoto">
-                <Image src="/images/origin-observed.png" alt="" fill sizes="(max-width:650px) 94vw, 55vw" />
+                <Image
+                  src="/images/origin-observed.jpg"
+                  alt=""
+                  fill
+                  sizes="(max-width:650px) 100vw, 720px"
+                  quality={60}
+                  fetchPriority="low"
+                />
               </div>
               <OriginBadge kind="OBSERVED" caption={data.observation?.originLabel} />
               <TempRange tmin={data.observation?.tmin ?? null} tmax={data.observation?.tmax ?? null} />

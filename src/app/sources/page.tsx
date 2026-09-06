@@ -25,7 +25,7 @@ export default function SourcesPage() {
   return (
     <main className="docVisual">
       <PageBanner
-        image="/images/hero-earth.png"
+        image="/images/hero-earth.jpg"
         eyebrow="REGISTRE"
         title={
           <>

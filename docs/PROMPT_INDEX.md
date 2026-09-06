@@ -136,8 +136,8 @@ Source : sections 0 à 187 du prompt maître.
 | 121 | POURQUOI LA FRANCE EN PREMIER | [ ] |
 | 122 | UX ACCUEIL | [ ] *partiel* (recherche commune + CTAs 390 px ; pas France entière) |
 | 123 | DESIGN | [ ] *partiel* |
-| 124 | HOME HERO | [ ] *partiel* (hero compact 390 px, LCP `priority` + `quality=70` + `sizes=100vw`) |
-| 125 | PAGE MOBILE | [ ] *partiel* (commune + accueil + naissance + comparer 390 px ; MapLibre/Recharts hors écran ; Lighthouse lab LCP 3,0 s ; pas de bottom sheet GIS) |
+| 124 | HOME HERO | [ ] *partiel* (hero compact 390 px, JPEG, `decoding=sync`, `quality=70`, sizes ≤ 1480 px) |
+| 125 | PAGE MOBILE | [ ] *partiel* (390 px ; MapLibre/Recharts hors écran ; Lighthouse lab LCP 2523 ms ; pas de bottom sheet GIS) |
 | 126 | SEO | [ ] *partiel* (titres + sitemap filtré + OG + hreflang fr + JSON-LD + score v1 ; pas de pages en) |
 | 127 | INTERNATIONALISATION | [ ] *partiel* (html lang=fr, hreflang fr/x-default ; routage `en` = V2) |
 | 128 | PARTAGE SOCIAL | [ ] |

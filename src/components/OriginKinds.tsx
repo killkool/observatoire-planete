@@ -2,12 +2,12 @@ import Image from "next/image";
 
 const KINDS = [
   {
-    src: "/images/origin-observed.png",
+    src: "/images/origin-observed.jpg",
     title: "Mesure officielle",
     text: "Un poste Météo-France a relevé la température et la pluie. La station n’est pas forcément dans la commune : la distance reste indiquée."
   },
   {
-    src: "/images/origin-reanalysis.png",
+    src: "/images/origin-reanalysis.jpg",
     title: "Estimation climatique",
     text: "Quand aucune station pertinente n’existe, une réanalyse peut compléter. Ce n’est pas un thermomètre."
   }

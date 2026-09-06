@@ -1,9 +1,9 @@
 import Image from "next/image";
 
 const ICONS = {
-  OBSERVED: { src: "/images/origin-observed.png", label: "Mesure officielle" },
-  REANALYSIS: { src: "/images/origin-reanalysis.png", label: "Estimation climatique" },
-  FORECAST: { src: "/images/origin-forecast.png", label: "Prévision" }
+  OBSERVED: { src: "/images/origin-observed.jpg", label: "Mesure officielle" },
+  REANALYSIS: { src: "/images/origin-reanalysis.jpg", label: "Estimation climatique" },
+  FORECAST: { src: "/images/origin-forecast.jpg", label: "Prévision" }
 } as const;
 
 export default function OriginBadge({

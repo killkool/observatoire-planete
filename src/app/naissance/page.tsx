@@ -14,12 +14,13 @@ export default function NaissancePage() {
     <main className="homeVisual">
       <section className="earthHero">
         <Image
-          src="/images/hero-earth.png"
+          src="/images/hero-earth.jpg"
           alt=""
           fill
           priority
           quality={70}
-          sizes="100vw"
+          decoding="sync"
+          sizes="(max-width: 650px) 100vw, 1480px"
         />
         <div className="earthHeroContent">
           <p className="eyebrow">JOUR DE NAISSANCE</p>

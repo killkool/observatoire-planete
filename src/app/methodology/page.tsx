@@ -15,7 +15,7 @@ export default function MethodologyPage() {
   return (
     <main className="docVisual">
       <PageBanner
-        image="/images/origin-reanalysis.png"
+        image="/images/origin-reanalysis.jpg"
         eyebrow="TRANSPARENCE"
         title={
           <>
