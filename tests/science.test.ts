@@ -746,12 +746,20 @@ if (obsCount === 0) {
     "assimilated ERA5 is not an independent source"
   );
 
+  const missingDay = getPlaceHistory("grenoble", "1900-01-01");
+  assert.ok(missingDay, "Grenoble must still resolve for a date without observations");
+  assert.equal(missingDay.observation, null);
+  assert.equal(missingDay.preferredStation, null);
+  assert.notEqual(missingDay.observation?.tmin, 0);
+
   const annualCount = (db.prepare(`SELECT COUNT(*) AS c FROM annual_statistics`).get() as { c: number }).c;
   const seasonalCount = (db.prepare(`SELECT COUNT(*) AS c FROM seasonal_statistics`).get() as { c: number }).c;
   const normalCount = (db.prepare(`SELECT COUNT(*) AS c FROM station_normals`).get() as { c: number }).c;
   if (annualCount === 0 || seasonalCount === 0 || normalCount === 0) computeStationStatistics();
   const yearly = getCommuneYearly("38185");
   assert.ok(yearly, "Grenoble INSEE must resolve yearly payload");
+  assert.ok(yearly.computed, "yearly climate must not depend on the selected day");
+  assert.ok(yearly.years.filter((row) => row.yearComplete).length >= 10);
   assert.ok(yearly.years.length <= 150, "yearly API must not dump daily rows");
   assert.ok((yearly.summers || []).length <= 80, "summers must not dump daily rows");
   assert.ok((yearly.seasons || []).length <= 4 * 80, "seasonal API must not dump daily rows");

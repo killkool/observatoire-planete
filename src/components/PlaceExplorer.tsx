@@ -280,11 +280,13 @@ export default function PlaceExplorer({
   slug,
   initialDate,
   initialHistory = null,
+  initialYearly = null,
   histoire = false
 }: {
   slug: string;
   initialDate: string;
   initialHistory?: HistoryPayload | null;
+  initialYearly?: YearlyPayload | null;
   histoire?: boolean;
 }) {
   const router = useRouter();
@@ -293,7 +295,7 @@ export default function PlaceExplorer({
   const [data, setData] = useState<HistoryPayload | null>(() =>
     initialHistory && initialHistory.date === initialDate ? initialHistory : null
   );
-  const [yearly, setYearly] = useState<YearlyPayload | null>(null);
+  const [yearly, setYearly] = useState<YearlyPayload | null>(initialYearly);
   const [childhood, setChildhood] = useState<ChildhoodPayload | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(
@@ -375,6 +377,10 @@ export default function PlaceExplorer({
 
   const insee = data?.place?.insee_code;
   useEffect(() => {
+    if (initialYearly) {
+      setYearly(initialYearly);
+      return;
+    }
     if (!insee) return;
     const controller = new AbortController();
     fetch(`/api/v1/communes/${insee}/yearly`, { signal: controller.signal })
@@ -388,7 +394,7 @@ export default function PlaceExplorer({
         if (e.name !== "AbortError") setYearly(null);
       });
     return () => controller.abort();
-  }, [insee]);
+  }, [insee, initialYearly]);
 
   useEffect(() => {
     if (!histoire || !insee) {
@@ -630,16 +636,17 @@ export default function PlaceExplorer({
         </section>
       )}
 
-      {data && !data.preferredStation && (
-        <section className="empty panel">
-          <h2>Aucune station importée</h2>
-          <code>npm run import:meteo -- --department=38 --from=1980 --to=2026</code>
-        </section>
-      )}
+      {data && !data.preferredStation ? (
+        <div className="placeDayFlow">
+          <section className="empty panel">
+            <h2>Aucune mesure officielle</h2>
+            <p>Aucune valeur n’est inventée pour cette date.</p>
+          </section>
+        </div>
+      ) : null}
 
-      {data?.preferredStation && (
-        <>
-          <div className="placeDayFlow">
+      {data?.preferredStation ? (
+        <div className="placeDayFlow">
           <section className="storyGrid">
             <article className="panel storyMain">
               <div className="storyPhoto">
@@ -809,7 +816,9 @@ export default function PlaceExplorer({
             </details>
           </section>
           </div>
+      ) : null}
 
+      {place ? (
           <div className="placeClimateFlow">
           <section className="panel chartPanel">
             <div className="panelTitle">
@@ -830,7 +839,9 @@ export default function PlaceExplorer({
               tracées. Une année incomplète n’est pas une année climatique. La pluie annuelle n’apparaît que si presque
               tous les jours ont une mesure : un trou n’est pas zéro.
             </p>
-            {!yearly?.computed ? (
+            {!yearly ? (
+              <p className="note">Chargement du climat observé…</p>
+            ) : !yearly.computed ? (
               <p className="note">Statistiques non calculées. Une visite de page ne lance pas ce calcul.</p>
             ) : yearlyChart.length === 0 ? (
               <p className="note">Pas assez d’années complètes pour tracer une évolution.</p>
@@ -1230,7 +1241,9 @@ export default function PlaceExplorer({
                 </div>
               </div>
             ) : null}
-            {(monthYearsFull.length || monthYearsAny.length) ? (
+            {!yearly ? (
+              <p className="note">Chargement du climat observé…</p>
+            ) : (monthYearsFull.length || monthYearsAny.length) ? (
               <>
                 <div className="compareRow">
                   <label>
@@ -1416,7 +1429,9 @@ export default function PlaceExplorer({
                 </select>
               </label>
             </div>
-            {!yearly?.computed ? (
+            {!yearly ? (
+              <p className="note">Chargement du climat observé…</p>
+            ) : !yearly.computed ? (
               <p className="note">Statistiques non calculées. Une visite de page ne lance pas ce calcul.</p>
             ) : seasonChart.length === 0 ? (
               <p className="note">Pas assez de saisons complètes pour tracer une évolution.</p>
@@ -1495,7 +1510,9 @@ export default function PlaceExplorer({
               <strong>Ce n’est pas une canicule officielle</strong> Météo-France (seuils départementaux de Tmin et
               Tmax).
             </p>
-            {!yearly?.computed ? (
+            {!yearly ? (
+              <p className="note">Chargement du climat observé…</p>
+            ) : !yearly.computed ? (
               <p className="note">Statistiques non calculées. Une visite de page ne lance pas ce calcul.</p>
             ) : !heatBand30 || heatBand30.episodeCount === 0 ? (
               <p className="note">Aucun épisode de 3 jours consécutifs à Tmax ≥ 30 °C sur ce poste.</p>
@@ -1627,6 +1644,7 @@ export default function PlaceExplorer({
             </section>
           ) : null}
 
+          {data?.preferredStation ? (
           <section className="panel chartPanel">
             <div className="panelTitle">
               <div>
@@ -1664,9 +1682,13 @@ export default function PlaceExplorer({
               <Link href="/sources">Registre des sources</Link>
             </p>
           </section>
+          ) : (
+            <p className="note">
+              <Link href="/sources">Registre des sources</Link>
+            </p>
+          )}
           </div>
-        </>
-      )}
+      ) : null}
     </main>
   );
 }

@@ -1,6 +1,6 @@
 # Avancement — Observatoire Planète
 
-**Date de revue :** 2026-09-06 (mesure du jour dans le HTML initial)  
+**Date de revue :** 2026-09-06 (climat annuel dans le HTML initial)  
 **Constitution définitive :** [PROMPT_MAITRE_V2.md](./PROMPT_MAITRE_V2.md) — mot pour mot, sections 0–187.  
 **Livraison V1 :** [V1_FRANCE_REFOCUS.md](./V1_FRANCE_REFOCUS.md) + [ROADMAP.md](./ROADMAP.md).  
 **Stack cible :** [ARCHITECTURE_PRODUCTION.md](./ARCHITECTURE_PRODUCTION.md) — [ADR-0002](./adr/ADR-0002-production-stack-v1.md). Runtime encore SQLite.
@@ -11,7 +11,7 @@ Les fournisseurs sont des **sources**, jamais des partenaires.
 
 ## En une phrase
 
-Le parcours **Isère → Météo-France → Grenoble → 1983-05-12 → ERA5 point → comparaison sans fusion → provenance → confiance** est livré. Accueil, naissance, comparer et page commune tiennent à 390 px. La mesure du jour est dans le HTML initial (Grenoble 6,6 / 21,6 °C, CORENC) : plus de « Chargement des observations… » avant le premier écran. Cache Next 1 h (accueil, sitemap, historique d’un jour). Pas de score Lighthouse.
+Le parcours **Isère → Météo-France → Grenoble → 1983-05-12 → ERA5 point → comparaison sans fusion → provenance → confiance** est livré. Accueil, naissance, comparer et page commune tiennent à 390 px. La mesure du jour **et** le climat annuel (LVD, 26 années) sont dans le HTML initial. Une date sans poste (1900-01-01) dit « aucune mesure officielle », pas « import manquant », et le climat reste visible. Cache Next 1 h. Pas de score Lighthouse.
 
 ## Prochaine action
 
@@ -32,7 +32,7 @@ Ne pas : E-OBS, ERA5 mondial, océan, extract massif IGN, migrer vers un faux Su
 | R8 comparateur | **Partiel** | année vs année + saison vs **même** saison + ville vs ville Isère ; pas hiver vs été, pas France entière |
 | R9 ERA5 | **Partiel** | point Grenoble 1983-05-12 ; pas de subset France |
 | R11 SEO | **Fait (Isère)** | titres + sitemap filtré + OG + hreflang fr/x-default + JSON-LD + `seo-content-v1` ; pas de pages en |
-| R12 mobile | **Partiel** | commune + accueil + naissance + comparer 390 px ; Recharts à la demande ; HTML initial = mesure du jour ; cache 1 h accueil/sitemap/historique ; pas CWV mesuré, pas CDN |
+| R12 mobile | **Partiel** | commune + accueil 390 px ; Recharts à la demande ; HTML initial = jour + climat annuel ; 1900 sans invention ; cache 1 h ; pas CWV mesuré, pas CDN |
 | PoC 1 ERA5 | **Fait** | `point_extractions` = 3 |
 
 ## Preuve statistiques `precompute-v2`
@@ -61,14 +61,14 @@ Seuils : année 330 j ; mois 25 j ; saison 75 j ; normale 24 années climatiques
 - Page commune 390×844 : nav horizontale défilable, date + partage en colonne, Tmin/Tmax puis carte IGN, cibles ≥ 44 px. Desktop inchangé (carte toujours au-dessus du récit). Pas de bottom sheet.
 - Accueil / naissance / comparer 390×844 : recherche et CTA pleine largeur, 1 colonne, overflow-x absent, cibles ≥ 44 px. Comparer Grenoble vs Voiron : LVD vs COUBLEVIE, 21 années, écarts inchangés.
 - Graphiques commune : Recharts chargé à la demande (`ClimateLineChart`). Grenoble `#ce-jour` : 8 × 12 mai, 21,6 / 7,3 °C, percentile 50 %, courbes Tmax/Tmin visibles.
-- Cache Next `unstable_cache` 1 h : accueil (3 communes) + sitemap **517** URL (5 + 512) + historique d’un jour. HTML Grenoble 1983-05-12 : `6.6 °C` / `21.6 °C`, CORENC, JSON-LD `WeatherObservation`, **sans** « Chargement des observations… ». Changer de date rappelle encore `/api/v1/history`. Pas un CDN. Le climat annuel reste chargé après coup (`/yearly`). Le dashboard `/dashboard` charge encore Recharts en tête (prototype).
+- Cache Next `unstable_cache` 1 h : accueil + sitemap **517** URL + historique d’un jour + climat annuel. HTML Grenoble 1983-05-12 : jour CORENC **et** climat LVD (26 années, 2025 · 901,1 mm) dès le premier écran — plus de « Statistiques non calculées » pendant le chargement. Date 1900-01-01 : **Aucune mesure officielle**, aucune valeur inventée, climat LVD toujours affiché. Changer de date rappelle `/api/v1/history`. Le dashboard `/dashboard` charge encore Recharts en tête (prototype).
 
 Ville vs ville (preuve 2026-09-06) :
 
 - Grenoble vs Crolles / La Pierre : **même poste GRENOBLE - LVD** → aucun écart affiché.
 - Grenoble vs Voiron : LVD vs **COUBLEVIE**, 21 années climatiques 2005–2025. Max. moyenne 18,5 → 18,2 °C (−0,3) ; min. 7,3 → 8,4 °C (+1,1) ; pluie 980,8 → 1117,6 mm. Pas de normale 1991-2020 (LVD n’a que 21 ans sur la période).
 
-Tests : `npm run test:science`. Pages : `/` · `/naissance` · `/comparer?a=38185&b=38563` · `/meteo/auvergne-rhone-alpes/isere/grenoble?date=1983-05-12` (HTML initial : CORENC 6,6 / 21,6 °C, sans « Chargement des observations… ») · `/sitemap.xml` (5 + 512) · `#ce-jour` · `#comparaison-sources` · `#mois` · `#normale-mensuelle` · `#saisons` · `#chaleur` · `/og/grenoble/1983-05-12`.
+Tests : `npm run test:science`. Pages : `/` · `/naissance` · `/comparer?a=38185&b=38563` · `/meteo/auvergne-rhone-alpes/isere/grenoble?date=1983-05-12` (jour + climat LVD dans le HTML) · `?date=1900-01-01` (aucune mesure, climat conservé) · `/sitemap.xml` (5 + 512) · `#ce-jour` · `#comparaison-sources` · `#mois` · `#normale-mensuelle` · `#saisons` · `#chaleur` · `/og/grenoble/1983-05-12`.
 
 ## Runtime
 

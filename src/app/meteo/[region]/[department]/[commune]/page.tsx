@@ -7,7 +7,7 @@ import { communePath, departmentLabel } from "@/lib/placeUrl";
 import { frenchLanguageAlternates, seoFactsForPlace } from "@/lib/seoContent";
 import { communeJsonLd } from "@/lib/seoJsonLd";
 import { shareCardPath } from "@/lib/shareCard";
-import { getPlaceHistoryCached } from "@/lib/sqliteReadCache";
+import { getCommuneYearlyCached, getPlaceHistoryCached } from "@/lib/sqliteReadCache";
 import { notFound } from "next/navigation";
 
 type CommuneParams = { region: string; department: string; commune: string };
@@ -69,6 +69,7 @@ export default async function CommunePage({
   const title = `${place.name} — histoire météo | Observatoire Planète`;
   const description = `Températures, pluie et records observés à ${place.name} (${departmentLabel(place.department_slug)}). La station et la source sont indiquées. Ce n’est pas une prévision.`;
   const history = isIsoDate(date) ? await getPlaceHistoryCached(commune, date) : null;
+  const yearly = await getCommuneYearlyCached(place.insee_code);
   const observed =
     history?.observation?.originType === "OBSERVED" && history.preferredStation
       ? {
@@ -95,6 +96,7 @@ export default async function CommunePage({
         slug={commune}
         initialDate={date}
         initialHistory={history}
+        initialYearly={yearly}
         histoire={query.histoire === "naissance"}
       />
     </>
