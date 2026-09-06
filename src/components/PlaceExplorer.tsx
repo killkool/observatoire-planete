@@ -126,6 +126,12 @@ type HistoryPayload = {
     precipMm?: number | null;
     precipDisplay?: string;
     precipDelta?: number | null;
+    windSpeedMs?: number | null;
+    windSpeedDisplay?: string;
+    windFromDeg?: number | null;
+    windFromDisplay?: string;
+    mslHpa?: number | null;
+    mslDisplay?: string;
   } | null;
   comparison: { tminDelta: number | null; tmaxDelta: number | null; note: string } | null;
   recordsObserved: {
@@ -819,6 +825,12 @@ export default function PlaceExplorer({
                       : ""}
                     {data.era5.precipDelta != null && data.observation?.precipDisplay
                       ? ` Mesure de station : ${data.observation.precipDisplay}. Écart estimation − mesure : ${formatSignedMm(data.era5.precipDelta)}. Pas une fusion.`
+                      : ""}
+                    {data.era5.windSpeedMs != null
+                      ? ` Vent à 10 m (moyenne des vitesses horaires, dérivé de u et v, pas un anémomètre) : ${data.era5.windSpeedDisplay}${data.era5.windFromDeg != null ? `, d’où il vient ${data.era5.windFromDisplay}` : ""}.`
+                      : ""}
+                    {data.era5.mslHpa != null
+                      ? ` Pression au niveau de la mer (moyenne 24 h UTC) : ${data.era5.mslDisplay}. Ce n’est pas la pression au sol de Grenoble.`
                       : ""}
                     {" "}
                     Maille d’environ 0,25°. Aucune correction d’altitude ni moyenne avec la station.

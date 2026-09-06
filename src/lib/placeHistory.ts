@@ -1,7 +1,7 @@
 import db from "./db";
 import { rankStationsForPlace } from "../../packages/source-engine/src/stationMatch";
 import { scoreConfidence } from "../../packages/confidence-engine/src/score";
-import { formatCelsius, formatMm, roundToPrecision } from "../../packages/weather-core/src/units";
+import { formatCelsius, formatHpaFromPa, formatKmhFromMs, formatMm, formatWindFromDeg, roundToPrecision } from "../../packages/weather-core/src/units";
 import { ORIGIN_LABEL_FR, ORIGIN_LABEL_PUBLIC_FR } from "../../packages/weather-core/src/origin";
 import { describeSameDayLead, meanOfKnown, warmerThanPercent } from "../../packages/weather-core/src/sameDayStats";
 import { getSource } from "../../packages/licensing/src/gate";
@@ -225,7 +225,9 @@ export function getPlaceHistory(slug: string, date: string) {
     WHERE pe.date = ? AND pe.variable_id IN (
         'air_temperature_min', 'air_temperature_max', 'air_temperature',
         'dew_point_min', 'dew_point_max', 'dew_point',
-        'precipitation'
+        'precipitation',
+        'wind_speed', 'wind_direction',
+        'sea_level_pressure'
       )
       AND pe.source_id = 'copernicus.c3s.era5.single-levels-hourly'
       AND abs(pe.latitude - ?) < 0.0001 AND abs(pe.longitude - ?) < 0.0001
@@ -258,6 +260,9 @@ export function getPlaceHistory(slug: string, date: string) {
   const era5DewMinC = toCelsius(era5ByVar.dew_point_min);
   const era5DewMaxC = toCelsius(era5ByVar.dew_point_max);
   const era5PrecipMm = toMillimetres(era5ByVar.precipitation);
+  const era5WindMs = toMetresPerSecond(era5ByVar.wind_speed);
+  const era5WindFromDeg = toWindFromDeg(era5ByVar.wind_direction);
+  const era5MslHpa = toHectopascals(era5ByVar.sea_level_pressure);
   const era5HasTemp = era5TminC != null || era5TmaxC != null;
   const precipDelta =
     rr != null && era5PrecipMm != null ? roundToPrecision(era5PrecipMm - rr, 1) : null;
@@ -380,7 +385,13 @@ export function getPlaceHistory(slug: string, date: string) {
           dewpointMaxDisplay: formatCelsius(era5DewMaxC),
           precipMm: era5PrecipMm,
           precipDisplay: formatMm(era5PrecipMm),
-          precipDelta
+          precipDelta,
+          windSpeedMs: era5WindMs,
+          windSpeedDisplay: formatKmhFromMs(era5WindMs),
+          windFromDeg: era5WindFromDeg,
+          windFromDisplay: formatWindFromDeg(era5WindFromDeg),
+          mslHpa: era5MslHpa,
+          mslDisplay: era5ByVar.sea_level_pressure ? formatHpaFromPa(era5ByVar.sea_level_pressure.value) : "non disponible"
         }
       : null,
     comparison,
@@ -444,6 +455,26 @@ function toMillimetres(row?: { value: number | null; unit: string }): number | n
   if (!row || row.value == null) return null;
   if (row.unit === "m") return roundToPrecision(row.value * 1000, 1);
   if (row.unit === "mm") return roundToPrecision(row.value, 1);
+  return null;
+}
+
+function toMetresPerSecond(row?: { value: number | null; unit: string }): number | null {
+  if (!row || row.value == null) return null;
+  if (row.unit === "m s-1" || row.unit === "m s**-1") return row.value;
+  if (row.unit === "km/h") return row.value / 3.6;
+  return null;
+}
+
+function toWindFromDeg(row?: { value: number | null; unit: string }): number | null {
+  if (!row || row.value == null) return null;
+  if (row.unit !== "degree") return null;
+  return roundToPrecision(row.value, 0);
+}
+
+function toHectopascals(row?: { value: number | null; unit: string }): number | null {
+  if (!row || row.value == null) return null;
+  if (row.unit === "Pa") return roundToPrecision(row.value / 100, 0);
+  if (row.unit === "hPa") return roundToPrecision(row.value, 0);
   return null;
 }
 

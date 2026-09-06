@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
-import { currentTowardsUv, formatCelsius, roundToPrecision, windFromUv } from "../packages/weather-core/src/units";
+import { currentTowardsUv, formatCelsius, formatHpaFromPa, formatKmhFromMs, formatWindFromDeg, roundToPrecision, windFromUv } from "../packages/weather-core/src/units";
 import { ORIGIN_LABEL_PUBLIC_FR } from "../packages/weather-core/src/origin";
 import { warmerThanPercent, meanOfKnown, describeSameDayLead } from "../packages/weather-core/src/sameDayStats";
 import { scoreConfidence } from "../packages/confidence-engine/src/score";
@@ -54,6 +54,9 @@ import db from "../src/lib/db";
 assert.equal(formatCelsius(24.437), "24.4 °C");
 assert.equal(formatCelsius(null), "non disponible");
 assert.equal(roundToPrecision(24.437, 1), 24.4);
+assert.equal(formatKmhFromMs(1), "3.6 km/h");
+assert.equal(formatHpaFromPa(101325), "1013 hPa");
+assert.equal(formatWindFromDeg(227.4), "227°");
 
 assert.equal(ORIGIN_LABEL_PUBLIC_FR.OBSERVED, "Mesure officielle");
 assert.equal(ORIGIN_LABEL_PUBLIC_FR.REANALYSIS, "Estimation climatique");
@@ -67,9 +70,12 @@ const grenoblePointExtract = JSON.parse(
 ) as {
   method_version: string;
   hourly_tp_m: number[];
+  hourly_10u_ms: number[];
+  hourly_10v_ms: number[];
+  hourly_msl_Pa: number[];
   points: { variable_id: string; value: number; unit: string }[];
 };
-assert.equal(grenoblePointExtract.method_version, "era5-point-nearest-hourly-2t-d2m-tp-v1");
+assert.equal(grenoblePointExtract.method_version, "era5-point-nearest-hourly-2t-d2m-tp-uv10-msl-v1");
 assert.equal(grenoblePointExtract.hourly_tp_m.length, 24);
 assert.equal(grenoblePointExtract.hourly_tp_m.every((v) => v >= 0), true);
 const tpSum = grenoblePointExtract.hourly_tp_m.reduce((a, b) => a + b, 0);
@@ -83,6 +89,26 @@ assert.equal(
   "ARCO TP is hourly accumulation, not a monotonic CDS step cumulative"
 );
 assert.equal(Math.round(tpPoint.value * 1000 * 10) / 10, 0.3);
+assert.equal(grenoblePointExtract.hourly_10u_ms.length, 24);
+assert.equal(grenoblePointExtract.hourly_10v_ms.length, 24);
+assert.equal(grenoblePointExtract.hourly_msl_Pa.length, 24);
+const hourlySpeeds = grenoblePointExtract.hourly_10u_ms.map((u, i) => Math.hypot(u, grenoblePointExtract.hourly_10v_ms[i]));
+const windPoint = grenoblePointExtract.points.find((p) => p.variable_id === "wind_speed");
+assert.ok(windPoint);
+assert.equal(windPoint.unit, "m s-1");
+assert.ok(Math.abs(windPoint.value - hourlySpeeds.reduce((a, b) => a + b, 0) / hourlySpeeds.length) < 1e-12);
+const meanU = grenoblePointExtract.hourly_10u_ms.reduce((a, b) => a + b, 0) / 24;
+const meanV = grenoblePointExtract.hourly_10v_ms.reduce((a, b) => a + b, 0) / 24;
+const vectorMean = windFromUv(meanU, meanV);
+const dirPoint = grenoblePointExtract.points.find((p) => p.variable_id === "wind_direction");
+assert.ok(dirPoint, "vector-mean wind is not calm: direction must not be invented nor omitted if speed is real");
+assert.equal(dirPoint.unit, "degree");
+assert.ok(Math.abs(dirPoint.value - vectorMean.fromDeg) < 1e-9);
+const mslPoint = grenoblePointExtract.points.find((p) => p.variable_id === "sea_level_pressure");
+assert.ok(mslPoint);
+assert.equal(mslPoint.unit, "Pa");
+const mslMean = grenoblePointExtract.hourly_msl_Pa.reduce((a, b) => a + b, 0) / 24;
+assert.ok(Math.abs(mslPoint.value - mslMean) < 1e-9);
 
 const franceDaily = JSON.parse(
   fs.readFileSync(path.join(process.cwd(), "pipelines/era5/extracts/france-1983-05-12-2t-daily.json"), "utf8")
@@ -409,6 +435,8 @@ assert.equal(grenobleLdText.includes("REANALYSIS"), false);
 assert.equal(grenobleLdText.includes("6.9"), false);
 assert.equal(grenobleLdText.includes("dew"), false);
 assert.equal(grenobleLdText.includes("0.3"), false, "ERA5 precip must not enter JSON-LD");
+assert.equal(grenobleLdText.includes("km/h"), false, "ERA5 wind must not enter JSON-LD");
+assert.equal(grenobleLdText.includes("hPa"), false, "ERA5 MSL must not enter JSON-LD");
 const era5Rejected = JSON.stringify(
   communeJsonLd({
     place: {
@@ -800,9 +828,14 @@ if (obsCount === 0) {
   assert.notEqual(grenoble.era5.precipMm, grenoble.observation.precipitationMm, "ERA5 rain is not a copy of CORENC");
   assert.equal(grenoble.era5.precipDelta, 0.2);
   assert.equal(grenoble.era5.method, "nearest");
-  assert.equal(grenoble.era5.methodVersion, "era5-point-nearest-hourly-2t-d2m-tp-v1");
+  assert.equal(grenoble.era5.methodVersion, "era5-point-nearest-hourly-2t-d2m-tp-uv10-msl-v1");
+  assert.equal(grenoble.era5.windSpeedDisplay, formatKmhFromMs(grenoble.era5.windSpeedMs));
+  assert.ok(grenoble.era5.windSpeedMs != null && grenoble.era5.windSpeedMs > 0);
+  assert.ok(grenoble.era5.windFromDeg != null && grenoble.era5.windFromDeg >= 0 && grenoble.era5.windFromDeg <= 360);
+  assert.equal(grenoble.era5.mslDisplay, formatHpaFromPa(mslPoint.value));
+  assert.ok(grenoble.era5.mslHpa != null && grenoble.era5.mslHpa >= 800 && grenoble.era5.mslHpa <= 1100);
   const era5Rows = (db.prepare(`SELECT COUNT(*) AS c FROM point_extractions`).get() as { c: number }).c;
-  assert.equal(era5Rows, 7, "2t min/max/mean + dewpoint min/max/mean + precipitation sum, no invented rows");
+  assert.equal(era5Rows, 10, "2t + dewpoint + precip + wind speed/dir + MSL, no invented rows");
   const precipRow = db.prepare(
     `SELECT unit, value FROM point_extractions WHERE variable_id = 'precipitation'`
   ).get() as { unit: string; value: number };

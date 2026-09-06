@@ -11,7 +11,7 @@ Nom de travail. Les fournisseurs (Météo-France, Copernicus, NOAA, ECMWF, IGN) 
 **Priorité :** utilité → simplicité → fiabilité → rapidité → beauté → complexité technique.  
 Les cases `[x]` = livré **et** vérifié (preuve). Un fichier vide ne compte pas.
 
-Dernière mise à jour : 2026-09-07 (ERA5 pluie Grenoble + quotidien France 2t un jour). Tableau : [STATUS.md](./STATUS.md).
+Dernière mise à jour : 2026-09-07 (ERA5 vent 10 m + MSL Grenoble). Tableau : [STATUS.md](./STATUS.md).
 
 ---
 
@@ -44,7 +44,8 @@ Dernière mise à jour : 2026-09-07 (ERA5 pluie Grenoble + quotidien France 2t u
 25. [x] Phase R12 suite — HTML sans saisons ni chaleur (56 Ko) ; `detailRows` ; héros IGN q=60 ; LCP lab 2535 ms
 26. [x] Phase R9 suite — point de rosée ERA5 Grenoble 1983-05-12 (2,0 / 6,9 °C) ; bbox France ; 2t inchangé
 27. [x] Phase R9 suite — pluie ERA5 Grenoble 1983-05-12 (0,3 mm, pas fusionnée) ; quotidien 2t bbox France un jour (2709 mailles, pas SQL)
-28. Ne **pas** extraire ERA5 mondial. Ne **pas** activer océan / NOAA / API commerciale. Ne **pas** feindre Vercel/Supabase. Ne **pas** extraire massivement les tuiles IGN.
+28. [x] Phase R9 suite — vent 10 m ERA5 Grenoble 1983-05-12 (8,8 km/h, 169°, dérivé u/v) et MSL 1005 hPa ; pas une mesure
+29. Ne **pas** extraire ERA5 mondial. Ne **pas** activer océan / NOAA / API commerciale. Ne **pas** feindre Vercel/Supabase. Ne **pas** extraire massivement les tuiles IGN.
 
 Héritage déjà vérifié (ne pas recommencer) : licences Phase 0, import Isère 1 208 439 obs, Grenoble 1983-05-12 (CORENC, 6,6 / 21,6 °C), matching station v1, carte IGN, provenance. Runtime encore SQLite. Cible prod : [ARCHITECTURE_PRODUCTION.md](./ARCHITECTURE_PRODUCTION.md).
 
@@ -175,7 +176,7 @@ Reste : France entière (autres départements) en R10. Isère : 512 communes imp
 - [ ] subset France (pas mondial)
 - [ ] variables essentielles au-delà de 2t min/max/mean sur un jour
 
-**État :** point Grenoble 1983-05-12 : 2t + point de rosée + pluie (somme 24 h UTC, 0,3 mm, pas fusionnée). Quotidien 2t bbox France **un jour** (2709 mailles JSON, maille Grenoble = même Kelvin). Pas 1940–2026, pas d’import SQL de la grille, pas ERA5-Land, pas vent/pression. **Ne pas inventer.**
+**État :** point Grenoble 1983-05-12 : 2t + rosée + pluie + vent 10 m (moyenne hypot u/v, 8,8 km/h, 169°) + MSL (1005 hPa). Quotidien 2t bbox France **un jour** (2709 mailles JSON). Pas 1940–2026, pas d’import SQL de la grille, pas ERA5-Land, pas SP/neige/SSRD/rafale. **Ne pas inventer.**
 
 ---
 

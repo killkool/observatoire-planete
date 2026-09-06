@@ -50,13 +50,25 @@ for (const p of payload.points) {
     if (p.unit !== "m") {
       throw new Error(`Précipitation ERA5 attendue en mètres (canonique), pas ${p.unit}`);
     }
+  } else if (p.variable_id === "wind_speed") {
+    if (p.unit !== "m s-1") {
+      throw new Error(`Vent ERA5 attendu en m s-1 (canonique), pas ${p.unit}`);
+    }
+  } else if (p.variable_id === "wind_direction") {
+    if (p.unit !== "degree") {
+      throw new Error(`Direction ERA5 attendue en degree, pas ${p.unit}`);
+    }
+  } else if (p.variable_id === "sea_level_pressure" || p.variable_id === "pressure") {
+    if (p.unit !== "Pa") {
+      throw new Error(`Pression ERA5 attendue en Pa (canonique), pas ${p.unit}`);
+    }
   } else if (p.unit !== "K" && p.unit !== "degC" && p.unit !== "Celsius") {
     throw new Error(`Unité inattendue ${p.unit} pour ${p.variable_id}`);
   }
 }
 
 const dates = [...new Set(payload.points.map((p) => p.date))];
-const methodVersion = payload.method_version || "era5-point-nearest-hourly-2t-d2m-tp-v1";
+const methodVersion = payload.method_version || "era5-point-nearest-hourly-2t-d2m-tp-uv10-msl-v1";
 const lineageId = randomUUID();
 
 db.prepare(`

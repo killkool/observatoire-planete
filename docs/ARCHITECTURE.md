@@ -19,7 +19,7 @@ Détail produit : [V1_FRANCE_REFOCUS.md](./V1_FRANCE_REFOCUS.md). Audit : [V1_FR
 | MapLibre + tuiles IGN page lieu | MapLibre + **PMTiles** (cible) ; IGN conservé pour le lieu |
 | Matching station v1 + une obs préférée | Mapping commune↔station (jour) + station climatique (série) |
 | Accueil « planète » | Recherche commune France, storytelling |
-| ERA5 point Grenoble (1 jour, comparaison sans fusion) + quotidien 2t France un jour (JSON) | R9 remainder : archive quotidienne 1940–2026, vent/pression, pas mondial |
+| ERA5 point Grenoble (1 jour, comparaison sans fusion) + quotidien 2t France un jour (JSON) | R9 remainder : archive quotidienne 1940–2026, SP/neige/SSRD, pas mondial |
 | Schéma `packages/database/schema/` Postgres | Garder les noms **génériques** ; n’implémenter que les tables utiles |
 
 Le prototype `/dashboard` **reste utilisable** pour l’import local. Il ne dicte pas le produit.

@@ -38,6 +38,23 @@ export function formatMm(valueMm: number | null | undefined): string {
   return n == null ? "non disponible" : `${n.toFixed(1)} mm`;
 }
 
+export function formatKmhFromMs(valueMs: number | null | undefined): string {
+  if (valueMs == null || !Number.isFinite(valueMs)) return "non disponible";
+  const n = roundToPrecision(valueMs * 3.6, DISPLAY_PRECISION.wind_speed);
+  return n == null ? "non disponible" : `${n.toFixed(1)} km/h`;
+}
+
+export function formatHpaFromPa(valuePa: number | null | undefined): string {
+  if (valuePa == null || !Number.isFinite(valuePa)) return "non disponible";
+  const n = roundToPrecision(valuePa / 100, DISPLAY_PRECISION.sea_level_pressure);
+  return n == null ? "non disponible" : `${n.toFixed(0)} hPa`;
+}
+
+export function formatWindFromDeg(deg: number | null | undefined): string {
+  const n = roundToPrecision(deg, 0);
+  return n == null ? "non disponible" : `${n}°`;
+}
+
 export function kelvinToCelsius(k: number): number {
   return k - 273.15;
 }

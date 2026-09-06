@@ -27,3 +27,7 @@ Document method (`nearest` default unless an ADR says otherwise). Store model al
 Assimilated observations → not an independent confirmation of a nearby station.
 
 On the ARCO `ar/full` mirror, `total_precipitation` is hourly accumulation in metres (not a CDS forecast-step cumulative). Daily total = sum of 24 UTC steps. Model hourly 0 is a zero, not NULL. Display mm = × 1000.
+
+10 m wind: store hourly u/v; daily `wind_speed` = mean of hypot(u,v); `wind_direction` = meteorological FROM, vector mean of u/v (not mean of angles). Calm vector mean (< 0.05 m/s): omit direction, do not invent. Display km/h = × 3.6. Not a gust, not an anemometer.
+
+MSL: mean of 24 UTC hours in Pa, display hPa. Not station pressure, not surface pressure at Grenoble.

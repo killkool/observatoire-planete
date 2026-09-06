@@ -2,6 +2,13 @@
 
 Journal des sources, versions et recalculs. Pas de remplacement silencieux d’un dataset.
 
+## 2026-09-07 (ERA5 vent 10 m + MSL Grenoble)
+
+- Même maille ARCO 45,25°N, 5,75°E, 1983-05-12, 24 h UTC. 2t / rosée / TP inchangés (3,4 / 14,2 °C ; 2,0 / 6,9 °C ; 0,3 mm).
+- `10m_u_component_of_wind` / `10m_v_component_of_wind` : m s⁻¹. Vitesse quotidienne = moyenne des hypot(u,v) horaires **2,4516 m/s** → **8,8 km/h**. Direction d’où vient le vent = moyenne vectorielle **169,3°** → **169°**. Pas une rafale, pas un anémomètre. Pas fusionné (le quotidien Météo-France importé n’a pas de vent).
+- `mean_sea_level_pressure` : moyenne 24 h UTC **100523,66 Pa** → **1005 hPa**. Pas la pression au sol de Grenoble. Pas de `surface_pressure`.
+- Fichier point SHA-256 `63cb522f6e9a5c2e18b07e70d52d4c96eb9170a19ccbec1b3c6bfb6e66d4331f`. `method_version=era5-point-nearest-hourly-2t-d2m-tp-uv10-msl-v1`. Import : **10** lignes `point_extractions`. Quotidien France 2t JSON inchangé (pas réécrit).
+
 ## 2026-09-07 (ERA5 pluie Grenoble + quotidien France 2t un jour)
 
 - Même maille ARCO 45,25°N, 5,75°E, 1983-05-12, 24 h UTC. `2m_temperature` inchangé : Tmin **276,5640 K** (3,4 °C), Tmax **287,3429 K** (14,2 °C). Point de rosée inchangé : **275,1994 / 280,0102 K**.

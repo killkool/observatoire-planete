@@ -6,6 +6,7 @@ import argparse
 import hashlib
 import json
 import os
+import math
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -15,7 +16,7 @@ import xarray as xr
 ARCO_ZARR = "gs://gcp-public-data-arco-era5/ar/full_37-1h-0p25deg-chunk-1.zarr-v3"
 SOURCE_ID = "copernicus.c3s.era5.single-levels-hourly"
 METHOD = "nearest"
-METHOD_VERSION = "era5-point-nearest-hourly-2t-d2m-tp-v1"
+METHOD_VERSION = "era5-point-nearest-hourly-2t-d2m-tp-uv10-msl-v1"
 FRANCE_DAILY_METHOD = "bbox_daily_minmax"
 FRANCE_DAILY_METHOD_VERSION = "era5-france-daily-2t-minmax-v1"
 DOI = "10.24381/cds.adbb2d47"
@@ -25,6 +26,10 @@ FRANCE_LON = (-5.5, 10.0)
 T2M_NAMES = ("2m_temperature", "t2m", "2t")
 D2M_NAMES = ("2m_dewpoint_temperature", "2m_dewpoint", "d2m", "2d")
 TP_NAMES = ("total_precipitation", "tp")
+U10_NAMES = ("10m_u_component_of_wind",)
+V10_NAMES = ("10m_v_component_of_wind",)
+MSL_NAMES = ("mean_sea_level_pressure", "msl")
+CALM_MS = 0.05
 # Preuve déjà extraite (même miroir, même jour, maille 45,25 / 5,75). Échec si ARCO diverge.
 GRENOBLE_GRID = (45.25, 5.75)
 GRENOBLE_TMIN_K = 276.5640
@@ -127,6 +132,40 @@ def daily_precip_point(date: str, hours_m: list[float]) -> dict:
     # ARCO ar/full : accumulation horaire (m), série non monotone. Pas last−first (cumul de step CDS).
     # Un 0 horaire est un zéro du modèle, pas un NULL.
     return {"date": date, "variable_id": "precipitation", "value": float(sum(hours_m)), "unit": "m"}
+
+
+def wind_from_uv(u: float, v: float) -> tuple[float, float]:
+    """Même convention que packages/weather-core : direction d'où vient le vent."""
+    speed = math.hypot(u, v)
+    to_deg = math.degrees(math.atan2(u, v))
+    from_deg = (to_deg + 180.0 + 360.0) % 360.0
+    return speed, from_deg
+
+
+def daily_wind_points(date: str, hours_u: list[float], hours_v: list[float]) -> list[dict]:
+    if len(hours_u) != len(hours_v):
+        raise SystemExit("u10 et v10 : nombre d'heures différent.")
+    speeds = [math.hypot(u, v) for u, v in zip(hours_u, hours_v)]
+    mean_speed = sum(speeds) / len(speeds)
+    points = [{"date": date, "variable_id": "wind_speed", "value": mean_speed, "unit": "m s-1"}]
+    mean_u = sum(hours_u) / len(hours_u)
+    mean_v = sum(hours_v) / len(hours_v)
+    vec_speed, from_deg = wind_from_uv(mean_u, mean_v)
+    if vec_speed < CALM_MS:
+        return points
+    points.append({"date": date, "variable_id": "wind_direction", "value": from_deg, "unit": "degree"})
+    return points
+
+
+def daily_msl_point(date: str, hours_pa: list[float]) -> dict:
+    if any(v < 80000 or v > 110000 for v in hours_pa):
+        raise SystemExit("mean_sea_level_pressure hors plage : extraction refusée.")
+    return {
+        "date": date,
+        "variable_id": "sea_level_pressure",
+        "value": sum(hours_pa) / len(hours_pa),
+        "unit": "Pa",
+    }
 
 
 def france_daily_2t(day_2t: xr.DataArray, date: str, hours_2t: list[float], grid_lat: float, grid_lon: float) -> dict:
@@ -253,17 +292,36 @@ def main() -> None:
     t2m = pick_var(ds, T2M_NAMES, "2m_temperature")
     d2m = pick_var(ds, D2M_NAMES, "2m_dewpoint_temperature")
     tp = pick_var(ds, TP_NAMES, "total_precipitation")
+    u10 = pick_var(ds, U10_NAMES, "10m_u_component_of_wind")
+    v10 = pick_var(ds, V10_NAMES, "10m_v_component_of_wind")
+    msl = pick_var(ds, MSL_NAMES, "mean_sea_level_pressure")
 
     day_2t = load_day(t2m, args.date, "2t")
     hours_2t, times, grid_lat, grid_lon = point_from_day(day_2t, args.lat, args.lon, "2t")
     hours_d2m, times_d2m, grid_lat_d, grid_lon_d = load_day_point(d2m, args.lat, args.lon, args.date, "d2m")
     hours_tp, times_tp, grid_lat_p, grid_lon_p = load_day_point(tp, args.lat, args.lon, args.date, "tp")
-    if (grid_lat, grid_lon) != (grid_lat_d, grid_lon_d) or (grid_lat, grid_lon) != (grid_lat_p, grid_lon_p):
-        raise SystemExit(f"Maille 2t {grid_lat},{grid_lon} ≠ d2m {grid_lat_d},{grid_lon_d} ≠ tp {grid_lat_p},{grid_lon_p}")
-    if times != times_d2m or times != times_tp:
-        raise SystemExit("Heures UTC 2t / d2m / tp différentes : pas de mélange.")
+    hours_u, times_u, grid_lat_u, grid_lon_u = load_day_point(u10, args.lat, args.lon, args.date, "10u")
+    hours_v, times_v, grid_lat_v, grid_lon_v = load_day_point(v10, args.lat, args.lon, args.date, "10v")
+    hours_msl, times_msl, grid_lat_m, grid_lon_m = load_day_point(msl, args.lat, args.lon, args.date, "msl")
+    grids = {
+        "d2m": (grid_lat_d, grid_lon_d),
+        "tp": (grid_lat_p, grid_lon_p),
+        "10u": (grid_lat_u, grid_lon_u),
+        "10v": (grid_lat_v, grid_lon_v),
+        "msl": (grid_lat_m, grid_lon_m),
+    }
+    for label, grid in grids.items():
+        if grid != (grid_lat, grid_lon):
+            raise SystemExit(f"Maille 2t {grid_lat},{grid_lon} ≠ {label} {grid[0]},{grid[1]}")
+    for label, series_times in (("d2m", times_d2m), ("tp", times_tp), ("10u", times_u), ("10v", times_v), ("msl", times_msl)):
+        if series_times != times:
+            raise SystemExit(f"Heures UTC 2t / {label} différentes : pas de mélange.")
+    if round(min(hours_2t), 4) != GRENOBLE_TMIN_K or round(max(hours_2t), 4) != GRENOBLE_TMAX_K:
+        raise SystemExit("2t Grenoble a divergé de la preuve 276.5640 / 287.3429 K.")
 
     precip = daily_precip_point(args.date, hours_tp)
+    wind_points = daily_wind_points(args.date, hours_u, hours_v)
+    msl_point = daily_msl_point(args.date, hours_msl)
     dataset_version = dataset_version_for(ds, args.date)
 
     payload = {
@@ -278,7 +336,9 @@ def main() -> None:
             "note": (
                 "Copie analysis-ready du jeu ERA5 C3S (même DOI). Pas une autre réanalyse. "
                 "total_precipitation ARCO = mètres par pas horaire (non monotone) ; "
-                "cumul journalier UTC = somme des 24 pas, pas last−first."
+                "cumul journalier UTC = somme des 24 pas, pas last−first. "
+                "Vent 10 m = hypot(u,v) horaire puis moyenne ; direction = d'où vient le vent, "
+                "moyenne vectorielle u/v (pas moyenne des angles). MSL = moyenne 24 h UTC en Pa."
             ),
         },
         "latitude": args.lat,
@@ -291,10 +351,15 @@ def main() -> None:
         "hourly_2t_K": [round(v, 4) for v in hours_2t],
         "hourly_d2m_K": [round(v, 4) for v in hours_d2m],
         "hourly_tp_m": [float(v) for v in hours_tp],
+        "hourly_10u_ms": [float(v) for v in hours_u],
+        "hourly_10v_ms": [float(v) for v in hours_v],
+        "hourly_msl_Pa": [float(v) for v in hours_msl],
         "extracted_at": datetime.now(timezone.utc).isoformat(),
         "points": daily_points(args.date, hours_2t, "air_temperature_min", "air_temperature_max", "air_temperature")
         + daily_points(args.date, hours_d2m, "dew_point_min", "dew_point_max", "dew_point")
-        + [precip],
+        + [precip]
+        + wind_points
+        + [msl_point],
     }
 
     checksum = write_json(out_path, payload)
@@ -305,6 +370,12 @@ def main() -> None:
     print(f"grid nearest {grid_lat},{grid_lon} hours={len(hours_2t)} tmin_K={tmin_k:.4f} tmax_K={tmax_k:.4f}", flush=True)
     print(f"d2m min_K={dmin_k:.4f} max_K={dmax_k:.4f}", flush=True)
     print(f"tp_sum_m={precip['value']:.10f} tp_mm={tp_mm:.4f}", flush=True)
+    wind_speed = next(p["value"] for p in wind_points if p["variable_id"] == "wind_speed")
+    print(f"wind_speed_ms={wind_speed:.4f} wind_speed_kmh={wind_speed * 3.6:.1f}", flush=True)
+    wind_dir = next((p["value"] for p in wind_points if p["variable_id"] == "wind_direction"), None)
+    if wind_dir is not None:
+        print(f"wind_from_deg={wind_dir:.1f}", flush=True)
+    print(f"msl_mean_Pa={msl_point['value']:.2f} msl_hPa={msl_point['value'] / 100:.0f}", flush=True)
     print(f"sha256 {checksum}", flush=True)
 
     if not args.skip_france_daily:

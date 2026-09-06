@@ -2,12 +2,12 @@
   "source_id": "copernicus.c3s.era5.single-levels-hourly",
   "dataset_version": "ERA5",
   "method": "nearest",
-  "method_version": "era5-point-nearest-hourly-2t-d2m-tp-v1",
+  "method_version": "era5-point-nearest-hourly-2t-d2m-tp-uv10-msl-v1",
   "doi": "10.24381/cds.adbb2d47",
   "access": {
     "kind": "arco-era5-public-zarr",
     "uri": "gs://gcp-public-data-arco-era5/ar/full_37-1h-0p25deg-chunk-1.zarr-v3",
-    "note": "Copie analysis-ready du jeu ERA5 C3S (même DOI). Pas une autre réanalyse. total_precipitation ARCO = mètres par pas horaire (non monotone) ; cumul journalier UTC = somme des 24 pas, pas last−first."
+    "note": "Copie analysis-ready du jeu ERA5 C3S (même DOI). Pas une autre réanalyse. total_precipitation ARCO = mètres par pas horaire (non monotone) ; cumul journalier UTC = somme des 24 pas, pas last−first. Vent 10 m = hypot(u,v) horaire puis moyenne ; direction = d'où vient le vent, moyenne vectorielle u/v (pas moyenne des angles). MSL = moyenne 24 h UTC en Pa."
   },
   "latitude": 45.1885,
   "longitude": 5.7245,
@@ -119,7 +119,85 @@
     0.0,
     0.0
   ],
-  "extracted_at": "2026-09-06T22:51:33.731105+00:00",
+  "hourly_10u_ms": [
+    -1.363495945930481,
+    -1.0305100679397583,
+    -1.2574182748794556,
+    -1.4428788423538208,
+    -1.4288285970687866,
+    -1.6676794290542603,
+    -1.6451994180679321,
+    -1.04104745388031,
+    -0.5240058898925781,
+    -0.29850268363952637,
+    -0.6392161846160889,
+    -0.34346282482147217,
+    0.04150843620300293,
+    0.5522274971008301,
+    0.06469100713729858,
+    -0.1889122724533081,
+    -0.18258976936340332,
+    0.1876288652420044,
+    0.3646594285964966,
+    0.466522216796875,
+    0.7868632674217224,
+    0.5887576341629028,
+    0.04572343826293945,
+    -0.14324963092803955
+  ],
+  "hourly_10v_ms": [
+    1.2117875814437866,
+    0.8505624532699585,
+    1.0858558416366577,
+    1.2369738817214966,
+    1.2754161357879639,
+    1.553128719329834,
+    1.7791428565979004,
+    1.5836174488067627,
+    1.7055723667144775,
+    2.2570204734802246,
+    3.016587495803833,
+    3.589245319366455,
+    4.043924808502197,
+    4.8942952156066895,
+    4.232159614562988,
+    3.177647590637207,
+    3.222054958343506,
+    2.733572483062744,
+    2.2550320625305176,
+    1.6817115545272827,
+    1.8507251739501953,
+    1.640618085861206,
+    1.5703613758087158,
+    1.1368913650512695
+  ],
+  "hourly_msl_Pa": [
+    100581.171875,
+    100532.9296875,
+    100492.0859375,
+    100446.0,
+    100399.9140625,
+    100365.390625,
+    100391.75,
+    100388.9765625,
+    100432.8984375,
+    100423.9609375,
+    100385.734375,
+    100395.4453125,
+    100416.5625,
+    100445.3828125,
+    100446.7734375,
+    100464.1875,
+    100471.4296875,
+    100480.21875,
+    100546.8046875,
+    100635.578125,
+    100766.59375,
+    100856.296875,
+    100868.78125,
+    100932.8984375
+  ],
+  "extracted_at": "2026-09-06T23:04:27.742434+00:00",
   "points": [
     {
       "date": "1983-05-12",
@@ -162,6 +240,24 @@
       "variable_id": "precipitation",
       "value": 0.00032344087958335876,
       "unit": "m"
+    },
+    {
+      "date": "1983-05-12",
+      "variable_id": "wind_speed",
+      "value": 2.4515890810373224,
+      "unit": "m s-1"
+    },
+    {
+      "date": "1983-05-12",
+      "variable_id": "wind_direction",
+      "value": 169.32722553902204,
+      "unit": "degree"
+    },
+    {
+      "date": "1983-05-12",
+      "variable_id": "sea_level_pressure",
+      "value": 100523.65690104167,
+      "unit": "Pa"
     }
   ]
 }
