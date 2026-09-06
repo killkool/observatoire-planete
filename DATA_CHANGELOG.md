@@ -2,6 +2,13 @@
 
 Journal des sources, versions et recalculs. Pas de remplacement silencieux d’un dataset.
 
+## 2026-09-07 (ERA5 quotidien 2t France, 3 jours)
+
+- Même bbox V1, 2t min/max UTC, 2709 mailles, JSON hors SQL. Preuve **1983-05-12** inchangée (SHA-256 `9c7b9a9836b23b1252d09b3c410f96cbe5ccd61558b59c92f19b8f3fbfb1cbe2`, maille Grenoble 276,5640 / 287,3429 K).
+- **1983-05-11** : maille Grenoble **277,4869 / 283,7463 K** (4,3 / 10,6 °C). SHA-256 `fb4e4401d689e09a9647079471edff3942330f1a4ec058171b183da02310cf08`.
+- **1983-05-13** : maille Grenoble **279,6589 / 286,5999 K** (6,5 / 13,4 °C). SHA-256 `bdeda4278a6acfcfd864c0e2cc45b8c5fa45c7848f071b7093b3e296b548f7c6`.
+- Index `pipelines/era5/extracts/france-2t-daily-index.json`. `imported_to_sql=false`, `archive_1940_2026=false`. Max 7 jours par run. Pas d’ERA5 mondial. Point Grenoble 14 lignes inchangé.
+
 ## 2026-09-07 (ERA5 SP / neige / SSRD / rafale Grenoble)
 
 - Même maille ARCO 45,25°N, 5,75°E, 1983-05-12, 24 h UTC. 2t / rosée / TP / vent 10 m / MSL inchangés (3,4 / 14,2 °C ; 2,0 / 6,9 °C ; 0,3 mm ; 8,8 km/h, 169° ; 1005 hPa).

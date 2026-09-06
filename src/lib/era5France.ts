@@ -1,4 +1,4 @@
-/** Bbox V1 documentée (~41–51°N, 5°W–10°E) + petit buffer. Un jour 2t quotidien peut exister en JSON ; pas un dump SQL mondial. */
+/** Bbox V1 documentée (~41–51°N, 5°W–10°E) + petit buffer. Quelques jours 2t quotidiens peuvent exister en JSON ; pas un dump SQL mondial. */
 export const ERA5_FRANCE_LAT = { min: 41, max: 51.5 };
 export const ERA5_FRANCE_LON = { min: -5.5, max: 10 };
 
@@ -20,3 +20,7 @@ export function assertFranceEra5Point(lat: number, lon: number): void {
     );
   }
 }
+
+/** Jours 2t quotidiens bbox France extraits en JSON. Pas l’archive 1940–2026, pas un import SQL. */
+export const ERA5_FRANCE_DAILY_2T_DATES = ["1983-05-11", "1983-05-12", "1983-05-13"] as const;
+export const ERA5_FRANCE_DAILY_2T_CELLS = 2709;

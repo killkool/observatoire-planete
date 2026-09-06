@@ -16,6 +16,8 @@ UI label: **Réanalyse ERA5**. Never “observation” or “station”.
 
 Never dump global hourly grids into SQL. Use point timeseries, regional daily cache, or on-demand Zarr/GRIB.
 
+France daily 2t (bbox V1, min/max UTC) is JSON, not SQL. Max **7** days per extract run — not the 1940–2026 archive. Chunks ARCO remain 1 h × globe; only France cells are stored.
+
 ## Extraction
 
 Document method (`nearest` default unless an ADR says otherwise). Store model altitude vs user altitude. Optional lapse-rate correction = `DERIVED`.

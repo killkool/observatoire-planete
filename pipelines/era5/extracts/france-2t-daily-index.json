@@ -1,0 +1,43 @@
+{
+  "source_id": "copernicus.c3s.era5.single-levels-hourly",
+  "method": "bbox_daily_minmax",
+  "method_version": "era5-france-daily-2t-minmax-v1",
+  "variable": "2m_temperature",
+  "aggregation": "daily_minmax_utc",
+  "cell_count": 2709,
+  "bbox": {
+    "lat_min": 41.0,
+    "lat_max": 51.5,
+    "lon_min": -5.5,
+    "lon_max": 10.0
+  },
+  "imported_to_sql": false,
+  "archive_1940_2026": false,
+  "days": [
+    {
+      "date": "1983-05-11",
+      "file": "france-1983-05-11-2t-daily.json",
+      "sha256": "fb4e4401d689e09a9647079471edff3942330f1a4ec058171b183da02310cf08",
+      "grenoble_tmin_K": 277.4869384765625,
+      "grenoble_tmax_K": 283.746337890625,
+      "cell_count": 2709
+    },
+    {
+      "date": "1983-05-12",
+      "file": "france-1983-05-12-2t-daily.json",
+      "sha256": "9c7b9a9836b23b1252d09b3c410f96cbe5ccd61558b59c92f19b8f3fbfb1cbe2",
+      "grenoble_tmin_K": 276.56402587890625,
+      "grenoble_tmax_K": 287.3428955078125,
+      "cell_count": 2709
+    },
+    {
+      "date": "1983-05-13",
+      "file": "france-1983-05-13-2t-daily.json",
+      "sha256": "bdeda4278a6acfcfd864c0e2cc45b8c5fa45c7848f071b7093b3e296b548f7c6",
+      "grenoble_tmin_K": 279.65887451171875,
+      "grenoble_tmax_K": 286.599853515625,
+      "cell_count": 2709
+    }
+  ],
+  "updated_at": "2026-09-06T23:33:10.410541+00:00"
+}

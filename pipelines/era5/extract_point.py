@@ -1,4 +1,4 @@
-"""Extract one ERA5 grid cell for one UTC day. France bbox only. No invented values."""
+"""Extract ERA5 at one France point, or a few daily 2t France-bbox days. No invented values."""
 
 from __future__ import annotations
 
@@ -41,6 +41,12 @@ GRENOBLE_GRID = (45.25, 5.75)
 GRENOBLE_TMIN_K = 276.5640
 GRENOBLE_TMAX_K = 287.3429
 EXPECTED_FRANCE_CELLS = 43 * 63  # 0,25° sur la bbox V1 inclusive
+EXTRACTS_DIR = Path(__file__).resolve().parent / "extracts"
+GOLDEN_POINT_DATE = "1983-05-12"
+GOLDEN_POINT_FILE = "grenoble-1983-05-12.json"
+GOLDEN_FRANCE_FILE = "france-1983-05-12-2t-daily.json"
+MAX_FRANCE_DAILY_DATES = 7
+T2M_PLAUSIBLE_K = (220.0, 330.0)
 
 
 def sha256_file(path: Path) -> str:
@@ -260,11 +266,16 @@ def france_daily_2t(day_2t: xr.DataArray, date: str, hours_2t: list[float], grid
         raise SystemExit("Maille Grenoble 45,25 / 5,75 absente du subset France.")
     g_tmin = float(tmin[int(gi[0]), int(gj[0])])
     g_tmax = float(tmax[int(gi[0]), int(gj[0])])
-    if round(g_tmin, 4) != GRENOBLE_TMIN_K or round(g_tmax, 4) != GRENOBLE_TMAX_K:
-        raise SystemExit(
-            f"Subset France maille Grenoble {g_tmin:.4f}/{g_tmax:.4f} K ≠ preuve "
-            f"{GRENOBLE_TMIN_K}/{GRENOBLE_TMAX_K} K."
-        )
+    if not (T2M_PLAUSIBLE_K[0] <= g_tmin <= T2M_PLAUSIBLE_K[1] and T2M_PLAUSIBLE_K[0] <= g_tmax <= T2M_PLAUSIBLE_K[1]):
+        raise SystemExit(f"2t Grenoble hors Kelvin plausibles ({g_tmin}/{g_tmax}) : extraction refusée.")
+    if g_tmax < g_tmin:
+        raise SystemExit("Tmax < Tmin sur la maille Grenoble : extraction refusée.")
+    if date == GOLDEN_POINT_DATE:
+        if round(g_tmin, 4) != GRENOBLE_TMIN_K or round(g_tmax, 4) != GRENOBLE_TMAX_K:
+            raise SystemExit(
+                f"Subset France maille Grenoble {g_tmin:.4f}/{g_tmax:.4f} K ≠ preuve "
+                f"{GRENOBLE_TMIN_K}/{GRENOBLE_TMAX_K} K."
+            )
     if round(g_tmin, 4) != round(min(hours_2t), 4) or round(g_tmax, 4) != round(max(hours_2t), 4):
         raise SystemExit("Subset France ≠ point Grenoble (même 2t chargé) : pas de mélange.")
     if round(grid_lat, 4) != GRENOBLE_GRID[0] or round(grid_lon, 4) != GRENOBLE_GRID[1]:
@@ -323,31 +334,169 @@ def write_json(path: Path, payload: dict) -> str:
     return sha256_file(path)
 
 
+def parse_iso_dates(raw: str) -> list[str]:
+    dates = [part.strip() for part in raw.split(",") if part.strip()]
+    if not dates:
+        raise SystemExit("Aucune date : rien n'est inventé.")
+    seen: set[str] = set()
+    ordered: list[str] = []
+    for date in dates:
+        if len(date) != 10 or date[4] != "-" or date[7] != "-":
+            raise SystemExit(f"Date invalide {date} (attendu YYYY-MM-DD).")
+        try:
+            datetime.strptime(date, "%Y-%m-%d")
+        except ValueError as exc:
+            raise SystemExit(f"Date invalide {date}.") from exc
+        if date in seen:
+            continue
+        seen.add(date)
+        ordered.append(date)
+    if len(ordered) > MAX_FRANCE_DAILY_DATES:
+        raise SystemExit(
+            f"Pas l'archive 1940–2026 : max {MAX_FRANCE_DAILY_DATES} jours par run ({len(ordered)} demandés)."
+        )
+    return ordered
+
+
+def france_daily_path(date: str, explicit: str | None) -> Path:
+    path = Path(explicit) if explicit else EXTRACTS_DIR / f"france-{date}-2t-daily.json"
+    if path.name == GOLDEN_FRANCE_FILE and date != GOLDEN_POINT_DATE:
+        raise SystemExit("Refus d'écraser la preuve quotidienne 1983-05-12.")
+    if date == GOLDEN_POINT_DATE:
+        raise SystemExit("Preuve quotidienne 1983-05-12 non réécrite.")
+    return path
+
+
+def extract_one_france_daily(
+    ds: xr.Dataset,
+    t2m: xr.DataArray,
+    lat: float,
+    lon: float,
+    date: str,
+    out_path: Path,
+) -> dict:
+    day_2t = load_day(t2m, date, "2t")
+    hours_2t, _times, grid_lat, grid_lon = point_from_day(day_2t, lat, lon, "2t")
+    payload = france_daily_2t(day_2t, date, hours_2t, grid_lat, grid_lon)
+    payload["dataset_version"] = dataset_version_for(ds, date)
+    checksum = write_json(out_path, payload)
+    payload["_sha256"] = checksum
+    payload["_path"] = str(out_path)
+    print(f"wrote {out_path}", flush=True)
+    print(
+        f"france_cells={payload['cell_count']} date={date} "
+        f"grenoble_tmin_K={payload['grenoble_cell']['tmin_K']:.4f} "
+        f"grenoble_tmax_K={payload['grenoble_cell']['tmax_K']:.4f}",
+        flush=True,
+    )
+    print(f"france_sha256 {checksum}", flush=True)
+    return payload
+
+
+def write_france_daily_index(extra_days: list[dict]) -> str:
+    golden = EXTRACTS_DIR / GOLDEN_FRANCE_FILE
+    if not golden.is_file():
+        raise SystemExit("Preuve quotidienne 1983-05-12 absente : pas d'index incomplet.")
+    golden_payload = json.loads(golden.read_text(encoding="utf-8"))
+    days = [
+        {
+            "date": GOLDEN_POINT_DATE,
+            "file": GOLDEN_FRANCE_FILE,
+            "sha256": sha256_file(golden),
+            "grenoble_tmin_K": golden_payload["grenoble_cell"]["tmin_K"],
+            "grenoble_tmax_K": golden_payload["grenoble_cell"]["tmax_K"],
+            "cell_count": golden_payload["cell_count"],
+        }
+    ]
+    for payload in extra_days:
+        days.append(
+            {
+                "date": payload["date"],
+                "file": Path(payload["_path"]).name,
+                "sha256": payload["_sha256"],
+                "grenoble_tmin_K": payload["grenoble_cell"]["tmin_K"],
+                "grenoble_tmax_K": payload["grenoble_cell"]["tmax_K"],
+                "cell_count": payload["cell_count"],
+            }
+        )
+    days.sort(key=lambda row: row["date"])
+    index = {
+        "source_id": SOURCE_ID,
+        "method": FRANCE_DAILY_METHOD,
+        "method_version": FRANCE_DAILY_METHOD_VERSION,
+        "variable": "2m_temperature",
+        "aggregation": "daily_minmax_utc",
+        "cell_count": EXPECTED_FRANCE_CELLS,
+        "bbox": {
+            "lat_min": FRANCE_LAT[0],
+            "lat_max": FRANCE_LAT[1],
+            "lon_min": FRANCE_LON[0],
+            "lon_max": FRANCE_LON[1],
+        },
+        "imported_to_sql": False,
+        "archive_1940_2026": False,
+        "days": days,
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+    }
+    checksum = write_json(EXTRACTS_DIR / "france-2t-daily-index.json", index)
+    print(f"wrote {EXTRACTS_DIR / 'france-2t-daily-index.json'} days={len(days)} sha256 {checksum}", flush=True)
+    return checksum
+
+
+def run_france_only(ds: xr.Dataset, lat: float, lon: float, dates: list[str], france_out: str | None) -> None:
+    t2m = pick_var(ds, T2M_NAMES, "2m_temperature")
+    extra: list[dict] = []
+    for date in dates:
+        out_path = france_daily_path(date, france_out if len(dates) == 1 else None)
+        extra.append(extract_one_france_daily(ds, t2m, lat, lon, date, out_path))
+    write_france_daily_index(extra)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--lat", type=float, default=45.1885)
     parser.add_argument("--lon", type=float, default=5.7245)
     parser.add_argument("--date", default="1983-05-12")
     parser.add_argument(
+        "--dates",
+        default="",
+        help="Liste YYYY-MM-DD (france-only). Max 7 jours. N'est pas l'archive 1940–2026.",
+    )
+    parser.add_argument(
         "--out",
-        default=str(Path(__file__).resolve().parent / "extracts" / "grenoble-1983-05-12.json"),
+        default=str(EXTRACTS_DIR / GOLDEN_POINT_FILE),
     )
     parser.add_argument(
         "--france-out",
-        default=str(Path(__file__).resolve().parent / "extracts" / "france-1983-05-12-2t-daily.json"),
+        default="",
+        help="Chemin du JSON quotidien France (un seul --date). Sinon france-{date}-2t-daily.json.",
     )
     parser.add_argument("--skip-france-daily", action="store_true", help="N'écrit pas le quotidien bbox France.")
+    parser.add_argument(
+        "--france-only",
+        action="store_true",
+        help="N'extrait que le quotidien 2t bbox France (pas le point, pas les autres variables).",
+    )
     parser.add_argument("--bbox-only", action="store_true", help="Vérifie la bbox France, n'ouvre pas ARCO.")
     args = parser.parse_args()
     assert_in_france(args.lat, args.lon)
     if args.bbox_only:
         print(f"bbox France ok {args.lat},{args.lon}")
         return
+    if args.dates and not args.france_only:
+        raise SystemExit("--dates exige --france-only (pas un dump point multi-jours).")
 
     out_path = Path(args.out)
-    france_path = Path(args.france_out)
+    if args.date != GOLDEN_POINT_DATE and out_path.name == GOLDEN_POINT_FILE:
+        raise SystemExit("Refus d'écraser la preuve point 1983-05-12.")
 
     ds = open_era5()
+    if args.france_only:
+        dates = parse_iso_dates(args.dates or args.date)
+        run_france_only(ds, args.lat, args.lon, dates, args.france_out or None)
+        ds.close()
+        os._exit(0)
+
     t2m = pick_var(ds, T2M_NAMES, "2m_temperature")
     d2m = pick_var(ds, D2M_NAMES, "2m_dewpoint_temperature")
     tp = pick_var(ds, TP_NAMES, "total_precipitation")
@@ -400,8 +549,9 @@ def main() -> None:
     ):
         if series_times != times:
             raise SystemExit(f"Heures UTC 2t / {label} différentes : pas de mélange.")
-    if round(min(hours_2t), 4) != GRENOBLE_TMIN_K or round(max(hours_2t), 4) != GRENOBLE_TMAX_K:
-        raise SystemExit("2t Grenoble a divergé de la preuve 276.5640 / 287.3429 K.")
+    if args.date == GOLDEN_POINT_DATE:
+        if round(min(hours_2t), 4) != GRENOBLE_TMIN_K or round(max(hours_2t), 4) != GRENOBLE_TMAX_K:
+            raise SystemExit("2t Grenoble a divergé de la preuve 276.5640 / 287.3429 K.")
 
     precip = daily_precip_point(args.date, hours_tp)
     wind_points = daily_wind_points(args.date, hours_u, hours_v)
@@ -482,12 +632,16 @@ def main() -> None:
     print(f"sha256 {checksum}", flush=True)
 
     if not args.skip_france_daily:
-        france_payload = france_daily_2t(day_2t, args.date, hours_2t, grid_lat, grid_lon)
-        france_payload["dataset_version"] = dataset_version
-        france_checksum = write_json(france_path, france_payload)
-        print(f"wrote {france_path}", flush=True)
-        print(f"france_cells={france_payload['cell_count']} grenoble_tmin_K={france_payload['grenoble_cell']['tmin_K']:.4f}", flush=True)
-        print(f"france_sha256 {france_checksum}", flush=True)
+        if args.date == GOLDEN_POINT_DATE:
+            print("preuve quotidienne 1983-05-12 conservée (pas réécrite)", flush=True)
+        else:
+            france_path = Path(args.france_out) if args.france_out else EXTRACTS_DIR / f"france-{args.date}-2t-daily.json"
+            france_payload = france_daily_2t(day_2t, args.date, hours_2t, grid_lat, grid_lon)
+            france_payload["dataset_version"] = dataset_version
+            france_checksum = write_json(france_path, france_payload)
+            print(f"wrote {france_path}", flush=True)
+            print(f"france_cells={france_payload['cell_count']} grenoble_tmin_K={france_payload['grenoble_cell']['tmin_K']:.4f}", flush=True)
+            print(f"france_sha256 {france_checksum}", flush=True)
 
     ds.close()
     os._exit(0)

@@ -7,7 +7,8 @@ import { warmerThanPercent, meanOfKnown, describeSameDayLead } from "../packages
 import { scoreConfidence } from "../packages/confidence-engine/src/score";
 import { stationMatchScore } from "../packages/source-engine/src/stationMatch";
 import { assertCommercialSource } from "../packages/licensing/src/gate";
-import { isInFranceEra5Bbox } from "../src/lib/era5France";
+import { createHash } from "node:crypto";
+import { isInFranceEra5Bbox, ERA5_FRANCE_DAILY_2T_CELLS, ERA5_FRANCE_DAILY_2T_DATES } from "../src/lib/era5France";
 import { communePath } from "../src/lib/placeUrl";
 import { searchPlaces, getPlaceHistory, getPlaceByInsee, getPlaceDayObservation, listPlaces } from "../src/lib/placeHistory";
 import { computeStationStatistics, isMonthComplete, isPrecipComplete, isSeasonComplete, isYearComplete } from "../src/lib/computeStatistics";
@@ -178,6 +179,47 @@ assert.equal(Math.round(franceDaily.grenoble_cell.tmax_K * 10000) / 10000, 287.3
 assert.equal(franceDaily.tmin_K.length, franceDaily.latitude.length);
 assert.equal(franceDaily.tmin_K[0].length, franceDaily.longitude.length);
 assert.ok(!("hourly_2t_K" in franceDaily), "France daily must not store hourly grids");
+assert.equal(
+  createHash("sha256").update(fs.readFileSync(path.join(process.cwd(), "pipelines/era5/extracts/france-1983-05-12-2t-daily.json"))).digest("hex"),
+  "9c7b9a9836b23b1252d09b3c410f96cbe5ccd61558b59c92f19b8f3fbfb1cbe2",
+  "1983-05-12 France daily proof must not be rewritten"
+);
+const franceDailyIndex = JSON.parse(
+  fs.readFileSync(path.join(process.cwd(), "pipelines/era5/extracts/france-2t-daily-index.json"), "utf8")
+) as {
+  imported_to_sql: boolean;
+  archive_1940_2026: boolean;
+  cell_count: number;
+  days: { date: string; file: string; sha256: string; grenoble_tmin_K: number; grenoble_tmax_K: number; cell_count: number }[];
+};
+assert.equal(franceDailyIndex.imported_to_sql, false);
+assert.equal(franceDailyIndex.archive_1940_2026, false);
+assert.equal(franceDailyIndex.cell_count, ERA5_FRANCE_DAILY_2T_CELLS);
+assert.deepEqual(franceDailyIndex.days.map((d) => d.date), [...ERA5_FRANCE_DAILY_2T_DATES]);
+assert.equal(franceDailyIndex.days.length, 3);
+for (const row of franceDailyIndex.days) {
+  const abs = path.join(process.cwd(), "pipelines/era5/extracts", row.file);
+  assert.equal(createHash("sha256").update(fs.readFileSync(abs)).digest("hex"), row.sha256);
+  assert.equal(row.cell_count, 2709);
+}
+const france11 = JSON.parse(
+  fs.readFileSync(path.join(process.cwd(), "pipelines/era5/extracts/france-1983-05-11-2t-daily.json"), "utf8")
+) as typeof franceDaily & { date: string };
+const france13 = JSON.parse(
+  fs.readFileSync(path.join(process.cwd(), "pipelines/era5/extracts/france-1983-05-13-2t-daily.json"), "utf8")
+) as typeof franceDaily & { date: string };
+assert.equal(france11.date, "1983-05-11");
+assert.equal(france13.date, "1983-05-13");
+assert.deepEqual(france11.latitude, franceDaily.latitude);
+assert.deepEqual(france11.longitude, franceDaily.longitude);
+assert.deepEqual(france13.latitude, franceDaily.latitude);
+assert.ok(!("hourly_2t_K" in france11) && !("hourly_2t_K" in france13));
+assert.equal(Math.round(france11.grenoble_cell.tmin_K * 10000) / 10000, 277.4869);
+assert.equal(Math.round(france11.grenoble_cell.tmax_K * 10000) / 10000, 283.7463);
+assert.equal(Math.round(france13.grenoble_cell.tmin_K * 10000) / 10000, 279.6589);
+assert.equal(Math.round(france13.grenoble_cell.tmax_K * 10000) / 10000, 286.5999);
+assert.notEqual(Math.round(france11.grenoble_cell.tmin_K * 10000) / 10000, 276.564);
+assert.notEqual(Math.round(france13.grenoble_cell.tmax_K * 10000) / 10000, 287.3429);
 assert.equal(communePath({ region_slug: "auvergne-rhone-alpes", department_slug: "isere", slug: "grenoble" }), "/meteo/auvergne-rhone-alpes/isere/grenoble");
 assert.equal(
   communeHistoryHref("/meteo/auvergne-rhone-alpes/isere/grenoble", "1983-05-12", "naissance"),

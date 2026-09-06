@@ -26,9 +26,9 @@ Méthode point : `nearest` (`method_version` `era5-point-nearest-hourly-2t-d2m-t
 - SSRD : `surface_solar_radiation_downwards` en J m⁻², **somme** des 24 pas (comme TP, pas last−first). Affichage MJ/m² = / 1e6.
 - Rafale : `instantaneous_10m_wind_gust`, **max** des 24 pas, m s⁻¹, affichage km/h. Pas une rafale officielle.
 
-Quotidien bbox France (`method_version` `era5-france-daily-2t-minmax-v1`) : **un jour**, 2t min/max seulement, mailles ~0,25° dans la bbox. Les longitudes ARCO sont 0–360° (5,5°W = 354,5°). Fichier JSON, **pas** importé en SQLite.
+Quotidien bbox France (`method_version` `era5-france-daily-2t-minmax-v1`) : **3 jours** (11–13 mai 1983), 2t min/max seulement, 2709 mailles ~0,25° dans la bbox. Index `france-2t-daily-index.json`. Les longitudes ARCO sont 0–360° (5,5°W = 354,5°). Fichiers JSON, **pas** importés en SQLite. Un run `--france-only --dates=` accepte au plus **7** jours — pas l’archive 1940–2026. La preuve `france-1983-05-12-2t-daily.json` n’est pas réécrite.
 
-Chunks ARCO `(1, 721, 1440)` = 1 h × globe. Un jour 2t quotidien France télécharge donc 24 tranches horaires mondiales de 2t ; seules les mailles France sont **stockées**. Ce n’est pas l’archive 1940–2026.
+Chunks ARCO `(1, 721, 1440)` = 1 h × globe. Un jour 2t quotidien France télécharge donc 24 tranches horaires mondiales de 2t ; seules les mailles France sont **stockées**.
 
 Accès : miroir public **ARCO ERA5**  
 `gs://gcp-public-data-arco-era5/ar/full_37-1h-0p25deg-chunk-1.zarr-v3`  
@@ -45,9 +45,10 @@ py -3.12 -m venv pipelines/era5/.venv
 pipelines/era5/.venv/Scripts/python.exe -m pip install -r pipelines/era5/requirements.txt
 npm run era5:extract-point
 npm run import:era5
+pipelines/era5/.venv/Scripts/python.exe pipelines/era5/extract_point.py --france-only --dates=1983-05-11,1983-05-13
 ```
 
-`era5:extract-point` écrit aussi `pipelines/era5/extracts/france-1983-05-12-2t-daily.json`. Seul le JSON **point** est importé (`import:era5`).
+`era5:extract-point` n’écrase plus le quotidien 1983-05-12. Seul le JSON **point** est importé (`import:era5`).
 
 Schéma JSON point (valeurs illustratives sauf consigne) :
 
