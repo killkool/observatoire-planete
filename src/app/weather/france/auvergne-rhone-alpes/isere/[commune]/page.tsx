@@ -1,7 +1,7 @@
 import PlaceExplorer from "@/components/PlaceExplorer";
 import { isIsoDate } from "@/lib/birthDay";
 import { defaultDateForPlace, getPlaceBySlug } from "@/lib/placeHistory";
-import { getCommuneYearlyCached, getPlaceHistoryCached } from "@/lib/sqliteReadCache";
+import { getCommuneChildhoodCached, getCommuneYearlyCached, getPlaceHistoryCached } from "@/lib/sqliteReadCache";
 import { notFound } from "next/navigation";
 
 export default async function CommunePage({
@@ -16,15 +16,22 @@ export default async function CommunePage({
   const place = getPlaceBySlug(commune);
   if (!place) notFound();
   const date = query.date || defaultDateForPlace(commune);
+  const histoire = query.histoire === "naissance";
   const history = isIsoDate(date) ? await getPlaceHistoryCached(commune, date) : null;
   const yearly = await getCommuneYearlyCached(place.insee_code);
+  const birthYear = isIsoDate(date) ? Number(date.slice(0, 4)) : NaN;
+  const childhood =
+    histoire && Number.isInteger(birthYear)
+      ? await getCommuneChildhoodCached(place.insee_code, birthYear)
+      : null;
   return (
     <PlaceExplorer
       slug={commune}
       initialDate={date}
       initialHistory={history}
       initialYearly={yearly}
-      histoire={query.histoire === "naissance"}
+      initialChildhood={childhood}
+      histoire={histoire}
     />
   );
 }

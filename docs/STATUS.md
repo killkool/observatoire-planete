@@ -1,6 +1,6 @@
 # Avancement — Observatoire Planète
 
-**Date de revue :** 2026-09-06 (climat annuel dans le HTML initial)  
+**Date de revue :** 2026-09-06 (enfance SSR + Lighthouse lab localhost)  
 **Constitution définitive :** [PROMPT_MAITRE_V2.md](./PROMPT_MAITRE_V2.md) — mot pour mot, sections 0–187.  
 **Livraison V1 :** [V1_FRANCE_REFOCUS.md](./V1_FRANCE_REFOCUS.md) + [ROADMAP.md](./ROADMAP.md).  
 **Stack cible :** [ARCHITECTURE_PRODUCTION.md](./ARCHITECTURE_PRODUCTION.md) — [ADR-0002](./adr/ADR-0002-production-stack-v1.md). Runtime encore SQLite.
@@ -11,11 +11,11 @@ Les fournisseurs sont des **sources**, jamais des partenaires.
 
 ## En une phrase
 
-Le parcours **Isère → Météo-France → Grenoble → 1983-05-12 → ERA5 point → comparaison sans fusion → provenance → confiance** est livré. Accueil, naissance, comparer et page commune tiennent à 390 px. La mesure du jour **et** le climat annuel (LVD, 26 années) sont dans le HTML initial. Une date sans poste (1900-01-01) dit « aucune mesure officielle », pas « import manquant », et le climat reste visible. Cache Next 1 h. Pas de score Lighthouse.
+Le parcours **Isère → Météo-France → Grenoble → 1983-05-12 → ERA5 point → comparaison sans fusion → provenance → confiance** est livré. Accueil, naissance, comparer et page commune tiennent à 390 px. Jour, climat annuel **et** enfance (si `histoire=naissance`) sont dans le HTML initial. MapLibre et Recharts ne se chargent qu’à l’approche du viewport. Lighthouse lab mobile localhost : perf **95**, LCP **3,0 s** — pas un pass Core Web Vitals, pas du CrUX.
 
 ## Prochaine action
 
-1. **Produit :** mesurer les Core Web Vitals (Lighthouse en build `next start`, ou terrain) ; CDN ou vues matérialisées si besoin démontré.  
+1. **Produit :** ramener le LCP lab sous 2,5 s (héros IGN) puis confirmer sur un `next start` ; CDN ou vues matérialisées si besoin démontré.  
 2. **Science / R9 remainder :** subset ERA5 France (pas mondial) — pas de téléchargement grille entière.
 
 Ne pas : E-OBS, ERA5 mondial, océan, extract massif IGN, migrer vers un faux Supabase, déclencher un import à la page vue.
@@ -32,7 +32,7 @@ Ne pas : E-OBS, ERA5 mondial, océan, extract massif IGN, migrer vers un faux Su
 | R8 comparateur | **Partiel** | année vs année + saison vs **même** saison + ville vs ville Isère ; pas hiver vs été, pas France entière |
 | R9 ERA5 | **Partiel** | point Grenoble 1983-05-12 ; pas de subset France |
 | R11 SEO | **Fait (Isère)** | titres + sitemap filtré + OG + hreflang fr/x-default + JSON-LD + `seo-content-v1` ; pas de pages en |
-| R12 mobile | **Partiel** | commune + accueil 390 px ; Recharts à la demande ; HTML initial = jour + climat annuel ; 1900 sans invention ; cache 1 h ; pas CWV mesuré, pas CDN |
+| R12 mobile | **Partiel** | 390 px ; HTML initial = jour + climat + enfance ; MapLibre/Recharts hors écran ; Lighthouse lab LCP 3,0 s ; pas CDN, pas CrUX |
 | PoC 1 ERA5 | **Fait** | `point_extractions` = 3 |
 
 ## Preuve statistiques `precompute-v2`
@@ -60,15 +60,16 @@ Seuils : année 330 j ; mois 25 j ; saison 75 j ; normale 24 années climatiques
 - Ce jour (CORENC, 8 × 12 mai) : maximale moyenne **21,6 °C**, minimale moyenne **7,3 °C**, plus chaude que **50 %**. Records 5,1 °C (1982) / 32,1 °C (1986). Pas une normale climatique.
 - Page commune 390×844 : nav horizontale défilable, date + partage en colonne, Tmin/Tmax puis carte IGN, cibles ≥ 44 px. Desktop inchangé (carte toujours au-dessus du récit). Pas de bottom sheet.
 - Accueil / naissance / comparer 390×844 : recherche et CTA pleine largeur, 1 colonne, overflow-x absent, cibles ≥ 44 px. Comparer Grenoble vs Voiron : LVD vs COUBLEVIE, 21 années, écarts inchangés.
-- Graphiques commune : Recharts chargé à la demande (`ClimateLineChart`). Grenoble `#ce-jour` : 8 × 12 mai, 21,6 / 7,3 °C, percentile 50 %, courbes Tmax/Tmin visibles.
-- Cache Next `unstable_cache` 1 h : accueil + sitemap **517** URL + historique d’un jour + climat annuel. HTML Grenoble 1983-05-12 : jour CORENC **et** climat LVD (26 années, 2025 · 901,1 mm) dès le premier écran — plus de « Statistiques non calculées » pendant le chargement. Date 1900-01-01 : **Aucune mesure officielle**, aucune valeur inventée, climat LVD toujours affiché. Changer de date rappelle `/api/v1/history`. Le dashboard `/dashboard` charge encore Recharts en tête (prototype).
+- Graphiques commune : Recharts **et** MapLibre chargés seulement près du viewport (`DeferInView`). HTML initial Grenoble naissance : placeholder « Carte IGN… », **sans** `maplibre` / `recharts` dans le premier HTML. Après scroll : Photo IGN + pins CORENC.
+- Cache Next `unstable_cache` 1 h : accueil + sitemap **517** URL + historique d’un jour + climat annuel + **enfance**. HTML Grenoble 1983-05-12 : jour CORENC **et** climat LVD (26 années, 2025 · 901,1 mm). Naissance : **QUAND J’ÉTAIS ENFANT** CHATTE_SAPC 1988–1995 (7 ans), max. annuelle moyenne **17,4 °C** — un seul poste, pas LVD (couverture enfance insuffisante). Date 1900-01-01 : **Aucune mesure officielle**, climat LVD conservé. Changer de date rappelle `/api/v1/history`.
+- Lighthouse **13.4.1** mobile, `next start` :3002, Grenoble `?date=1983-05-12`, 2026-09-06T21:55Z : performance **0,95** ; FCP **0,9 s** ; LCP **3,0 s** (score 0,78) ; TBT **40 ms** ; CLS **0** ; Speed Index **0,9 s**. First Load JS page commune **126 kB** (dashboard prototype **223 kB**). Lab localhost, pas CrUX. LCP > 2,5 s → case Core Web Vitals **non** cochée.
 
 Ville vs ville (preuve 2026-09-06) :
 
 - Grenoble vs Crolles / La Pierre : **même poste GRENOBLE - LVD** → aucun écart affiché.
 - Grenoble vs Voiron : LVD vs **COUBLEVIE**, 21 années climatiques 2005–2025. Max. moyenne 18,5 → 18,2 °C (−0,3) ; min. 7,3 → 8,4 °C (+1,1) ; pluie 980,8 → 1117,6 mm. Pas de normale 1991-2020 (LVD n’a que 21 ans sur la période).
 
-Tests : `npm run test:science`. Pages : `/` · `/naissance` · `/comparer?a=38185&b=38563` · `/meteo/auvergne-rhone-alpes/isere/grenoble?date=1983-05-12` (jour + climat LVD dans le HTML) · `?date=1900-01-01` (aucune mesure, climat conservé) · `/sitemap.xml` (5 + 512) · `#ce-jour` · `#comparaison-sources` · `#mois` · `#normale-mensuelle` · `#saisons` · `#chaleur` · `/og/grenoble/1983-05-12`.
+Tests : `npm run test:science`. Pages : `/` · `/naissance` · `/meteo/auvergne-rhone-alpes/isere/grenoble?date=1983-05-12&histoire=naissance` (enfance CHATTE_SAPC dans le HTML, carte après scroll) · `?date=1983-05-12` (jour + climat LVD) · `?date=1900-01-01` · `/comparer?a=38185&b=38563` · `/sitemap.xml` (5 + 512) · Lighthouse lab `next start :3002`.
 
 ## Runtime
 

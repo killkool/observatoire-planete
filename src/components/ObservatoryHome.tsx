@@ -24,6 +24,7 @@ export default function ObservatoryHome({ places }: { places: Place[] }) {
           alt="La France et les Alpes vues du ciel, illustration d’ambiance"
           fill
           priority
+          quality={70}
           sizes="100vw"
         />
         <div className="earthHeroContent">

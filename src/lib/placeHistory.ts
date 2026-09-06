@@ -305,7 +305,7 @@ export function getPlaceHistory(slug: string, date: string) {
   const attributions = [
     observation ? mfSource?.attribution : null,
     era5.length ? era5Source?.attribution : null
-  ].filter(Boolean);
+  ].filter((line): line is string => Boolean(line));
 
   return {
     place,

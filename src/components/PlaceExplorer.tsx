@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ComponentProps } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import dynamic from "next/dynamic";
+import DeferInView from "./DeferInView";
 import TempRange from "./TempRange";
 import YearHeatmap from "./YearHeatmap";
 import OriginBadge from "./OriginBadge";
@@ -38,11 +39,30 @@ import {
   yearsWithTwelveCompleteMonths
 } from "@/lib/climateMonths";
 
-const PlaceMap = dynamic(() => import("./PlaceMap"), { ssr: false, loading: () => <div className="mapCanvas mapPlaceholder">Carte IGN…</div> });
-const ClimateLineChart = dynamic(() => import("./ClimateLineChart"), {
+const PlaceMapCanvas = dynamic(() => import("./PlaceMap"), {
+  ssr: false,
+  loading: () => <div className="mapCanvas mapPlaceholder">Carte IGN…</div>
+});
+const ClimateLineChartCanvas = dynamic(() => import("./ClimateLineChart"), {
   ssr: false,
   loading: () => <div className="chart" aria-hidden />
 });
+
+function PlaceMap(props: ComponentProps<typeof PlaceMapCanvas>) {
+  return (
+    <DeferInView fallback={<div className="mapCanvas mapPlaceholder">Carte IGN…</div>}>
+      <PlaceMapCanvas {...props} />
+    </DeferInView>
+  );
+}
+
+function ClimateLineChart(props: ComponentProps<typeof ClimateLineChartCanvas>) {
+  return (
+    <DeferInView fallback={<div className="chart" aria-hidden />}>
+      <ClimateLineChartCanvas {...props} />
+    </DeferInView>
+  );
+}
 
 type HistoryPayload = {
   date: string;
@@ -179,6 +199,7 @@ type YearlyPayload = {
     months: {
       month: number;
       yearsUsed: number;
+      yearsPrecip: number;
       available: boolean;
       precipAvailable: boolean;
       tminMean: number | null;
@@ -281,12 +302,14 @@ export default function PlaceExplorer({
   initialDate,
   initialHistory = null,
   initialYearly = null,
+  initialChildhood = null,
   histoire = false
 }: {
   slug: string;
   initialDate: string;
   initialHistory?: HistoryPayload | null;
   initialYearly?: YearlyPayload | null;
+  initialChildhood?: ChildhoodPayload | null;
   histoire?: boolean;
 }) {
   const router = useRouter();
@@ -296,7 +319,9 @@ export default function PlaceExplorer({
     initialHistory && initialHistory.date === initialDate ? initialHistory : null
   );
   const [yearly, setYearly] = useState<YearlyPayload | null>(initialYearly);
-  const [childhood, setChildhood] = useState<ChildhoodPayload | null>(null);
+  const [childhood, setChildhood] = useState<ChildhoodPayload | null>(
+    histoire && initialChildhood ? initialChildhood : null
+  );
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(
     () => !(initialHistory && initialHistory.date === initialDate)
@@ -406,6 +431,10 @@ export default function PlaceExplorer({
       setChildhood(null);
       return;
     }
+    if (initialChildhood && Number(initialDate.slice(0, 4)) === birthYear) {
+      setChildhood(initialChildhood);
+      return;
+    }
     const controller = new AbortController();
     fetch(`/api/v1/communes/${insee}/childhood?birthYear=${birthYear}`, { signal: controller.signal })
       .then(async (r) => {
@@ -418,7 +447,7 @@ export default function PlaceExplorer({
         if (e.name !== "AbortError") setChildhood(null);
       });
     return () => controller.abort();
-  }, [histoire, insee, date]);
+  }, [histoire, insee, date, initialChildhood, initialDate]);
 
   const chart = useMemo(
     () => (data?.seriesSameDay || []).map((row) => ({ year: row.date.slice(0, 4), tmin: row.tmin, tmax: row.tmax })),
@@ -560,6 +589,7 @@ export default function PlaceExplorer({
           alt={place ? `Vue aérienne IGN de ${place.name}` : ""}
           fill
           priority
+          quality={70}
           sizes="100vw"
         />
         <div className="placeHeroContent">

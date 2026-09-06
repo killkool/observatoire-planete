@@ -172,13 +172,13 @@ export async function ingestIsereCommunes(mode: FetchMode = "local-first") {
       const existing = selectExisting.get(placeId) as
         | { latitude: number; longitude: number; altitude_m: number | null; slug: string }
         | undefined;
-      const pinned = PINNED_INSEE.has(insee) && existing;
-      const longitude = pinned ? existing.longitude : coords[0];
-      const latitude = pinned ? existing.latitude : coords[1];
-      const altitude_m = pinned ? existing.altitude_m : null;
-      let slug = pinned?.slug || slugifyFr(commune.nom);
+      const pinnedPlace = PINNED_INSEE.has(insee) ? existing : undefined;
+      const longitude = pinnedPlace ? pinnedPlace.longitude : coords[0];
+      const latitude = pinnedPlace ? pinnedPlace.latitude : coords[1];
+      const altitude_m = pinnedPlace ? pinnedPlace.altitude_m : null;
+      let slug = pinnedPlace?.slug || slugifyFr(commune.nom);
       if (!slug) slug = `commune-${insee}`;
-      if (!pinned && usedSlugs.has(slug) && existing?.slug !== slug) {
+      if (!pinnedPlace && usedSlugs.has(slug) && existing?.slug !== slug) {
         slug = `${slug}-${insee}`;
       }
       usedSlugs.add(slug);

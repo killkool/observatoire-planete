@@ -52,12 +52,15 @@ function closeRun(run: DailyTmax[], minDays: number): HeatEpisode | null {
   if (tmaxs.some((value) => value == null)) return null;
   const known = tmaxs as number[];
   const tmins = run.map((row) => row.tmin);
+  const tmaxMax = roundToPrecision(Math.max(...known), 1);
+  const tmaxMean = roundToPrecision(known.reduce((sum, value) => sum + value, 0) / known.length, 1);
+  if (tmaxMax == null || tmaxMean == null) return null;
   return {
     startDate: run[0].date,
     endDate: run[run.length - 1].date,
     durationDays: run.length,
-    tmaxMax: roundToPrecision(Math.max(...known), 1),
-    tmaxMean: roundToPrecision(known.reduce((sum, value) => sum + value, 0) / known.length, 1),
+    tmaxMax,
+    tmaxMean,
     tminMin: tmins.every((value) => value != null) ? roundToPrecision(Math.min(...(tmins as number[])), 1) : null
   };
 }

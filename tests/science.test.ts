@@ -750,7 +750,6 @@ if (obsCount === 0) {
   assert.ok(missingDay, "Grenoble must still resolve for a date without observations");
   assert.equal(missingDay.observation, null);
   assert.equal(missingDay.preferredStation, null);
-  assert.notEqual(missingDay.observation?.tmin, 0);
 
   const annualCount = (db.prepare(`SELECT COUNT(*) AS c FROM annual_statistics`).get() as { c: number }).c;
   const seasonalCount = (db.prepare(`SELECT COUNT(*) AS c FROM seasonal_statistics`).get() as { c: number }).c;
@@ -884,6 +883,8 @@ if (obsCount === 0) {
   }
   const childhood = getCommuneChildhood("38185", 1983, 2026);
   assert.ok(childhood, "Grenoble childhood payload must resolve");
+  assert.equal(childhood.computed, true, "childhood climate must not wait for a daily observation fetch");
+  assert.equal(childhood.birthYear, 1983);
   assert.equal(childhood.comparison.comparable, true, "1983 Grenoble must find one long station, not concatenate");
   if (childhood.comparison.comparable) {
     assert.ok(childhood.station, "childhood series must name one station");
@@ -891,6 +892,10 @@ if (obsCount === 0) {
     assert.ok(childhood.comparison.recent.n >= 5);
     assert.ok(childhood.comparison.childhood.to < childhood.comparison.recent.from);
   }
+  const childhoodBeforeCoverage = getCommuneChildhood("38185", 1900, 2026);
+  assert.ok(childhoodBeforeCoverage);
+  assert.equal(childhoodBeforeCoverage.computed, true);
+  assert.equal(childhoodBeforeCoverage.comparison.comparable, false, "no childhood years before the imported series");
   const sameCity = getCommuneCityCompare("38185", "38185");
   assert.equal(sameCity?.overlap.comparable, false);
   const vsCrolles = getCommuneCityCompare("38185", "38140");
