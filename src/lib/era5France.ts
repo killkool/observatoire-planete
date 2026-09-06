@@ -1,4 +1,4 @@
-/** Bbox V1 documentée (~41–51°N, 5°W–10°E) + petit buffer. Pas un subset France ingéré. */
+/** Bbox V1 documentée (~41–51°N, 5°W–10°E) + petit buffer. Un jour 2t quotidien peut exister en JSON ; pas un dump SQL mondial. */
 export const ERA5_FRANCE_LAT = { min: 41, max: 51.5 };
 export const ERA5_FRANCE_LON = { min: -5.5, max: 10 };
 

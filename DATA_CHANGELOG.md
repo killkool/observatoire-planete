@@ -2,6 +2,12 @@
 
 Journal des sources, versions et recalculs. Pas de remplacement silencieux d’un dataset.
 
+## 2026-09-07 (ERA5 pluie Grenoble + quotidien France 2t un jour)
+
+- Même maille ARCO 45,25°N, 5,75°E, 1983-05-12, 24 h UTC. `2m_temperature` inchangé : Tmin **276,5640 K** (3,4 °C), Tmax **287,3429 K** (14,2 °C). Point de rosée inchangé : **275,1994 / 280,0102 K**.
+- `total_precipitation` ARCO : accumulation horaire en **mètres**, série non monotone (pas un cumul de step CDS). Somme 24 h UTC **0,0003234409 m** → **0,3 mm** à l’affichage. Pas fusionné avec CORENC **0,1 mm**. SHA-256 point `082273eb5d811c8676740d511820d49cdea171ff3ca1fd1c7d32c6c3441346f9`. `method_version=era5-point-nearest-hourly-2t-d2m-tp-v1`. Import : **7** lignes `point_extractions`.
+- Quotidien 2t bbox France, **un jour** seulement : 2709 mailles, longitudes signées −5,5–10°E (ARCO 0–360). Maille Grenoble = mêmes Kelvin. Fichier `pipelines/era5/extracts/france-1983-05-12-2t-daily.json` (95 Ko), SHA-256 `9c7b9a9836b23b1252d09b3c410f96cbe5ccd61558b59c92f19b8f3fbfb1cbe2`. `method_version=era5-france-daily-2t-minmax-v1`. **Pas** importé en SQLite. Pas 1940–2026. Chunks ARCO toujours 1 h × globe.
+
 ## 2026-09-07 (ERA5 point de rosée Grenoble)
 
 - Même maille ARCO 45,25°N, 5,75°E, 1983-05-12, 24 h UTC. `2m_temperature` inchangé : Tmin **276,5640 K** (3,4 °C), Tmax **287,3429 K** (14,2 °C).

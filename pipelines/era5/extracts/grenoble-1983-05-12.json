@@ -2,12 +2,12 @@
   "source_id": "copernicus.c3s.era5.single-levels-hourly",
   "dataset_version": "ERA5",
   "method": "nearest",
-  "method_version": "era5-point-nearest-hourly-2t-d2m-minmax-v1",
+  "method_version": "era5-point-nearest-hourly-2t-d2m-tp-v1",
   "doi": "10.24381/cds.adbb2d47",
   "access": {
     "kind": "arco-era5-public-zarr",
     "uri": "gs://gcp-public-data-arco-era5/ar/full_37-1h-0p25deg-chunk-1.zarr-v3",
-    "note": "Copie analysis-ready du jeu ERA5 C3S (même DOI). Pas une autre réanalyse."
+    "note": "Copie analysis-ready du jeu ERA5 C3S (même DOI). Pas une autre réanalyse. total_precipitation ARCO = mètres par pas horaire (non monotone) ; cumul journalier UTC = somme des 24 pas, pas last−first."
   },
   "latitude": 45.1885,
   "longitude": 5.7245,
@@ -93,7 +93,33 @@
     278.1388,
     278.1558
   ],
-  "extracted_at": "2026-09-06T22:34:35.166904+00:00",
+  "hourly_tp_m": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    4.33996319770813e-07,
+    1.821015030145645e-05,
+    0.00014784559607505798,
+    7.760804146528244e-05,
+    3.165006637573242e-05,
+    2.2979453206062317e-05,
+    1.1272728443145752e-05,
+    1.1706724762916565e-05,
+    1.734122633934021e-06,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+  ],
+  "extracted_at": "2026-09-06T22:51:33.731105+00:00",
   "points": [
     {
       "date": "1983-05-12",
@@ -130,6 +156,12 @@
       "variable_id": "dew_point",
       "value": 278.05565134684247,
       "unit": "K"
+    },
+    {
+      "date": "1983-05-12",
+      "variable_id": "precipitation",
+      "value": 0.00032344087958335876,
+      "unit": "m"
     }
   ]
 }

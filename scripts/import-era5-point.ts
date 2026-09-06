@@ -46,13 +46,17 @@ for (const p of payload.points) {
   if (typeof p.value !== "number" || !Number.isFinite(p.value)) {
     throw new Error(`Valeur invalide pour ${p.variable_id} ${p.date} : refus d'inventer.`);
   }
-  if (p.unit !== "K" && p.unit !== "degC" && p.unit !== "Celsius") {
+  if (p.variable_id === "precipitation") {
+    if (p.unit !== "m") {
+      throw new Error(`Précipitation ERA5 attendue en mètres (canonique), pas ${p.unit}`);
+    }
+  } else if (p.unit !== "K" && p.unit !== "degC" && p.unit !== "Celsius") {
     throw new Error(`Unité inattendue ${p.unit} pour ${p.variable_id}`);
   }
 }
 
 const dates = [...new Set(payload.points.map((p) => p.date))];
-const methodVersion = payload.method_version || "era5-point-nearest-hourly-2t-minmax-v1";
+const methodVersion = payload.method_version || "era5-point-nearest-hourly-2t-d2m-tp-v1";
 const lineageId = randomUUID();
 
 db.prepare(`

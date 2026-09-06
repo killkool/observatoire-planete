@@ -123,6 +123,9 @@ type HistoryPayload = {
     dewpointMax?: number | null;
     dewpointMinDisplay?: string;
     dewpointMaxDisplay?: string;
+    precipMm?: number | null;
+    precipDisplay?: string;
+    precipDelta?: number | null;
   } | null;
   comparison: { tminDelta: number | null; tmaxDelta: number | null; note: string } | null;
   recordsObserved: {
@@ -811,6 +814,13 @@ export default function PlaceExplorer({
                     {data.era5.dewpointMin != null || data.era5.dewpointMax != null
                       ? ` Point de rosée à 2 m (même maille, pas une mesure) : ${data.era5.dewpointMinDisplay} / ${data.era5.dewpointMaxDisplay}.`
                       : ""}
+                    {data.era5.precipMm != null
+                      ? ` Pluie sommée sur 24 h UTC (estimation, pas un pluviomètre) : ${data.era5.precipDisplay}.`
+                      : ""}
+                    {data.era5.precipDelta != null && data.observation?.precipDisplay
+                      ? ` Mesure de station : ${data.observation.precipDisplay}. Écart estimation − mesure : ${formatSignedMm(data.era5.precipDelta)}. Pas une fusion.`
+                      : ""}
+                    {" "}
                     Maille d’environ 0,25°. Aucune correction d’altitude ni moyenne avec la station.
                   </p>
                   {data.attributions.map((line) => (

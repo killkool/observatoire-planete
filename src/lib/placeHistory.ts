@@ -224,7 +224,8 @@ export function getPlaceHistory(slug: string, date: string) {
     LEFT JOIN data_lineage dl ON dl.lineage_id = pe.lineage_id
     WHERE pe.date = ? AND pe.variable_id IN (
         'air_temperature_min', 'air_temperature_max', 'air_temperature',
-        'dew_point_min', 'dew_point_max', 'dew_point'
+        'dew_point_min', 'dew_point_max', 'dew_point',
+        'precipitation'
       )
       AND pe.source_id = 'copernicus.c3s.era5.single-levels-hourly'
       AND abs(pe.latitude - ?) < 0.0001 AND abs(pe.longitude - ?) < 0.0001
@@ -256,7 +257,10 @@ export function getPlaceHistory(slug: string, date: string) {
   const era5TmeanC = toCelsius(era5ByVar.air_temperature);
   const era5DewMinC = toCelsius(era5ByVar.dew_point_min);
   const era5DewMaxC = toCelsius(era5ByVar.dew_point_max);
+  const era5PrecipMm = toMillimetres(era5ByVar.precipitation);
   const era5HasTemp = era5TminC != null || era5TmaxC != null;
+  const precipDelta =
+    rr != null && era5PrecipMm != null ? roundToPrecision(era5PrecipMm - rr, 1) : null;
   const tmaxDelta =
     tmax != null && era5TmaxC != null ? roundToPrecision(era5TmaxC - tmax, 1) : null;
   const tminDelta =
@@ -373,7 +377,10 @@ export function getPlaceHistory(slug: string, date: string) {
           dewpointMin: era5DewMinC,
           dewpointMax: era5DewMaxC,
           dewpointMinDisplay: formatCelsius(era5DewMinC),
-          dewpointMaxDisplay: formatCelsius(era5DewMaxC)
+          dewpointMaxDisplay: formatCelsius(era5DewMaxC),
+          precipMm: era5PrecipMm,
+          precipDisplay: formatMm(era5PrecipMm),
+          precipDelta
         }
       : null,
     comparison,
@@ -431,6 +438,13 @@ function toCelsius(row?: { value: number | null; unit: string }): number | null 
   if (row.unit === "K") return roundToPrecision(row.value - 273.15, 1);
   if (row.unit === "degC" || row.unit === "Celsius") return roundToPrecision(row.value, 1);
   return roundToPrecision(row.value, 1);
+}
+
+function toMillimetres(row?: { value: number | null; unit: string }): number | null {
+  if (!row || row.value == null) return null;
+  if (row.unit === "m") return roundToPrecision(row.value * 1000, 1);
+  if (row.unit === "mm") return roundToPrecision(row.value, 1);
+  return null;
 }
 
 export function coverageForStation(stationId: string) {

@@ -25,3 +25,5 @@ Document method (`nearest` default unless an ADR says otherwise). Store model al
 2m T, 2m dewpoint, TP, 10u, 10v, SP, MSL, snow, SSRD.
 
 Assimilated observations → not an independent confirmation of a nearby station.
+
+On the ARCO `ar/full` mirror, `total_precipitation` is hourly accumulation in metres (not a CDS forecast-step cumulative). Daily total = sum of 24 UTC steps. Model hourly 0 is a zero, not NULL. Display mm = × 1000.

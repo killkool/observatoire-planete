@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
 import { currentTowardsUv, formatCelsius, roundToPrecision, windFromUv } from "../packages/weather-core/src/units";
 import { ORIGIN_LABEL_PUBLIC_FR } from "../packages/weather-core/src/origin";
 import { warmerThanPercent, meanOfKnown, describeSameDayLead } from "../packages/weather-core/src/sameDayStats";
@@ -57,7 +59,55 @@ assert.equal(ORIGIN_LABEL_PUBLIC_FR.OBSERVED, "Mesure officielle");
 assert.equal(ORIGIN_LABEL_PUBLIC_FR.REANALYSIS, "Estimation climatique");
 assert.equal(isInFranceEra5Bbox(45.1885, 5.7245), true, "Grenoble is inside the V1 France ERA5 bbox");
 assert.equal(isInFranceEra5Bbox(48.8566, 2.3522), true, "Paris is inside the V1 France ERA5 bbox");
+assert.equal(isInFranceEra5Bbox(48.3904, -4.4861), true, "Brest west of Greenwich stays in the V1 bbox");
 assert.equal(isInFranceEra5Bbox(40.7128, -74.006), false, "a point outside France must not be extractable");
+
+const grenoblePointExtract = JSON.parse(
+  fs.readFileSync(path.join(process.cwd(), "pipelines/era5/extracts/grenoble-1983-05-12.json"), "utf8")
+) as {
+  method_version: string;
+  hourly_tp_m: number[];
+  points: { variable_id: string; value: number; unit: string }[];
+};
+assert.equal(grenoblePointExtract.method_version, "era5-point-nearest-hourly-2t-d2m-tp-v1");
+assert.equal(grenoblePointExtract.hourly_tp_m.length, 24);
+assert.equal(grenoblePointExtract.hourly_tp_m.every((v) => v >= 0), true);
+const tpSum = grenoblePointExtract.hourly_tp_m.reduce((a, b) => a + b, 0);
+const tpPoint = grenoblePointExtract.points.find((p) => p.variable_id === "precipitation");
+assert.ok(tpPoint);
+assert.equal(tpPoint.unit, "m");
+assert.ok(Math.abs(tpPoint.value - tpSum) < 1e-12, "daily TP is the sum of 24 hourly metres, not last-first");
+assert.equal(
+  grenoblePointExtract.hourly_tp_m.every((v, i, arr) => i === 0 || v >= arr[i - 1] - 1e-18),
+  false,
+  "ARCO TP is hourly accumulation, not a monotonic CDS step cumulative"
+);
+assert.equal(Math.round(tpPoint.value * 1000 * 10) / 10, 0.3);
+
+const franceDaily = JSON.parse(
+  fs.readFileSync(path.join(process.cwd(), "pipelines/era5/extracts/france-1983-05-12-2t-daily.json"), "utf8")
+) as {
+  method_version: string;
+  cell_count: number;
+  latitude: number[];
+  longitude: number[];
+  tmin_K: number[][];
+  tmax_K: number[][];
+  grenoble_cell: { latitude: number; longitude: number; tmin_K: number; tmax_K: number };
+  bbox: { lat_min: number; lat_max: number; lon_min: number; lon_max: number };
+};
+assert.equal(franceDaily.method_version, "era5-france-daily-2t-minmax-v1");
+assert.equal(franceDaily.cell_count, 2709);
+assert.equal(franceDaily.cell_count, franceDaily.latitude.length * franceDaily.longitude.length);
+assert.equal(franceDaily.latitude.every((lat) => lat >= 41 && lat <= 51.5), true);
+assert.equal(franceDaily.longitude.every((lon) => lon >= -5.5 && lon <= 10), true);
+assert.equal(franceDaily.grenoble_cell.latitude, 45.25);
+assert.equal(franceDaily.grenoble_cell.longitude, 5.75);
+assert.equal(Math.round(franceDaily.grenoble_cell.tmin_K * 10000) / 10000, 276.564);
+assert.equal(Math.round(franceDaily.grenoble_cell.tmax_K * 10000) / 10000, 287.3429);
+assert.equal(franceDaily.tmin_K.length, franceDaily.latitude.length);
+assert.equal(franceDaily.tmin_K[0].length, franceDaily.longitude.length);
+assert.ok(!("hourly_2t_K" in franceDaily), "France daily must not store hourly grids");
 assert.equal(communePath({ region_slug: "auvergne-rhone-alpes", department_slug: "isere", slug: "grenoble" }), "/meteo/auvergne-rhone-alpes/isere/grenoble");
 assert.equal(
   communeHistoryHref("/meteo/auvergne-rhone-alpes/isere/grenoble", "1983-05-12", "naissance"),
@@ -358,6 +408,7 @@ assert.equal(grenobleLdText.includes("ERA5"), false);
 assert.equal(grenobleLdText.includes("REANALYSIS"), false);
 assert.equal(grenobleLdText.includes("6.9"), false);
 assert.equal(grenobleLdText.includes("dew"), false);
+assert.equal(grenobleLdText.includes("0.3"), false, "ERA5 precip must not enter JSON-LD");
 const era5Rejected = JSON.stringify(
   communeJsonLd({
     place: {
@@ -745,10 +796,18 @@ if (obsCount === 0) {
   assert.equal(grenoble.era5.dewpointMin, 2.0);
   assert.equal(grenoble.era5.dewpointMax, 6.9);
   assert.ok(grenoble.era5.dewpointMin < grenoble.era5.tmin, "dewpoint is not a copy of 2t");
+  assert.equal(grenoble.era5.precipMm, 0.3);
+  assert.notEqual(grenoble.era5.precipMm, grenoble.observation.precipitationMm, "ERA5 rain is not a copy of CORENC");
+  assert.equal(grenoble.era5.precipDelta, 0.2);
   assert.equal(grenoble.era5.method, "nearest");
-  assert.equal(grenoble.era5.methodVersion, "era5-point-nearest-hourly-2t-d2m-minmax-v1");
+  assert.equal(grenoble.era5.methodVersion, "era5-point-nearest-hourly-2t-d2m-tp-v1");
   const era5Rows = (db.prepare(`SELECT COUNT(*) AS c FROM point_extractions`).get() as { c: number }).c;
-  assert.equal(era5Rows, 6, "2t min/max/mean + dewpoint min/max/mean, no invented rows");
+  assert.equal(era5Rows, 7, "2t min/max/mean + dewpoint min/max/mean + precipitation sum, no invented rows");
+  const precipRow = db.prepare(
+    `SELECT unit, value FROM point_extractions WHERE variable_id = 'precipitation'`
+  ).get() as { unit: string; value: number };
+  assert.equal(precipRow.unit, "m");
+  assert.ok(precipRow.value > 0 && precipRow.value < 0.001, "ERA5 precip stored in metres, not millimetres");
   assert.ok(grenoble.comparison, "MF vs ERA5 comparison must be present without fusion");
   assert.equal(grenoble.comparison.tminDelta, -3.2);
   assert.equal(grenoble.comparison.tmaxDelta, -7.4);
