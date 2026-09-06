@@ -5,7 +5,6 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import TempRange from "./TempRange";
 import YearHeatmap from "./YearHeatmap";
 import OriginBadge from "./OriginBadge";
@@ -40,6 +39,10 @@ import {
 } from "@/lib/climateMonths";
 
 const PlaceMap = dynamic(() => import("./PlaceMap"), { ssr: false, loading: () => <div className="mapCanvas mapPlaceholder">Carte IGN…</div> });
+const ClimateLineChart = dynamic(() => import("./ClimateLineChart"), {
+  ssr: false,
+  loading: () => <div className="chart" aria-hidden />
+});
 
 type HistoryPayload = {
   date: string;
@@ -614,7 +617,7 @@ export default function PlaceExplorer({ slug, initialDate }: { slug: string; ini
           <section className="storyGrid">
             <article className="panel storyMain">
               <div className="storyPhoto">
-                <Image src="/images/origin-observed.png" alt="" fill sizes="60vw" />
+                <Image src="/images/origin-observed.png" alt="" fill sizes="(max-width:650px) 94vw, 55vw" />
               </div>
               <OriginBadge kind="OBSERVED" caption={data.observation?.originLabel} />
               <TempRange tmin={data.observation?.tmin ?? null} tmax={data.observation?.tmax ?? null} />
@@ -759,18 +762,14 @@ export default function PlaceExplorer({ slug, initialDate }: { slug: string; ini
             )}
             <YearHeatmap series={data.seriesSameDay} selected={date} onSelect={goToDate} />
             {chart.length ? (
-              <div className="chart">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={chart}>
-                    <CartesianGrid stroke="rgba(255,255,255,.06)" />
-                    <XAxis dataKey="year" tick={{ fill: "#70888f", fontSize: 10 }} />
-                    <YAxis tick={{ fill: "#70888f", fontSize: 10 }} unit="°C" />
-                    <Tooltip />
-                    <Line type="monotone" dataKey="tmax" stroke="#ff7b36" dot={false} name="Maximale" />
-                    <Line type="monotone" dataKey="tmin" stroke="#7ec8ff" dot={false} name="Minimale" />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
+              <ClimateLineChart
+                data={chart}
+                xKey="year"
+                lines={[
+                  { dataKey: "tmax", stroke: "#ff7b36", name: "Maximale" },
+                  { dataKey: "tmin", stroke: "#7ec8ff", name: "Minimale" }
+                ]}
+              />
             ) : (
               <p className="yearlyNote">Aucun {date.slice(8, 10)}/{date.slice(5, 7)} observé à cette station. Rien n’est inventé.</p>
             )}
@@ -810,26 +809,19 @@ export default function PlaceExplorer({ slug, initialDate }: { slug: string; ini
             ) : yearlyChart.length === 0 ? (
               <p className="note">Pas assez d’années complètes pour tracer une évolution.</p>
             ) : (
-              <div className="chart">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={yearlyChart}>
-                    <CartesianGrid stroke="rgba(255,255,255,.06)" />
-                    <XAxis dataKey="year" tick={{ fill: "#70888f", fontSize: 10 }} />
-                    <YAxis tick={{ fill: "#70888f", fontSize: 10 }} unit="°C" />
-                    <Tooltip />
-                    {yearly.normal?.available && yearly.normal.sameStation && yearly.normal.tmaxMean != null ? (
-                      <ReferenceLine
-                        y={yearly.normal.tmaxMean}
-                        stroke="#ffb35b"
-                        strokeDasharray="4 4"
-                        label={{ value: `Normale max. ${yearly.normal.period}`, fill: "#88a0a8", fontSize: 10 }}
-                      />
-                    ) : null}
-                    <Line type="monotone" dataKey="tmax" stroke="#ff7b36" dot={false} name="Maximale moyenne" />
-                    <Line type="monotone" dataKey="tmin" stroke="#7ec8ff" dot={false} name="Minimale moyenne" />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
+              <ClimateLineChart
+                data={yearlyChart}
+                xKey="year"
+                lines={[
+                  { dataKey: "tmax", stroke: "#ff7b36", name: "Maximale moyenne" },
+                  { dataKey: "tmin", stroke: "#7ec8ff", name: "Minimale moyenne" }
+                ]}
+                referenceLines={
+                  yearly.normal?.available && yearly.normal.sameStation && yearly.normal.tmaxMean != null
+                    ? [{ y: yearly.normal.tmaxMean, label: `Normale max. ${yearly.normal.period}` }]
+                    : undefined
+                }
+              />
             )}
             {yearly?.years.some((row) => row.yearComplete && row.precipComplete) ? (
               <p className="recordLine">
@@ -1230,40 +1222,30 @@ export default function PlaceExplorer({ slug, initialDate }: { slug: string; ini
                   </label>
                 </div>
                 {monthChart.length ? (
-                  <div className="chart">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={monthChart}>
-                        <CartesianGrid stroke="rgba(255,255,255,.06)" />
-                        <XAxis dataKey="label" tick={{ fill: "#70888f", fontSize: 10 }} />
-                        <YAxis tick={{ fill: "#70888f", fontSize: 10 }} unit="°C" />
-                        <Tooltip />
-                        <Line type="monotone" dataKey="tmax" stroke="#ff7b36" connectNulls={false} name="Maximale moyenne" />
-                        <Line type="monotone" dataKey="tmin" stroke="#7ec8ff" connectNulls={false} name="Minimale moyenne" />
-                        {yearly?.monthNormal?.available && yearly.monthNormal.sameStation ? (
-                          <>
-                            <Line
-                              type="monotone"
-                              dataKey="normalTmax"
-                              stroke="#ff7b36"
-                              strokeDasharray="5 5"
-                              dot={false}
-                              connectNulls={false}
-                              name={`Normale max. ${yearly.monthNormal.period}`}
-                            />
-                            <Line
-                              type="monotone"
-                              dataKey="normalTmin"
-                              stroke="#7ec8ff"
-                              strokeDasharray="5 5"
-                              dot={false}
-                              connectNulls={false}
-                              name={`Normale min. ${yearly.monthNormal.period}`}
-                            />
-                          </>
-                        ) : null}
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
+                  <ClimateLineChart
+                    data={monthChart}
+                    xKey="label"
+                    lines={[
+                      { dataKey: "tmax", stroke: "#ff7b36", name: "Maximale moyenne" },
+                      { dataKey: "tmin", stroke: "#7ec8ff", name: "Minimale moyenne" },
+                      ...(yearly?.monthNormal?.available && yearly.monthNormal.sameStation
+                        ? [
+                            {
+                              dataKey: "normalTmax",
+                              stroke: "#ff7b36",
+                              name: `Normale max. ${yearly.monthNormal.period}`,
+                              dashed: true
+                            },
+                            {
+                              dataKey: "normalTmin",
+                              stroke: "#7ec8ff",
+                              name: `Normale min. ${yearly.monthNormal.period}`,
+                              dashed: true
+                            }
+                          ]
+                        : [])
+                    ]}
+                  />
                 ) : null}
               </>
             ) : (
@@ -1282,18 +1264,14 @@ export default function PlaceExplorer({ slug, initialDate }: { slug: string; ini
                 )}
                 {yearly.monthNormal.available && monthNormalChart.length ? (
                   <>
-                    <div className="chart">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={monthNormalChart}>
-                          <CartesianGrid stroke="rgba(255,255,255,.06)" />
-                          <XAxis dataKey="label" tick={{ fill: "#70888f", fontSize: 10 }} />
-                          <YAxis tick={{ fill: "#70888f", fontSize: 10 }} unit="°C" />
-                          <Tooltip />
-                          <Line type="monotone" dataKey="tmax" stroke="#ff7b36" connectNulls={false} name="Maximale normale" />
-                          <Line type="monotone" dataKey="tmin" stroke="#7ec8ff" connectNulls={false} name="Minimale normale" />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
+                    <ClimateLineChart
+                      data={monthNormalChart}
+                      xKey="label"
+                      lines={[
+                        { dataKey: "tmax", stroke: "#ff7b36", name: "Maximale normale" },
+                        { dataKey: "tmin", stroke: "#7ec8ff", name: "Minimale normale" }
+                      ]}
+                    />
                     <div className="compareMetrics monthNormalMetrics">
                       {yearly.monthNormal.months.filter((row) => row.month === 1 || row.month === 7).map((row) => (
                         <div key={row.month}>
@@ -1417,18 +1395,14 @@ export default function PlaceExplorer({ slug, initialDate }: { slug: string; ini
             ) : seasonChart.length === 0 ? (
               <p className="note">Pas assez de saisons complètes pour tracer une évolution.</p>
             ) : (
-              <div className="chart">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={seasonChart}>
-                    <CartesianGrid stroke="rgba(255,255,255,.06)" />
-                    <XAxis dataKey="year" tick={{ fill: "#70888f", fontSize: 10 }} />
-                    <YAxis tick={{ fill: "#70888f", fontSize: 10 }} unit="°C" />
-                    <Tooltip />
-                    <Line type="monotone" dataKey="tmax" stroke="#ff7b36" dot={false} name="Maximale moyenne" />
-                    <Line type="monotone" dataKey="tmin" stroke="#7ec8ff" dot={false} name="Minimale moyenne" />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
+              <ClimateLineChart
+                data={seasonChart}
+                xKey="year"
+                lines={[
+                  { dataKey: "tmax", stroke: "#ff7b36", name: "Maximale moyenne" },
+                  { dataKey: "tmin", stroke: "#7ec8ff", name: "Minimale moyenne" }
+                ]}
+              />
             )}
             {completeSeasons.length >= 2 ? (
               <>

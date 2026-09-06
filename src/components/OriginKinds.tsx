@@ -19,7 +19,7 @@ export default function OriginKinds() {
       {KINDS.map((kind) => (
         <article key={kind.title}>
           <div className="originStoryPhoto">
-            <Image src={kind.src} alt="" fill sizes="(max-width:1000px) 100vw, 33vw" />
+            <Image src={kind.src} alt="" fill sizes="(max-width:1000px) 100vw, 50vw" quality={70} />
           </div>
           <h3>{kind.title}</h3>
           <p>{kind.text}</p>

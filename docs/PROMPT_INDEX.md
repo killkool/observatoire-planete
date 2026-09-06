@@ -134,10 +134,10 @@ Source : sections 0 à 187 du prompt maître.
 | 119 | PHASE 20 — SCALE | [ ] |
 | 120 | MVP EXACT | [ ] *partiel* |
 | 121 | POURQUOI LA FRANCE EN PREMIER | [ ] |
-| 122 | UX ACCUEIL | [ ] |
+| 122 | UX ACCUEIL | [ ] *partiel* (recherche commune + CTAs 390 px ; pas France entière) |
 | 123 | DESIGN | [ ] *partiel* |
-| 124 | HOME HERO | [ ] *partiel* |
-| 125 | PAGE MOBILE | [ ] *partiel* (page commune empilée, cibles 44 px ; pas de bottom sheet GIS) |
+| 124 | HOME HERO | [ ] *partiel* (hero compact 390 px, LCP `priority` + `sizes=100vw`) |
+| 125 | PAGE MOBILE | [ ] *partiel* (commune + accueil + naissance + comparer 390 px, cibles 44 px ; pas de bottom sheet GIS) |
 | 126 | SEO | [ ] *partiel* (titres + sitemap filtré + OG + hreflang fr + JSON-LD + score v1 ; pas de pages en) |
 | 127 | INTERNATIONALISATION | [ ] *partiel* (html lang=fr, hreflang fr/x-default ; routage `en` = V2) |
 | 128 | PARTAGE SOCIAL | [ ] |
@@ -150,7 +150,7 @@ Source : sections 0 à 187 du prompt maître.
 | 135 | FINOPS | [ ] |
 | 136 | NE PAS STOCKER L'INUTILE | [ ] |
 | 137 | HOT/WARM/COLD DATA | [ ] |
-| 138 | CACHE | [ ] |
+| 138 | CACHE | [ ] *partiel* (`unstable_cache` 1 h accueil/sitemap ; pas CDN) |
 | 139 | PRECOMPUTATION | [ ] |
 | 140 | POSTGRES PARTITIONING | [ ] |
 | 141 | INDEXATION SPATIALE | [ ] |

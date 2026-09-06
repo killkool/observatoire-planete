@@ -54,6 +54,7 @@ export default function ObservatoryHome({ places }: { places: Place[] }) {
                 alt={`Vue aérienne IGN de ${place.name}`}
                 fill
                 sizes="(max-width:1000px) 100vw, 33vw"
+                quality={70}
               />
             </div>
             <div>

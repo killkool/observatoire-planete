@@ -1,11 +1,12 @@
 import type { MetadataRoute } from "next";
 import { communePath } from "@/lib/placeUrl";
-import { listIndexablePlaces, publicSiteOrigin } from "@/lib/seoContent";
+import { publicSiteOrigin } from "@/lib/seoContent";
+import { getIndexablePlacesCached } from "@/lib/sqliteReadCache";
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const origin = publicSiteOrigin();
   const staticRoutes = ["/", "/comparer", "/naissance", "/sources", "/methodology"];
-  const communeEntries = listIndexablePlaces().map((place) => ({
+  const communeEntries = (await getIndexablePlacesCached()).map((place) => ({
     url: `${origin}${communePath(place)}`,
     changeFrequency: "weekly" as const
   }));

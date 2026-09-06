@@ -11,7 +11,7 @@ Nom de travail. Les fournisseurs (Météo-France, Copernicus, NOAA, ECMWF, IGN) 
 **Priorité :** utilité → simplicité → fiabilité → rapidité → beauté → complexité technique.  
 Les cases `[x]` = livré **et** vérifié (preuve). Un fichier vide ne compte pas.
 
-Dernière mise à jour : 2026-09-06 (page commune responsive). Tableau : [STATUS.md](./STATUS.md).
+Dernière mise à jour : 2026-09-06 (R12 accueil mobile + cache 1 h). Tableau : [STATUS.md](./STATUS.md).
 
 ---
 
@@ -35,7 +35,8 @@ Dernière mise à jour : 2026-09-06 (page commune responsive). Tableau : [STATUS
 16. [x] Phase R11 — hreflang `fr` + `x-default` + JSON-LD lieu/mesure (pas de pages `en`)
 17. [x] Phase R11 — `seo_content_score` réel au sitemap (seuil 50, pas un scorer éditorial)
 18. [x] Phase R12 — page commune lisible au doigt (stack météo → carte, cibles 44 px ; pas de bottom sheet GIS)
-19. Ne **pas** extraire ERA5 mondial. Ne **pas** activer océan / NOAA / API commerciale. Ne **pas** feindre Vercel/Supabase. Ne **pas** extraire massivement les tuiles IGN.
+19. [x] Phase R12 suite — accueil / naissance / comparer 390 px ; Recharts à la demande ; cache 1 h accueil+sitemap (pas CDN, pas CWV mesuré)
+20. Ne **pas** extraire ERA5 mondial. Ne **pas** activer océan / NOAA / API commerciale. Ne **pas** feindre Vercel/Supabase. Ne **pas** extraire massivement les tuiles IGN.
 
 Héritage déjà vérifié (ne pas recommencer) : licences Phase 0, import Isère 1 208 439 obs, Grenoble 1983-05-12 (CORENC, 6,6 / 21,6 °C), matching station v1, carte IGN, provenance. Runtime encore SQLite. Cible prod : [ARCHITECTURE_PRODUCTION.md](./ARCHITECTURE_PRODUCTION.md).
 
@@ -192,12 +193,13 @@ Reste : France entière (autres départements) en R10. Isère : 512 communes imp
 ## PHASE R12 — Mobile / performance
 
 - [x] responsive page commune (stack tactile 650 px : jour → carte → climat ; nav défilable ; cibles ≥ 44 px)
+- [x] responsive accueil / naissance / comparer (390 px, 1 colonne, cibles ≥ 44 px, pas d’overflow-x)
 - [ ] Core Web Vitals
 - [ ] cache Next.js / CDN / vues matérialisées
 - [x] cache local tuiles IGN affichées (`data/tiles/ign/`, pas d’extract massif)
-- [ ] optimisation charts / images
+- [x] optimisation charts / images (Recharts chargé à la demande sur la page commune ; `sizes` / `quality` images hors LCP ; pas de score Lighthouse)
 
-**État :** page commune utilisable au téléphone. Pas de bottom sheet ni sélecteur de couches GIS (prompt §125, reste ouvert). CDN production = plus tard.
+**État :** pages grand public utilisables au téléphone. Cache Next 1 h sur accueil + sitemap (`src/lib/sqliteReadCache.ts`) — pas un CDN, pas de vues matérialisées. Pas de bottom sheet ni sélecteur de couches GIS (prompt §125, reste ouvert). Pas de mesure Core Web Vitals.
 
 ---
 

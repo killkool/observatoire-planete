@@ -130,7 +130,7 @@ Slice actuel : `/api/v1/history?place=&date=` + `GET /api/v1/communes/{insee}/ye
 
 ## 10. Caches
 
-SQLite local + `raw/` + cache tuiles IGN (`data/tiles/ign/`, uniquement les tuiles déjà affichées). Une page vue ne frappe ni data.gouv, ni geo.api, ni Météo-France. IGN : au plus la première fois qu’une tuile manque, 2 requêtes simultanées max. Redis **interdit au lancement** (ADR-0002). `npm run stats:compute` n’est **jamais** déclenché par une page vue.
+SQLite local + `raw/` + cache tuiles IGN (`data/tiles/ign/`, uniquement les tuiles déjà affichées). Accueil et sitemap : lecture SQLite mise en cache 1 h (`unstable_cache`, `src/lib/sqliteReadCache.ts`) — pas un CDN, pas un appel fournisseur. Une page vue ne frappe ni data.gouv, ni geo.api, ni Météo-France. IGN : au plus la première fois qu’une tuile manque, 2 requêtes simultanées max. Redis **interdit au lancement** (ADR-0002). `npm run stats:compute` n’est **jamais** déclenché par une page vue.
 
 ## 11. Ingestion
 

@@ -1,6 +1,6 @@
 import ObservatoryHome from "@/components/ObservatoryHome";
-import { listFeaturedPlaces } from "@/lib/placeHistory";
+import { getFeaturedPlacesCached } from "@/lib/sqliteReadCache";
 
-export default function Home() {
-  return <ObservatoryHome places={listFeaturedPlaces()} />;
+export default async function Home() {
+  return <ObservatoryHome places={await getFeaturedPlacesCached()} />;
 }
