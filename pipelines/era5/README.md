@@ -12,14 +12,16 @@ DOI : `10.24381/cds.adbb2d47`. `source_id` : `copernicus.c3s.era5.single-levels-
 
 ## Autorisé (vertical slice)
 
-Extraire **un point** (Grenoble 45.1885, 5.7245) pour des jours demandés.
+Extraire **un point en France** (bbox V1 ~41–51,5°N, 5,5°W–10°E) pour des jours demandés. Un point hors bbox est refusé (pas d’extraction mondiale).
 
-Méthode : `nearest` (`method_version` `era5-point-nearest-hourly-2t-minmax-v1`).
-Min/max quotidien = extrêmes des 24 heures UTC de `2m_temperature`, **pas** le Tmin/Tmax d’abri d’une station.
+Méthode : `nearest` (`method_version` `era5-point-nearest-hourly-2t-d2m-minmax-v1`).
+Min/max quotidien = extrêmes des 24 heures UTC de `2m_temperature` **et** `2m_dewpoint_temperature`, **pas** les Tmin/Tmax/Td d’abri d’une station. Le point de rosée n’est pas fusionné avec la mesure.
 
 Accès utilisé pour le PoC : miroir public **ARCO ERA5**  
 `gs://gcp-public-data-arco-era5/ar/full_37-1h-0p25deg-chunk-1.zarr-v3`  
 (anonyme GCS). Même produit ERA5, même DOI — pas une autre réanalyse. Compte CDS non requis pour ce miroir.
+
+Pas de grille France quotidienne. Pas de TP / vent / pression tant qu’ils ne sont pas extraits réellement.
 
 ## Comment extraire puis ingérer
 
@@ -39,7 +41,7 @@ Schéma JSON :
   "source_id": "copernicus.c3s.era5.single-levels-hourly",
   "dataset_version": "ERA5",
   "method": "nearest",
-  "method_version": "era5-point-nearest-hourly-2t-minmax-v1",
+  "method_version": "era5-point-nearest-hourly-2t-d2m-minmax-v1",
   "latitude": 45.1885,
   "longitude": 5.7245,
   "grid_latitude": 45.25,

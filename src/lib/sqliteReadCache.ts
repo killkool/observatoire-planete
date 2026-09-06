@@ -18,7 +18,7 @@ export const getIndexablePlacesCached = unstable_cache(
 
 export const getPlaceHistoryCached = unstable_cache(
   async (slug: string, date: string) => getPlaceHistory(slug, date),
-  ["place-history-v1"],
+  ["place-history-v2"],
   { revalidate: 3600 }
 );
 

@@ -126,7 +126,7 @@ Département 38 (Isère). Identifiants de postes : ceux du fichier MF, jamais un
 | Incertitude | ensemble 10 membres, 3 h, 0.5° |
 | Fichier | GRIB (CDS) ; Zarr/ARCO chez certains miroirs |
 | Fraîcheur | ERA5T ~5 jours ; final 2–3 mois |
-| V1 | Un point Grenoble 1983-05-12 ingéré. Pas de subset France, pas de grille mondiale. |
+| V1 | Un point Grenoble 1983-05-12 ingéré (2t + point de rosée). Bbox France à l’extracteur. Pas de subset grille France, pas de grille mondiale. |
 | UI | Grand public : « Estimation climatique ». Technique (« En savoir plus ») : réanalyse ERA5 — jamais « Observation ERA5 » |
 
 ### Variables prioritaires (Phase 11, sous-ensemble France d’abord)

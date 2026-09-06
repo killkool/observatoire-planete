@@ -2,6 +2,12 @@
 
 Journal des sources, versions et recalculs. Pas de remplacement silencieux d’un dataset.
 
+## 2026-09-07 (ERA5 point de rosée Grenoble)
+
+- Même maille ARCO 45,25°N, 5,75°E, 1983-05-12, 24 h UTC. `2m_temperature` inchangé : Tmin **276,5640 K** (3,4 °C), Tmax **287,3429 K** (14,2 °C).
+- `2m_dewpoint_temperature` : min **275,1994 K** (2,0 °C), max **280,0102 K** (6,9 °C), moyenne **278,0557 K** (4,9 °C). Aucune valeur inventée. Pas une mesure d’abri. Pas fusionné avec CORENC.
+- Fichier : `pipelines/era5/extracts/grenoble-1983-05-12.json`. SHA-256 `c9524523a50333f1a5f76f9d6f6d4c4cff25ad315f27961380755cdbbbf226e2`. `method_version=era5-point-nearest-hourly-2t-d2m-minmax-v1`. Import : **6** lignes `point_extractions`. Bbox France : un point hors 41–51,5°N / 5,5°W–10°E est refusé. Pas de grille France.
+
 ## 2026-09-07 (extrait IGN Grenoble recompressé)
 
 - Même fichier `public/images/places/grenoble.jpg` (extrait IGN déjà présent, pas une nouvelle tuile). JPEG mozjpeg qualité 58 : **201 Ko → 174 Ko**. Ce n’est pas une observation météo. Crolles / La Pierre inchangés.

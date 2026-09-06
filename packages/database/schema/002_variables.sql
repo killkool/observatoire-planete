@@ -5,6 +5,8 @@ INSERT INTO variables (variable_id, canonical_unit, display_unit_default, displa
 ('air_temperature_min', 'K', 'degC', 1, 'Daily minimum air temperature', 'air_temperature', 180, 340),
 ('air_temperature_max', 'K', 'degC', 1, 'Daily maximum air temperature', 'air_temperature', 180, 340),
 ('dew_point', 'K', 'degC', 1, 'Dew point temperature', 'dew_point_temperature', 180, 340),
+('dew_point_min', 'K', 'degC', 1, 'Daily minimum dew point temperature', 'dew_point_temperature', 180, 340),
+('dew_point_max', 'K', 'degC', 1, 'Daily maximum dew point temperature', 'dew_point_temperature', 180, 340),
 ('relative_humidity', '1', '%', 0, 'Relative humidity (0-1 canonical)', 'relative_humidity', 0, 1.05),
 ('precipitation', 'm', 'mm', 1, 'Precipitation amount', 'thickness_of_rainfall_amount', 0, 2),
 ('wind_speed', 'm s-1', 'km/h', 1, 'Wind speed', 'wind_speed', 0, 150),

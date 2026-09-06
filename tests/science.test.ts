@@ -5,6 +5,7 @@ import { warmerThanPercent, meanOfKnown, describeSameDayLead } from "../packages
 import { scoreConfidence } from "../packages/confidence-engine/src/score";
 import { stationMatchScore } from "../packages/source-engine/src/stationMatch";
 import { assertCommercialSource } from "../packages/licensing/src/gate";
+import { isInFranceEra5Bbox } from "../src/lib/era5France";
 import { communePath } from "../src/lib/placeUrl";
 import { searchPlaces, getPlaceHistory, getPlaceByInsee, getPlaceDayObservation, listPlaces } from "../src/lib/placeHistory";
 import { computeStationStatistics, isMonthComplete, isPrecipComplete, isSeasonComplete, isYearComplete } from "../src/lib/computeStatistics";
@@ -54,6 +55,9 @@ assert.equal(roundToPrecision(24.437, 1), 24.4);
 
 assert.equal(ORIGIN_LABEL_PUBLIC_FR.OBSERVED, "Mesure officielle");
 assert.equal(ORIGIN_LABEL_PUBLIC_FR.REANALYSIS, "Estimation climatique");
+assert.equal(isInFranceEra5Bbox(45.1885, 5.7245), true, "Grenoble is inside the V1 France ERA5 bbox");
+assert.equal(isInFranceEra5Bbox(48.8566, 2.3522), true, "Paris is inside the V1 France ERA5 bbox");
+assert.equal(isInFranceEra5Bbox(40.7128, -74.006), false, "a point outside France must not be extractable");
 assert.equal(communePath({ region_slug: "auvergne-rhone-alpes", department_slug: "isere", slug: "grenoble" }), "/meteo/auvergne-rhone-alpes/isere/grenoble");
 assert.equal(
   communeHistoryHref("/meteo/auvergne-rhone-alpes/isere/grenoble", "1983-05-12", "naissance"),
@@ -352,6 +356,8 @@ assert.ok(grenobleLdText.includes("6.6"));
 assert.ok(grenobleLdText.includes("0.1"));
 assert.equal(grenobleLdText.includes("ERA5"), false);
 assert.equal(grenobleLdText.includes("REANALYSIS"), false);
+assert.equal(grenobleLdText.includes("6.9"), false);
+assert.equal(grenobleLdText.includes("dew"), false);
 const era5Rejected = JSON.stringify(
   communeJsonLd({
     place: {
@@ -736,7 +742,13 @@ if (obsCount === 0) {
   assert.notEqual(grenoble.era5.originLabel, "Mesure officielle");
   assert.equal(grenoble.era5.tmin, 3.4);
   assert.equal(grenoble.era5.tmax, 14.2);
+  assert.equal(grenoble.era5.dewpointMin, 2.0);
+  assert.equal(grenoble.era5.dewpointMax, 6.9);
+  assert.ok(grenoble.era5.dewpointMin < grenoble.era5.tmin, "dewpoint is not a copy of 2t");
   assert.equal(grenoble.era5.method, "nearest");
+  assert.equal(grenoble.era5.methodVersion, "era5-point-nearest-hourly-2t-d2m-minmax-v1");
+  const era5Rows = (db.prepare(`SELECT COUNT(*) AS c FROM point_extractions`).get() as { c: number }).c;
+  assert.equal(era5Rows, 6, "2t min/max/mean + dewpoint min/max/mean, no invented rows");
   assert.ok(grenoble.comparison, "MF vs ERA5 comparison must be present without fusion");
   assert.equal(grenoble.comparison.tminDelta, -3.2);
   assert.equal(grenoble.comparison.tmaxDelta, -7.4);

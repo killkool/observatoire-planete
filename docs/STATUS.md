@@ -1,6 +1,6 @@
 # Avancement — Observatoire Planète
 
-**Date de revue :** 2026-09-07 (HTML sans mois/saisons/chaleur)  
+**Date de revue :** 2026-09-07 (ERA5 point de rosée, bbox France)  
 **Constitution définitive :** [PROMPT_MAITRE_V2.md](./PROMPT_MAITRE_V2.md) — mot pour mot, sections 0–187.  
 **Livraison V1 :** [V1_FRANCE_REFOCUS.md](./V1_FRANCE_REFOCUS.md) + [ROADMAP.md](./ROADMAP.md).  
 **Stack cible :** [ARCHITECTURE_PRODUCTION.md](./ARCHITECTURE_PRODUCTION.md) — [ADR-0002](./adr/ADR-0002-production-stack-v1.md). Runtime encore SQLite.
@@ -11,12 +11,12 @@ Les fournisseurs sont des **sources**, jamais des partenaires.
 
 ## En une phrase
 
-Le parcours **Isère → Météo-France → Grenoble → 1983-05-12 → ERA5 point → comparaison sans fusion → provenance → confiance** est livré. Le premier HTML de la page commune ne sérialise plus les mois, saisons ni épisodes de chaleur (**56 Ko**, avant 78 Ko). Les détails se chargent près de `#mois`. Lighthouse lab : LCP **2535 ms** — pas un pass Core Web Vitals, pas du CrUX.
+Le parcours **Isère → Météo-France → Grenoble → 1983-05-12 → ERA5 point (2t + point de rosée) → comparaison sans fusion → provenance → confiance** est livré. Point de rosée ERA5 **2,0 / 6,9 °C** (même maille, pas une mesure). Bbox France refusée hors métropole. Pas de grille France. LCP lab **2535 ms** — pas un pass Core Web Vitals.
 
 ## Prochaine action
 
-1. **Produit :** LCP lab encore **2535 ms** (seuil 2500 ms) ; pas de CDN tant que le besoin n’est pas démontré.  
-2. **Science / R9 remainder :** subset ERA5 France (pas mondial) — pas de téléchargement grille entière.
+1. **Science / R9 remainder :** subset ERA5 **quotidien bbox France** (pas mondial, pas grille horaire entière). Variables restantes (pluie, vent, pression) non extraites.  
+2. **Produit :** LCP lab encore **2535 ms** (seuil 2500 ms) ; pas de CDN tant que le besoin n’est pas démontré.
 
 Ne pas : E-OBS, ERA5 mondial, océan, extract massif IGN, migrer vers un faux Supabase, déclencher un import à la page vue.
 
@@ -30,10 +30,10 @@ Ne pas : E-OBS, ERA5 mondial, océan, extract massif IGN, migrer vers un faux Su
 | R6 naissance | **Fait** | `/naissance` + enfance + OG PNG + ce jour (moyenne ≥ 5 ans) ; pas de SDK social |
 | R7 mois/saisons/normales | **Partiel** | mois + 4 saisons + normale annuelle et mensuelle 1991-2020 + épisodes Tmax ; pas d’anomalies LSH, pas de canicule officielle |
 | R8 comparateur | **Partiel** | année vs année + saison vs **même** saison + ville vs ville Isère ; pas hiver vs été, pas France entière |
-| R9 ERA5 | **Partiel** | point Grenoble 1983-05-12 ; pas de subset France |
+| R9 ERA5 | **Partiel** | point Grenoble 2t + d2m 1983-05-12 ; bbox France ; pas de subset grille France |
 | R11 SEO | **Fait (Isère)** | titres + sitemap filtré + OG + hreflang fr/x-default + JSON-LD + `seo-content-v1` ; pas de pages en |
 | R12 mobile | **Partiel** | 390 px ; HTML initial 56 Ko sans mois/saisons/chaleur ; Lighthouse lab LCP 2535 ms ; pas CDN, pas CrUX |
-| PoC 1 ERA5 | **Fait** | `point_extractions` = 3 |
+| PoC 1 ERA5 | **Fait** | `point_extractions` = 6 |
 
 ## Preuve statistiques `precompute-v2`
 
@@ -44,7 +44,7 @@ Seuils : année 330 j ; mois 25 j ; saison 75 j ; normale 24 années climatiques
 ## Preuve Grenoble
 
 - Jour : CORENC LA REVIREE (`38126001`), 6,6 / 21,6 °C, 0,1 mm (1983-05-12), 4,7 km, Δz 15 m.
-- Estimation climatique ERA5 (réanalyse, pas une mesure) : maille **45,25°N, 5,75°E**, 24 h UTC `2m_temperature`, min/max horaires **3,4 / 14,2 °C** (276,5640 / 287,3429 K). Accès ARCO, DOI 10.24381/cds.adbb2d47, SHA-256 `bc400068cf019e64cebd974445af9a49a551339527613d4af388515affa15afb`.
+- Estimation climatique ERA5 (réanalyse, pas une mesure) : maille **45,25°N, 5,75°E**, 24 h UTC. `2m_temperature` min/max **3,4 / 14,2 °C** (276,5640 / 287,3429 K, inchangés). Point de rosée `2m_dewpoint_temperature` min/max **2,0 / 6,9 °C** (275,1994 / 280,0102 K). Accès ARCO, DOI 10.24381/cds.adbb2d47, SHA-256 `c9524523a50333f1a5f76f9d6f6d4c4cff25ad315f27961380755cdbbbf226e2`. `method_version=era5-point-nearest-hourly-2t-d2m-minmax-v1`. Derrière « En savoir plus ». Pas dans le JSON-LD.
 - Écart estimation − mesure : Tmin **−3,2 °C**, Tmax **−7,4 °C**. Pas de fusion, pas de correction d’altitude. ERA5 n’est pas une confirmation indépendante.
 - Confiance `confidence-v1-draft` : **90**/100 (observé + distance + Δz + couverture). Pas de bonus d’indépendance ERA5. Pas de bonus de cohérence (|ΔTmax| > 2 °C).
 - Série annuelle / étés / records d’année : **GRENOBLE - LVD** (10,2 km, 26 années 2000–2025). Année la plus chaude **2022** (max. moyenne 20,2 °C), la plus froide **2005** (min. moyenne 6,2 °C), la plus arrosée **2001** (1182,2 mm). Observé sur ce poste, pas ERA5.
@@ -69,7 +69,7 @@ Ville vs ville (preuve 2026-09-06) :
 - Grenoble vs Crolles / La Pierre : **même poste GRENOBLE - LVD** → aucun écart affiché.
 - Grenoble vs Voiron : LVD vs **COUBLEVIE**, 21 années climatiques 2005–2025. Max. moyenne 18,5 → 18,2 °C (−0,3) ; min. 7,3 → 8,4 °C (+1,1) ; pluie 980,8 → 1117,6 mm. Pas de normale 1991-2020 (LVD n’a que 21 ans sur la période).
 
-Tests : `npm run test:science`. Pages : `/meteo/auvergne-rhone-alpes/isere/grenoble?date=1983-05-12` (HTML 56 Ko, CORENC + LVD, mois/saisons/chaleur après scroll) · `?date=1900-01-01` · `/` · `/naissance` · `/comparer?a=38185&b=38563` · Lighthouse lab `next start :3002`.
+Tests : `npm run test:science`. Pages : `/meteo/auvergne-rhone-alpes/isere/grenoble?date=1983-05-12` (CORENC 6,6 / 21,6 °C, ERA5 3,4 / 14,2 °C, point de rosée 2,0 / 6,9 °C dans En savoir plus) · `?date=1900-01-01` · `/` · `/naissance` · `/comparer?a=38185&b=38563`.
 
 ## Runtime
 
@@ -77,9 +77,9 @@ Tests : `npm run test:science`. Pages : `/meteo/auvergne-rhone-alpes/isere/greno
 |---|---|
 | Communes | 512 (Isère) |
 | Observations | 1 208 439 |
-| ERA5 | 3 points (Grenoble 1983-05-12, min/max/mean) |
+| ERA5 | 6 points (Grenoble 1983-05-12, 2t + d2m min/max/mean) |
 | method_version stats | precompute-v2 |
-| method_version ERA5 | era5-point-nearest-hourly-2t-minmax-v1 |
+| method_version ERA5 | era5-point-nearest-hourly-2t-d2m-minmax-v1 |
 | method_version normale mensuelle | month-normal-1991-2020-v1 |
 | method_version SEO | seo-content-v1 |
 | Normales 1991-2020 affichables | 16 postes (annuel et profil mensuel 12/12) |

@@ -53,11 +53,11 @@ Méthode V1 : `heat-streak-tmax-v1`.
 Preuve V1 : Grenoble 45,1885 / 5,7245, **1983-05-12**.
 
 - Observation : station **CORENC LA REVIREE** (`38126001`), 6,6 / 21,6 °C.
-- Réanalyse : maille la plus proche **45,25°N, 5,75°E**, 24 heures UTC de `2m_temperature`, min/max = extrêmes horaires → 3,4 / 14,2 °C. Ce n’est **pas** le Tmin/Tmax d’abri.
-- Écart = estimation − mesure : Tmin **−3,2 °C**, Tmax **−7,4 °C**. Affiché, **pas fusionné**, pas corrigé par un gradient.
-- `method_version` : `era5-point-nearest-hourly-2t-minmax-v1`. Version jeu : ERA5 finale (1983).
+- Réanalyse : maille la plus proche **45,25°N, 5,75°E**, 24 heures UTC. `2m_temperature` min/max → 3,4 / 14,2 °C. Point de rosée `2m_dewpoint_temperature` min/max → **2,0 / 6,9 °C**. Ce n’est **pas** le Tmin/Tmax/Td d’abri.
+- Écart = estimation − mesure (2t seulement) : Tmin **−3,2 °C**, Tmax **−7,4 °C**. Affiché, **pas fusionné**, pas corrigé par un gradient. Le point de rosée n’entre pas dans l’écart ni dans le JSON-LD.
+- `method_version` : `era5-point-nearest-hourly-2t-d2m-minmax-v1`. Version jeu : ERA5 finale (1983).
 - ERA5 assimile des observations : elle **n’augmente pas** le score de confiance comme une source indépendante. Un |ΔTmax| > 2 °C n’ajoute pas de bonus de cohérence.
-- Pas un subset France, pas ERA5-Land, pas de grille mondiale en base.
+- Bbox France à l’extracteur. Pas un subset grille France, pas ERA5-Land, pas de grille mondiale en base.
 
 ## Tendance « ma ville se réchauffe ? »
 

@@ -2,7 +2,7 @@
   "source_id": "copernicus.c3s.era5.single-levels-hourly",
   "dataset_version": "ERA5",
   "method": "nearest",
-  "method_version": "era5-point-nearest-hourly-2t-minmax-v1",
+  "method_version": "era5-point-nearest-hourly-2t-d2m-minmax-v1",
   "doi": "10.24381/cds.adbb2d47",
   "access": {
     "kind": "arco-era5-public-zarr",
@@ -67,7 +67,33 @@
     281.9827,
     282.8079
   ],
-  "extracted_at": "2026-09-06T20:21:40.355094+00:00",
+  "hourly_d2m_K": [
+    275.9781,
+    275.6672,
+    275.2133,
+    275.441,
+    275.1994,
+    275.3964,
+    276.4721,
+    277.317,
+    279.3792,
+    278.6682,
+    279.0268,
+    278.9175,
+    278.9175,
+    278.8637,
+    279.527,
+    279.6455,
+    279.844,
+    280.0102,
+    279.6362,
+    279.6762,
+    279.293,
+    278.9514,
+    278.1388,
+    278.1558
+  ],
+  "extracted_at": "2026-09-06T22:34:35.166904+00:00",
   "points": [
     {
       "date": "1983-05-12",
@@ -85,6 +111,24 @@
       "date": "1983-05-12",
       "variable_id": "air_temperature",
       "value": 282.74940999348956,
+      "unit": "K"
+    },
+    {
+      "date": "1983-05-12",
+      "variable_id": "dew_point_min",
+      "value": 275.19940185546875,
+      "unit": "K"
+    },
+    {
+      "date": "1983-05-12",
+      "variable_id": "dew_point_max",
+      "value": 280.01019287109375,
+      "unit": "K"
+    },
+    {
+      "date": "1983-05-12",
+      "variable_id": "dew_point",
+      "value": 278.05565134684247,
       "unit": "K"
     }
   ]

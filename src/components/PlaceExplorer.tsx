@@ -119,6 +119,10 @@ type HistoryPayload = {
     tmaxDisplay: string;
     tmin: number | null;
     tmax: number | null;
+    dewpointMin?: number | null;
+    dewpointMax?: number | null;
+    dewpointMinDisplay?: string;
+    dewpointMaxDisplay?: string;
   } | null;
   comparison: { tminDelta: number | null; tmaxDelta: number | null; note: string } | null;
   recordsObserved: {
@@ -802,7 +806,11 @@ export default function PlaceExplorer({
                     {data.era5.gridLatitude != null && data.era5.gridLongitude != null
                       ? ` Maille la plus proche ${data.era5.gridLatitude}°N, ${data.era5.gridLongitude}°E.`
                       : ""}
+                    {" "}
                     Min/max = extrêmes des 24 heures UTC de température à 2 m, pas le Tmin/Tmax d’abri.
+                    {data.era5.dewpointMin != null || data.era5.dewpointMax != null
+                      ? ` Point de rosée à 2 m (même maille, pas une mesure) : ${data.era5.dewpointMinDisplay} / ${data.era5.dewpointMaxDisplay}.`
+                      : ""}
                     Maille d’environ 0,25°. Aucune correction d’altitude ni moyenne avec la station.
                   </p>
                   {data.attributions.map((line) => (

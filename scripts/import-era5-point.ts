@@ -3,6 +3,7 @@ import path from "node:path";
 import { createHash, randomUUID } from "node:crypto";
 import db from "../src/lib/db";
 import { assertCommercialSource } from "../packages/licensing/src/gate";
+import { assertFranceEra5Point } from "../src/lib/era5France";
 
 const args = Object.fromEntries(process.argv.slice(2).map((arg) => {
   const [k, v = "true"] = arg.replace(/^--/, "").split("=");
@@ -40,6 +41,7 @@ if (payload.source_id !== "copernicus.c3s.era5.single-levels-hourly") {
 if (!payload.points?.length) {
   throw new Error("Aucune extraction dans le JSON : rien n'est inventé.");
 }
+assertFranceEra5Point(payload.latitude, payload.longitude);
 for (const p of payload.points) {
   if (typeof p.value !== "number" || !Number.isFinite(p.value)) {
     throw new Error(`Valeur invalide pour ${p.variable_id} ${p.date} : refus d'inventer.`);

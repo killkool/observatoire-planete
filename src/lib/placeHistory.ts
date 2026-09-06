@@ -222,7 +222,10 @@ export function getPlaceHistory(slug: string, date: string) {
       dl.method_version, dl.steps
     FROM point_extractions pe
     LEFT JOIN data_lineage dl ON dl.lineage_id = pe.lineage_id
-    WHERE pe.date = ? AND pe.variable_id IN ('air_temperature_min', 'air_temperature_max', 'air_temperature')
+    WHERE pe.date = ? AND pe.variable_id IN (
+        'air_temperature_min', 'air_temperature_max', 'air_temperature',
+        'dew_point_min', 'dew_point_max', 'dew_point'
+      )
       AND pe.source_id = 'copernicus.c3s.era5.single-levels-hourly'
       AND abs(pe.latitude - ?) < 0.0001 AND abs(pe.longitude - ?) < 0.0001
   `).all(date, place.latitude, place.longitude) as {
@@ -251,6 +254,9 @@ export function getPlaceHistory(slug: string, date: string) {
   const era5TminC = toCelsius(era5ByVar.air_temperature_min);
   const era5TmaxC = toCelsius(era5ByVar.air_temperature_max);
   const era5TmeanC = toCelsius(era5ByVar.air_temperature);
+  const era5DewMinC = toCelsius(era5ByVar.dew_point_min);
+  const era5DewMaxC = toCelsius(era5ByVar.dew_point_max);
+  const era5HasTemp = era5TminC != null || era5TmaxC != null;
   const tmaxDelta =
     tmax != null && era5TmaxC != null ? roundToPrecision(era5TmaxC - tmax, 1) : null;
   const tminDelta =
@@ -348,7 +354,7 @@ export function getPlaceHistory(slug: string, date: string) {
           precipDisplay: formatMm(rr)
         }
       : null,
-    era5: era5.length
+    era5: era5HasTemp
       ? {
           originType: "REANALYSIS",
           originLabel: ORIGIN_LABEL_PUBLIC_FR.REANALYSIS,
@@ -363,7 +369,11 @@ export function getPlaceHistory(slug: string, date: string) {
           tmax: era5TmaxC,
           tmean: era5TmeanC,
           tminDisplay: formatCelsius(era5TminC),
-          tmaxDisplay: formatCelsius(era5TmaxC)
+          tmaxDisplay: formatCelsius(era5TmaxC),
+          dewpointMin: era5DewMinC,
+          dewpointMax: era5DewMaxC,
+          dewpointMinDisplay: formatCelsius(era5DewMinC),
+          dewpointMaxDisplay: formatCelsius(era5DewMaxC)
         }
       : null,
     comparison,
