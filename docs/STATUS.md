@@ -1,6 +1,6 @@
 # Avancement — Observatoire Planète
 
-**Date de revue :** 2026-09-06 (hreflang fr + JSON-LD)  
+**Date de revue :** 2026-09-06 (`seo_content_score` réel)  
 **Constitution définitive :** [PROMPT_MAITRE_V2.md](./PROMPT_MAITRE_V2.md) — mot pour mot, sections 0–187.  
 **Livraison V1 :** [V1_FRANCE_REFOCUS.md](./V1_FRANCE_REFOCUS.md) + [ROADMAP.md](./ROADMAP.md).  
 **Stack cible :** [ARCHITECTURE_PRODUCTION.md](./ARCHITECTURE_PRODUCTION.md) — [ADR-0002](./adr/ADR-0002-production-stack-v1.md). Runtime encore SQLite.
@@ -11,11 +11,11 @@ Les fournisseurs sont des **sources**, jamais des partenaires.
 
 ## En une phrase
 
-Le parcours **Isère → Météo-France → Grenoble → 1983-05-12 → ERA5 point → comparaison sans fusion → provenance → confiance** est livré. SEO V1 : hreflang `fr` + `x-default` (pas d’URL anglaise fantôme) et JSON-LD lieu + mesure officielle. Grenoble 1983-05-12 : CORENC 6,6 / 21,6 °C, 0,1 mm dans le graphe ; pas d’ERA5.
+Le parcours **Isère → Météo-France → Grenoble → 1983-05-12 → ERA5 point → comparaison sans fusion → provenance → confiance** est livré. SEO V1 : hreflang `fr` + `x-default`, JSON-LD lieu + mesure officielle, sitemap filtré par `seo_content_score` (`seo-content-v1`) sur des années climatiques et des mesures **OBSERVED** — pas un `true` inventé, pas d’ERA5.
 
 ## Prochaine action
 
-1. **Produit :** `seo_content_score` éditorial (R11 remainder), ou responsive / perfs (R12).  
+1. **Produit :** responsive page commune / perfs (R12).  
 2. **Science / R9 remainder :** subset ERA5 France (pas mondial) — pas de téléchargement grille entière.
 
 Ne pas : E-OBS, ERA5 mondial, océan, extract massif IGN, migrer vers un faux Supabase, déclencher un import à la page vue.
@@ -31,7 +31,7 @@ Ne pas : E-OBS, ERA5 mondial, océan, extract massif IGN, migrer vers un faux Su
 | R7 mois/saisons/normales | **Partiel** | mois + 4 saisons + normale annuelle et mensuelle 1991-2020 + épisodes Tmax ; pas d’anomalies LSH, pas de canicule officielle |
 | R8 comparateur | **Partiel** | année vs année + saison vs **même** saison + ville vs ville Isère ; pas hiver vs été, pas France entière |
 | R9 ERA5 | **Partiel** | point Grenoble 1983-05-12 ; pas de subset France |
-| R11 SEO | **Partiel** | titres + sitemap + OG + hreflang fr/x-default + JSON-LD ; pas de pages en ; `seo_content_score` encore helper |
+| R11 SEO | **Fait (Isère)** | titres + sitemap filtré + OG + hreflang fr/x-default + JSON-LD + `seo-content-v1` ; pas de pages en |
 | PoC 1 ERA5 | **Fait** | `point_extractions` = 3 |
 
 ## Preuve statistiques `precompute-v2`
@@ -55,6 +55,7 @@ Seuils : année 330 j ; mois 25 j ; saison 75 j ; normale 24 années climatiques
 - Épisodes Tmax (LVD, `heat-streak-tmax-v1`, pas une canicule officielle) : 131 épisodes ≥ 30 °C (856 j). Plus long **43 j** du 13 juin au 25 juillet 2026 (max. moyenne 33,9 °C, pic 38,3 °C). Plus chaud **1–17 août 2003** (max. moyenne 36,2 °C, pic 39,5 °C). ≥ 35 °C : plus long **12 j** du 3 au 14 août 2003. Aucun épisode de 3 jours ≥ 40 °C. Observé sur ce poste, série jusqu’au 4 septembre 2026.
 - Carte de partage : `/og/grenoble/1983-05-12` → PNG. Date sans mesure : `/og/grenoble/1900-01-01` → PNG « aucune mesure officielle », pas de 0 inventé. Pas d’ERA5 sur la carte.
 - SEO page commune : canonical + hreflang `fr` / `x-default` vers `/meteo/auvergne-rhone-alpes/isere/grenoble`. JSON-LD `City` INSEE **38185**, geo 45,1885 / 5,7245. Pour `?date=1983-05-12` : `WeatherObservation` CORENC 6,6 / 21,6 °C, 0,1 mm. Pas d’ERA5 dans le graphe.
+- `seo_content_score` `seo-content-v1` : Grenoble **100**/100 (identité + **26** années climatiques LVD `38538002` + historique observé). Sitemap Isère : **512 / 512** indexables — chaque commune a une station climatique proche avec ≥ 10 années, ce n’est pas un `true` forcé. Une coquille sans mesure ni série annuelle n’entre pas (`noindex`). ERA5 ne compte pas.
 - Ce jour (CORENC, 8 × 12 mai) : maximale moyenne **21,6 °C**, minimale moyenne **7,3 °C**, plus chaude que **50 %**. Records 5,1 °C (1982) / 32,1 °C (1986). Pas une normale climatique.
 
 Ville vs ville (preuve 2026-09-06) :
@@ -62,7 +63,7 @@ Ville vs ville (preuve 2026-09-06) :
 - Grenoble vs Crolles / La Pierre : **même poste GRENOBLE - LVD** → aucun écart affiché.
 - Grenoble vs Voiron : LVD vs **COUBLEVIE**, 21 années climatiques 2005–2025. Max. moyenne 18,5 → 18,2 °C (−0,3) ; min. 7,3 → 8,4 °C (+1,1) ; pluie 980,8 → 1117,6 mm. Pas de normale 1991-2020 (LVD n’a que 21 ans sur la période).
 
-Tests : `npm run test:science`. Pages : `/meteo/auvergne-rhone-alpes/isere/grenoble?date=1983-05-12#ce-jour` · `#comparaison-sources` · `#mois` · `#normale-mensuelle` · `#saisons` · `#chaleur` · `/og/grenoble/1983-05-12`.
+Tests : `npm run test:science`. Pages : `/meteo/auvergne-rhone-alpes/isere/grenoble?date=1983-05-12` · `/sitemap.xml` (5 + 512) · `#ce-jour` · `#comparaison-sources` · `#mois` · `#normale-mensuelle` · `#saisons` · `#chaleur` · `/og/grenoble/1983-05-12`.
 
 ## Runtime
 
@@ -74,4 +75,5 @@ Tests : `npm run test:science`. Pages : `/meteo/auvergne-rhone-alpes/isere/greno
 | method_version stats | precompute-v2 |
 | method_version ERA5 | era5-point-nearest-hourly-2t-minmax-v1 |
 | method_version normale mensuelle | month-normal-1991-2020-v1 |
+| method_version SEO | seo-content-v1 |
 | Normales 1991-2020 affichables | 16 postes (annuel et profil mensuel 12/12) |

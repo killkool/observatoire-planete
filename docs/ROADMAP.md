@@ -11,7 +11,7 @@ Nom de travail. Les fournisseurs (Météo-France, Copernicus, NOAA, ECMWF, IGN) 
 **Priorité :** utilité → simplicité → fiabilité → rapidité → beauté → complexité technique.  
 Les cases `[x]` = livré **et** vérifié (preuve). Un fichier vide ne compte pas.
 
-Dernière mise à jour : 2026-09-06 (hreflang fr + JSON-LD). Tableau : [STATUS.md](./STATUS.md).
+Dernière mise à jour : 2026-09-06 (`seo_content_score` réel). Tableau : [STATUS.md](./STATUS.md).
 
 ---
 
@@ -33,7 +33,8 @@ Dernière mise à jour : 2026-09-06 (hreflang fr + JSON-LD). Tableau : [STATUS.m
 14. [x] Phase R6 — ce jour dans l’histoire (moyenne + percentile + records, un poste)
 15. [x] Phase R7 — normale mensuelle 1991-2020 (≥ 24 mois complets / calendrier, un poste)
 16. [x] Phase R11 — hreflang `fr` + `x-default` + JSON-LD lieu/mesure (pas de pages `en`)
-17. Ne **pas** extraire ERA5 mondial. Ne **pas** activer océan / NOAA / API commerciale. Ne **pas** feindre Vercel/Supabase. Ne **pas** extraire massivement les tuiles IGN.
+17. [x] Phase R11 — `seo_content_score` réel au sitemap (seuil 50, pas un scorer éditorial)
+18. Ne **pas** extraire ERA5 mondial. Ne **pas** activer océan / NOAA / API commerciale. Ne **pas** feindre Vercel/Supabase. Ne **pas** extraire massivement les tuiles IGN.
 
 Héritage déjà vérifié (ne pas recommencer) : licences Phase 0, import Isère 1 208 439 obs, Grenoble 1983-05-12 (CORENC, 6,6 / 21,6 °C), matching station v1, carte IGN, provenance. Runtime encore SQLite. Cible prod : [ARCHITECTURE_PRODUCTION.md](./ARCHITECTURE_PRODUCTION.md).
 
@@ -181,9 +182,9 @@ Reste : France entière (autres départements) en R10. Isère : 512 communes imp
 
 - [x] pages communes (contenu réel seulement, Isère)
 - [x] métadonnées / sitemap / canonical / carte OG PNG / hreflang `fr` + `x-default` / JSON-LD (City + mesure officielle si OBSERVED)
-- [ ] `seo_content_score` — helper seuil 50 au sitemap ; pas un scorer éditorial
+- [x] `seo_content_score` — seuil 50 au sitemap et `noindex` si sous le seuil ; pas un scorer éditorial
 
-**État :** titres et descriptions issus du nom officiel. Sitemap = référentiel Isère + pages utiles. Hreflang français seulement (pas d’URL anglaise fantôme). JSON-LD : lieu INSEE + WeatherObservation Météo-France si une mesure existe ; pas d’ERA5. Pas de millions de coquilles.
+**État :** titres et descriptions issus du nom officiel. Sitemap = communes dont le score repose sur l’identité INSEE **et** des années climatiques ou des mesures OBSERVED. Hreflang français seulement. JSON-LD : lieu + WeatherObservation Météo-France si une mesure existe ; pas d’ERA5. Pas de millions de coquilles.
 
 ---
 

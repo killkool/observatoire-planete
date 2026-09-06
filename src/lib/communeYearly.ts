@@ -32,6 +32,10 @@ import {
   type ObservedMonthRecords
 } from "./climateMonths";
 import {
+  listClimateStationCoverage,
+  resolveClimateStationForPlace
+} from "./climateStations";
+import {
   listAnnualStats,
   listCompleteNormalStations,
   listCompleteMonthNormalStations,
@@ -46,18 +50,6 @@ import {
 import db from "./db";
 import { getPlaceByInsee, type PlaceRow } from "./placeHistory";
 import { communePath } from "./placeUrl";
-
-const CLIMATE_COMPLETE_YEARS_MIN = 10;
-
-type ClimateStationRow = {
-  id: string;
-  name: string;
-  latitude: number | null;
-  longitude: number | null;
-  altitude: number | null;
-  years: number;
-  complete_years: number;
-};
 
 type ChildhoodEligibleRow = {
   id: string;
@@ -146,34 +138,8 @@ export function getCommuneYearly(insee: string): CommuneYearlyPayload | null {
     return emptyPayload(place, false);
   }
 
-  const stations = db.prepare(
-    `
-    SELECT s.id, s.name, s.latitude, s.longitude, s.altitude,
-           COUNT(*) AS years,
-           SUM(a.year_complete) AS complete_years
-    FROM annual_statistics a
-    JOIN stations s ON s.id = a.station_id
-    GROUP BY s.id
-    `
-  ).all() as ClimateStationRow[];
-
-  const withClimate = stations.filter((s) => s.complete_years >= CLIMATE_COMPLETE_YEARS_MIN);
-  const pool = withClimate.length ? withClimate : stations;
-  const ranked = rankStationsForPlace(
-    place.latitude,
-    place.longitude,
-    place.altitude_m,
-    pool.map((s) => ({
-      id: s.id,
-      name: s.name,
-      latitude: s.latitude,
-      longitude: s.longitude,
-      altitude: s.altitude,
-      coverageDays: s.complete_years * 365,
-      hasTempOnDate: s.complete_years >= CLIMATE_COMPLETE_YEARS_MIN
-    }))
-  );
-  const preferred = ranked[0] ?? null;
+  const stations = listClimateStationCoverage();
+  const preferred = resolveClimateStationForPlace(place, stations);
   if (!preferred) return emptyPayload(place, true);
 
   const meta = stations.find((s) => s.id === preferred.id);

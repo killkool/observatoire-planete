@@ -4,7 +4,7 @@ import PlaceExplorer from "@/components/PlaceExplorer";
 import { isIsoDate } from "@/lib/birthDay";
 import { defaultDateForPlace, getPlaceByPath, getPlaceDayObservation } from "@/lib/placeHistory";
 import { communePath, departmentLabel } from "@/lib/placeUrl";
-import { frenchLanguageAlternates } from "@/lib/seoContent";
+import { frenchLanguageAlternates, seoFactsForPlace } from "@/lib/seoContent";
 import { communeJsonLd } from "@/lib/seoJsonLd";
 import { shareCardPath } from "@/lib/shareCard";
 import { notFound } from "next/navigation";
@@ -31,10 +31,12 @@ export async function generateMetadata({
   const description = `Températures, pluie et records observés à ${place.name} (${dept}). La station et la source sont indiquées. Ce n’est pas une prévision.`;
   const path = communePath(place);
   const image = shareCardPath(place.slug, date);
+  const seo = seoFactsForPlace(place);
   return {
     title,
     description,
     alternates: frenchLanguageAlternates(path),
+    robots: seo.indexable ? { index: true, follow: true } : { index: false, follow: true },
     openGraph: {
       title,
       description,

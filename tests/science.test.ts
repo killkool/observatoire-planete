@@ -6,7 +6,7 @@ import { scoreConfidence } from "../packages/confidence-engine/src/score";
 import { stationMatchScore } from "../packages/source-engine/src/stationMatch";
 import { assertCommercialSource } from "../packages/licensing/src/gate";
 import { communePath } from "../src/lib/placeUrl";
-import { searchPlaces, getPlaceHistory, getPlaceByInsee, getPlaceDayObservation } from "../src/lib/placeHistory";
+import { searchPlaces, getPlaceHistory, getPlaceByInsee, getPlaceDayObservation, listPlaces } from "../src/lib/placeHistory";
 import { computeStationStatistics, isMonthComplete, isPrecipComplete, isSeasonComplete, isYearComplete } from "../src/lib/computeStatistics";
 import { getCommuneYearCompare, getCommuneChildhood, getCommuneCityCompare, getCommuneYearly } from "../src/lib/communeYearly";
 import {
@@ -29,7 +29,7 @@ import {
   wettestCompleteMonth,
   yearsWithTwelveCompleteMonths
 } from "../src/lib/climateMonths";
-import { seoContentScore, frenchLanguageAlternates, publicAbsoluteUrl } from "../src/lib/seoContent";
+import { seoContentScore, frenchLanguageAlternates, publicAbsoluteUrl, seoFactsForPlace, listIndexablePlaces, SEO_CONTENT_METHOD } from "../src/lib/seoContent";
 import { communeJsonLd, websiteJsonLd } from "../src/lib/seoJsonLd";
 import { coldestCompleteSeason, seasonPublicLabel } from "../src/lib/climateSeasons";
 import { buildShareCardModel, shareCardPath } from "../src/lib/shareCard";
@@ -118,6 +118,12 @@ if (placeCount >= 100) {
   const grenoblePlace = getPlaceByInsee("38185");
   assert.equal(grenoblePlace?.latitude, 45.1885, "pinned Grenoble coordinates must stay");
   assert.equal(grenoblePlace?.longitude, 5.7245);
+  const grenobleSeo = seoFactsForPlace(grenoblePlace!);
+  assert.equal(grenobleSeo.indexable, true);
+  assert.ok(grenobleSeo.completeClimateYears >= 10, "Grenoble climate series must count real complete years, not 0");
+  assert.equal(grenobleSeo.hasDistinctiveHistory, true);
+  assert.ok(listIndexablePlaces().some((p) => p.insee_code === "38185"));
+  assert.ok(listIndexablePlaces().length <= listPlaces().length);
 }
 
 const northWind = windFromUv(0, -1);
@@ -256,6 +262,59 @@ assert.equal(seoContentScore({ hasPlace: false, completeClimateYears: 0, hasDist
 assert.equal(seoContentScore({ hasPlace: true, completeClimateYears: 0, hasDistinctiveHistory: false }).indexable, false);
 assert.equal(seoContentScore({ hasPlace: true, completeClimateYears: 0, hasDistinctiveHistory: true }).indexable, true);
 assert.equal(seoContentScore({ hasPlace: true, completeClimateYears: 10, hasDistinctiveHistory: false }).indexable, true);
+const shellPlace = {
+  place_id: "x",
+  name: "Coquille",
+  slug: "coquille",
+  insee_code: "99999",
+  latitude: 45.2,
+  longitude: 5.7,
+  altitude_m: 200,
+  timezone: "Europe/Paris",
+  region_slug: "auvergne-rhone-alpes",
+  department_slug: "isere",
+  postal_codes: null,
+  population: null
+};
+const emptyFacts = seoFactsForPlace(shellPlace, { stations: [], observed: [] });
+assert.equal(emptyFacts.indexable, false);
+assert.equal(emptyFacts.completeClimateYears, 0);
+assert.equal(emptyFacts.hasDistinctiveHistory, false);
+assert.equal(emptyFacts.methodVersion, SEO_CONTENT_METHOD);
+const climateFacts = seoFactsForPlace(shellPlace, {
+  stations: [
+    {
+      id: "st",
+      name: "Poste",
+      latitude: 45.2,
+      longitude: 5.7,
+      altitude: 200,
+      years: 12,
+      complete_years: 12
+    }
+  ],
+  observed: []
+});
+assert.equal(climateFacts.indexable, true);
+assert.equal(climateFacts.completeClimateYears, 12);
+assert.equal(climateFacts.hasDistinctiveHistory, true);
+const observedOnly = seoFactsForPlace(shellPlace, {
+  stations: [],
+  observed: [
+    {
+      id: "st",
+      name: "Poste",
+      latitude: 45.2,
+      longitude: 5.7,
+      altitude: 200,
+      observedDays: 4
+    }
+  ]
+});
+assert.equal(observedOnly.completeClimateYears, 0);
+assert.equal(observedOnly.hasDistinctiveHistory, true);
+assert.equal(observedOnly.indexable, true);
+assert.equal(observedOnly.climateStationId, null, "ERA5 / empty climate table must not invent a climate station");
 const hreflang = frenchLanguageAlternates("/meteo/auvergne-rhone-alpes/isere/grenoble");
 assert.equal(hreflang.languages.fr, hreflang.canonical);
 assert.equal(hreflang.languages["x-default"], hreflang.canonical);
@@ -745,6 +804,9 @@ if (obsCount === 0) {
   assert.equal(julyNormal?.tmaxMean, 28.3);
   assert.equal(julyNormal?.precipitationMean, 68.3);
   assert.ok(yearly.station, "climate series must map to one station, not copy observations per commune");
+  const yearlySeo = seoFactsForPlace(getPlaceByInsee("38185")!);
+  assert.equal(yearlySeo.completeClimateYears, yearly.station.completeYears);
+  assert.equal(yearlySeo.climateStationId, yearly.station.id);
   assert.equal(yearly.normal.period, "1991-2020");
   assert.equal(yearly.normal.minYearsRequired, 24);
   for (const row of yearly.years) {
