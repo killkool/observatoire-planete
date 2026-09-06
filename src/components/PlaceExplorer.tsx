@@ -610,6 +610,7 @@ export default function PlaceExplorer({ slug, initialDate }: { slug: string; ini
 
       {data?.preferredStation && (
         <>
+          <div className="placeDayFlow">
           <section className="storyGrid">
             <article className="panel storyMain">
               <div className="storyPhoto">
@@ -782,7 +783,9 @@ export default function PlaceExplorer({ slug, initialDate }: { slug: string; ini
               </p>
             </details>
           </section>
+          </div>
 
+          <div className="placeClimateFlow">
           <section className="panel chartPanel">
             <div className="panelTitle">
               <div>
@@ -1632,6 +1635,7 @@ export default function PlaceExplorer({ slug, initialDate }: { slug: string; ini
               </div>
               <strong>NUM_POSTE {data.preferredStation.id}</strong>
             </div>
+            <div className="tableWrap">
             <table>
               <thead>
                 <tr>
@@ -1652,6 +1656,7 @@ export default function PlaceExplorer({ slug, initialDate }: { slug: string; ini
                 ))}
               </tbody>
             </table>
+            </div>
             <p className="note">
               {data.stationDisclaimer} {data.attributions[0]}
             </p>
@@ -1659,6 +1664,7 @@ export default function PlaceExplorer({ slug, initialDate }: { slug: string; ini
               <Link href="/sources">Registre des sources</Link>
             </p>
           </section>
+          </div>
         </>
       )}
     </main>

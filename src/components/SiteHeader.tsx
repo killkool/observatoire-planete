@@ -6,7 +6,7 @@ export default function SiteHeader() {
       <Link href="/" className="brandMark">
         Observatoire <span>Planète</span>
       </Link>
-      <nav>
+      <nav className="siteNav" aria-label="Navigation principale">
         <Link href="/comparer">Comparer</Link>
         <Link href="/naissance">Naissance</Link>
         <Link href="/meteo/auvergne-rhone-alpes/isere/grenoble">Grenoble</Link>

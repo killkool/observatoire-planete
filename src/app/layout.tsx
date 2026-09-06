@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import JsonLd from "@/components/JsonLd";
 import SiteHeader from "@/components/SiteHeader";
@@ -15,6 +15,12 @@ export const metadata: Metadata = {
   title: homeTitle,
   description: homeDescription,
   alternates: frenchLanguageAlternates("/")
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: "#071014"
 };
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {

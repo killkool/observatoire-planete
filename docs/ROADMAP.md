@@ -11,7 +11,7 @@ Nom de travail. Les fournisseurs (Météo-France, Copernicus, NOAA, ECMWF, IGN) 
 **Priorité :** utilité → simplicité → fiabilité → rapidité → beauté → complexité technique.  
 Les cases `[x]` = livré **et** vérifié (preuve). Un fichier vide ne compte pas.
 
-Dernière mise à jour : 2026-09-06 (`seo_content_score` réel). Tableau : [STATUS.md](./STATUS.md).
+Dernière mise à jour : 2026-09-06 (page commune responsive). Tableau : [STATUS.md](./STATUS.md).
 
 ---
 
@@ -34,7 +34,8 @@ Dernière mise à jour : 2026-09-06 (`seo_content_score` réel). Tableau : [STAT
 15. [x] Phase R7 — normale mensuelle 1991-2020 (≥ 24 mois complets / calendrier, un poste)
 16. [x] Phase R11 — hreflang `fr` + `x-default` + JSON-LD lieu/mesure (pas de pages `en`)
 17. [x] Phase R11 — `seo_content_score` réel au sitemap (seuil 50, pas un scorer éditorial)
-18. Ne **pas** extraire ERA5 mondial. Ne **pas** activer océan / NOAA / API commerciale. Ne **pas** feindre Vercel/Supabase. Ne **pas** extraire massivement les tuiles IGN.
+18. [x] Phase R12 — page commune lisible au doigt (stack météo → carte, cibles 44 px ; pas de bottom sheet GIS)
+19. Ne **pas** extraire ERA5 mondial. Ne **pas** activer océan / NOAA / API commerciale. Ne **pas** feindre Vercel/Supabase. Ne **pas** extraire massivement les tuiles IGN.
 
 Héritage déjà vérifié (ne pas recommencer) : licences Phase 0, import Isère 1 208 439 obs, Grenoble 1983-05-12 (CORENC, 6,6 / 21,6 °C), matching station v1, carte IGN, provenance. Runtime encore SQLite. Cible prod : [ARCHITECTURE_PRODUCTION.md](./ARCHITECTURE_PRODUCTION.md).
 
@@ -190,13 +191,13 @@ Reste : France entière (autres départements) en R10. Isère : 512 communes imp
 
 ## PHASE R12 — Mobile / performance
 
-- [ ] responsive page commune
+- [x] responsive page commune (stack tactile 650 px : jour → carte → climat ; nav défilable ; cibles ≥ 44 px)
 - [ ] Core Web Vitals
 - [ ] cache Next.js / CDN / vues matérialisées
 - [x] cache local tuiles IGN affichées (`data/tiles/ign/`, pas d’extract massif)
 - [ ] optimisation charts / images
 
-**État :** une page commune lit SQLite + tuiles déjà vues. CDN production = plus tard.
+**État :** page commune utilisable au téléphone. Pas de bottom sheet ni sélecteur de couches GIS (prompt §125, reste ouvert). CDN production = plus tard.
 
 ---
 

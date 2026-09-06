@@ -6,8 +6,8 @@
 .siteHeader{position:sticky;top:0;z-index:20;display:flex;justify-content:space-between;gap:16px;align-items:center;padding:12px 4vw;background:rgba(7,16,20,.82);backdrop-filter:blur(16px);border-bottom:1px solid var(--line)}
 .brandMark{color:var(--text);text-decoration:none;font-weight:800;letter-spacing:-.03em}
 .brandMark span{color:var(--accent)}
-.siteHeader nav{display:flex;gap:16px;flex-wrap:wrap}
-.siteHeader nav a{color:#d5e4e8;text-decoration:none;font-size:13px;font-weight:700}
+.siteHeader nav{display:flex;gap:8px;flex-wrap:wrap}
+.siteHeader nav a{min-height:44px;display:inline-flex;align-items:center;color:#d5e4e8;text-decoration:none;font-size:13px;font-weight:700}
 
 .earthHero{position:relative;min-height:78vh;display:flex;align-items:flex-end;overflow:hidden}
 .earthHero img{object-fit:cover;object-position:center 35%}
@@ -83,7 +83,7 @@
 .placeHero .crumb{color:#c9d8dc}
 .photoCredit{color:#c9d8dc;font-size:12px;margin:8px 0 0}
 
-.mapBlock,.storyGrid,.placeVisual .chartPanel,.placeVisual .empty,.placeVisual .error,.placeVisual .loadingNote{width:min(1480px,94vw);margin:16px auto}
+.mapBlock,.storyGrid,.placeVisual .chartPanel,.placeVisual .empty,.placeVisual .error,.placeVisual .loadingNote,.sourceCompare,.placeDayFlow,.placeClimateFlow{width:min(1480px,94vw);margin:16px auto}
 .mapWrap{position:relative}
 .mapCanvas,.mapPlaceholder{height:460px;border-radius:14px;overflow:hidden;background:#0a1418}
 .mapPlaceholder{display:grid;place-items:center;color:var(--muted)}
@@ -157,6 +157,10 @@
 .monthNormalMetrics{grid-template-columns:repeat(2,minmax(0,1fr))}
 .moreMethod summary{cursor:pointer;color:var(--accent2)}
 .moreMethod p{margin:8px 0 0}
+.placeVisual{display:flex;flex-direction:column}
+.placeDayFlow,.placeClimateFlow{display:flex;flex-direction:column;gap:16px}
+.placeDayFlow > *,.placeClimateFlow > *{width:100%;margin-left:0;margin-right:0}
+.shareBtn,.mapToolbar button,.yearCell,.btnPrimary,.btnGhost{min-height:44px}
 
 @media(max-width:1000px){
   .placeCards,.originStory,.storyGrid,.methodSteps,.placeSearch{grid-template-columns:1fr}
@@ -167,5 +171,26 @@
   .mapCanvas,.mapPlaceholder{height:320px}
 }
 @media(max-width:650px){
-  .siteHeader{flex-direction:column;align-items:flex-start}
+  html{overflow-x:clip}
+  .siteHeader{flex-direction:column;align-items:stretch;gap:8px;padding:10px 4vw}
+  .siteHeader .siteNav{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;margin:0 -4vw;padding:0 4vw 4px}
+  .siteHeader .siteNav::-webkit-scrollbar{display:none}
+  .siteHeader .siteNav a{flex:0 0 auto;padding:10px 12px}
+  .placeDayFlow{order:1}
+  .mapBlock{order:2}
+  .placeClimateFlow{order:3}
+  .placeHero{min-height:280px}
+  .placeHeroContent h1{font-size:clamp(32px,12vw,48px)}
+  .heroActions{flex-direction:column;align-items:stretch}
+  .shareBtn{width:100%}
+  .datePick input,.placeVisual input[type=date],.placeVisual select,.placeSearch input{font-size:16px;min-height:44px}
+  .tempLabels{font-size:22px}
+  .chart{height:240px}
+  .mapCanvas,.mapPlaceholder{height:240px}
+  .yearCell{min-width:44px;height:44px}
+  .compareMetrics,.monthNormalMetrics,.sameDayMetrics{grid-template-columns:1fr}
+  .storyPhoto{height:120px}
+  .storyPhoto-side{height:88px}
+  .panelTitle{flex-direction:column}
+  .mapBlock,.storyGrid,.placeVisual .chartPanel,.placeVisual .empty,.placeVisual .error,.placeVisual .loadingNote,.placeDayFlow .sourceCompare,.placeDayFlow .chartPanel{width:min(1480px,94vw);margin-left:auto;margin-right:auto}
 }

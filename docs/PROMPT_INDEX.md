@@ -137,7 +137,7 @@ Source : sections 0 à 187 du prompt maître.
 | 122 | UX ACCUEIL | [ ] |
 | 123 | DESIGN | [ ] *partiel* |
 | 124 | HOME HERO | [ ] *partiel* |
-| 125 | PAGE MOBILE | [ ] *partiel* |
+| 125 | PAGE MOBILE | [ ] *partiel* (page commune empilée, cibles 44 px ; pas de bottom sheet GIS) |
 | 126 | SEO | [ ] *partiel* (titres + sitemap filtré + OG + hreflang fr + JSON-LD + score v1 ; pas de pages en) |
 | 127 | INTERNATIONALISATION | [ ] *partiel* (html lang=fr, hreflang fr/x-default ; routage `en` = V2) |
 | 128 | PARTAGE SOCIAL | [ ] |
