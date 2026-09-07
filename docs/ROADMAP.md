@@ -11,7 +11,7 @@ Nom de travail. Les fournisseurs (Météo-France, Copernicus, NOAA, ECMWF, IGN) 
 **Priorité :** utilité → simplicité → fiabilité → rapidité → beauté → complexité technique.  
 Les cases `[x]` = livré **et** vérifié (preuve). Un fichier vide ne compte pas.
 
-Dernière mise à jour : 2026-09-07 (records d’année LVD = 2001 · 210 j de pluie). Tableau : [STATUS.md](./STATUS.md).
+Dernière mise à jour : 2026-09-07 (records d’année LVD = 2003 · 12,2 °C d’écart min-max). Tableau : [STATUS.md](./STATUS.md).
 
 ---
 
@@ -76,7 +76,8 @@ Dernière mise à jour : 2026-09-07 (records d’année LVD = 2001 · 210 j de p
 57. [x] Phase R4/R7/R12 — records d’année observés : plus de jours ≥ 35 °C (Grenoble LVD **2003 · 22 j**, Tmax ≥ 35 °C, pas 2022 **18 j**, pas 2025 **15 j** collé sur le record) dans le panneau records ; héros / accueil / OG restent 2025 · 15 j ; cache `commune-yearly-page-v13`
 58. [x] Phase R4/R7/R12 — records d’année observés : plus de jours ≥ 25 °C (Grenoble LVD **2018 · 135 j**, Tmax ≥ 25 °C, pas 2022 **126 j**, pas 2025 **110 j** collé sur le record) dans le panneau records ; héros / accueil / OG restent 2025 · 110 j ; cache `commune-yearly-page-v14`
 59. [x] Phase R4/R7/R12 — records d’année observés : plus de jours de pluie (Grenoble LVD **2001 · 210 j**, précipitation > 0 mm, série pluie complète, pas 2014 **205 j**, pas 2025 **144 j** collé sur le record, pas 89 j / 2026 incomplet) dans le panneau records ; héros / accueil / OG restent 2025 · 144 j ; cache `commune-yearly-page-v15`
-60. Ne **pas** extraire ERA5 mondial. Ne **pas** activer océan / NOAA / API commerciale. Ne **pas** feindre Vercel/Supabase. Ne **pas** extraire massivement les tuiles IGN.
+60. [x] Phase R4/R7/R12 — records d’année observés : plus grand écart min-max (Grenoble LVD **2003 · 12,2 °C**, dérivé Tmin/Tmax, égalité 2022 → année la plus ancienne, pas 2025 **11,4 °C** collé sur le record, pas 13,8 °C / 2026 incomplet) dans le panneau records ; héros / accueil / OG restent 2025 · 11,4 °C ; cache `commune-yearly-page-v16`
+61. Ne **pas** extraire ERA5 mondial. Ne **pas** activer océan / NOAA / API commerciale. Ne **pas** feindre Vercel/Supabase. Ne **pas** extraire massivement les tuiles IGN.
 
 Héritage déjà vérifié (ne pas recommencer) : licences Phase 0, import Isère 1 208 439 obs, Grenoble 1983-05-12 (CORENC, 6,6 / 21,6 °C), matching station v1, carte IGN, provenance. Runtime encore SQLite. Cible prod : [ARCHITECTURE_PRODUCTION.md](./ARCHITECTURE_PRODUCTION.md).
 
@@ -182,9 +183,9 @@ Reste : France entière (autres départements) en R10. Isère : 512 communes imp
 - [x] mois / saisons / années (mois + DJF/MAM/JJA/SON + annuel à l’écran + normale mensuelle 1991-2020)
 - [x] normales (défaut 1991-2020, ≥ 24 années climatiques, même station ; sinon autre poste unique sans anomalie croisée)
 - [x] anomalies (année − normale **du même poste** seulement)
-- [x] records d’année observés (plus chaude / plus froide / plus arrosée / plus de jours ≥ 30 °C / plus de jours de gel / plus de nuits tropicales / plus de jours ≥ 35 °C / plus de jours ≥ 25 °C / plus de jours de pluie, station + période) ; records jour déjà en R5. Records de **mois** livrés. Épisodes Tmax consécutifs livrés (`heat-streak-tmax-v1`) — **pas** la canicule officielle Météo-France
+- [x] records d’année observés (plus chaude / plus froide / plus arrosée / plus de jours ≥ 30 °C / plus de jours de gel / plus de nuits tropicales / plus de jours ≥ 35 °C / plus de jours ≥ 25 °C / plus de jours de pluie / plus grand écart min-max, station + période) ; records jour déjà en R5. Records de **mois** livrés. Épisodes Tmax consécutifs livrés (`heat-streak-tmax-v1`) — **pas** la canicule officielle Météo-France
 
-**État :** quatre saisons à l’écran (seuil 75 j, un poste). Hiver DJF étiqueté par l’année de janvier. Pas de comparaison hiver vs été. Pas de LSH. Pas de canicule officielle. Normale mensuelle 1991-2020 : ≥ 24 mois complets par calendrier, un poste ; LVD Grenoble insuffisant → CHATTE_SAPC sans anomalie croisée. Records d’année LVD : plus de jours ≥ 30 °C = **2003 · 73 j** ; plus de jours de gel = **2005 · 94 j** ; plus de nuits tropicales = **2024 · 7 nuits** ; plus de jours ≥ 35 °C = **2003 · 22 j** ; plus de jours ≥ 25 °C = **2018 · 135 j** ; plus de jours de pluie = **2001 · 210 j** (pas collé sur le héros 2025 **144 j**).
+**État :** quatre saisons à l’écran (seuil 75 j, un poste). Hiver DJF étiqueté par l’année de janvier. Pas de comparaison hiver vs été. Pas de LSH. Pas de canicule officielle. Normale mensuelle 1991-2020 : ≥ 24 mois complets par calendrier, un poste ; LVD Grenoble insuffisant → CHATTE_SAPC sans anomalie croisée. Records d’année LVD : plus de jours ≥ 30 °C = **2003 · 73 j** ; plus de jours de gel = **2005 · 94 j** ; plus de nuits tropicales = **2024 · 7 nuits** ; plus de jours ≥ 35 °C = **2003 · 22 j** ; plus de jours ≥ 25 °C = **2018 · 135 j** ; plus de jours de pluie = **2001 · 210 j** ; plus grand écart min-max = **2003 · 12,2 °C** (égalité 2022, pas collé sur le héros 2025 **11,4 °C**).
 
 ---
 
@@ -263,8 +264,9 @@ Reste : France entière (autres départements) en R10. Isère : 512 communes imp
 - [x] HTML initial commune = record d’année observé de jours ≥ 35 °C (Grenoble LVD **2003 · 22 j**, pas 2022 **18 j**, pas collé sur le héros 2025 **15 j**)
 - [x] HTML initial commune = record d’année observé de jours ≥ 25 °C (Grenoble LVD **2018 · 135 j**, pas 2022 **126 j**, pas collé sur le héros 2025 **110 j**)
 - [x] HTML initial commune = record d’année observé de jours de pluie (Grenoble LVD **2001 · 210 j**, pas 2014 **205 j**, pas collé sur le héros 2025 **144 j**, pas 89 j / 2026 incomplet)
+- [x] HTML initial commune = record d’année observé d’écart min-max (Grenoble LVD **2003 · 12,2 °C**, égalité 2022, pas collé sur le héros 2025 **11,4 °C**, pas 13,8 °C / 2026 incomplet)
 
-**État :** premier HTML Grenoble **56 Ko** (`?date=`). Heatmap « ce jour » : liens `?date=`. Héros : sans query = année climatique LVD 2025 (min. **8,2 °C** · max. 19,6 °C · **écart min-max 11,4 °C** · 901,1 mm · **144 j de pluie** · **110 j ≥ 25 °C** · **57 j ≥ 30 °C** · **15 j ≥ 35 °C** · **0 j ≥ 40 °C** · **46 j de gel** · **5 nuits tropicales**), **sans** le jour par défaut, sélecteur de date vide, partage de l’année ; records d’année = **2003 · 73 j ≥ 30 °C**, **2005 · 94 j de gel**, **2024 · 7 nuits tropicales**, **2003 · 22 j ≥ 35 °C**, **2018 · 135 j ≥ 25 °C** et **2001 · 210 j de pluie** (pas collés sur le héros) ; avec `?date=` = Tmin/Tmax/pluie officiels + station à X km, pas d’ERA5 ni de JPEG IGN ; 1900 = « aucune mesure officielle » ; 1986 pluie héros **0,0 mm** ≠ ERA5 2,1 mm. Accueil : climat officiel LVD 2025 (min. 8,2 °C · écart min-max 11,4 °C · 144 j de pluie · 110 j ≥ 25 °C · 57 j ≥ 30 °C · 15 j ≥ 35 °C · 0 j ≥ 40 °C · 46 j de gel · 5 nuits tropicales) dans le premier HTML. Naissance : exemples officiels dans le premier HTML. Comparer : exemples Voiron / Crolles dans le premier HTML. Lighthouse lab 2026-09-07T00:45Z : perf 99, LCP **2178 ms**, CLS 0 — pas CrUX. Pas de bottom sheet GIS. Pas de CDN.
+**État :** premier HTML Grenoble **56 Ko** (`?date=`). Heatmap « ce jour » : liens `?date=`. Héros : sans query = année climatique LVD 2025 (min. **8,2 °C** · max. 19,6 °C · **écart min-max 11,4 °C** · 901,1 mm · **144 j de pluie** · **110 j ≥ 25 °C** · **57 j ≥ 30 °C** · **15 j ≥ 35 °C** · **0 j ≥ 40 °C** · **46 j de gel** · **5 nuits tropicales**), **sans** le jour par défaut, sélecteur de date vide, partage de l’année ; records d’année = **2003 · 73 j ≥ 30 °C**, **2005 · 94 j de gel**, **2024 · 7 nuits tropicales**, **2003 · 22 j ≥ 35 °C**, **2018 · 135 j ≥ 25 °C**, **2001 · 210 j de pluie** et **2003 · 12,2 °C d’écart min-max** (pas collés sur le héros) ; avec `?date=` = Tmin/Tmax/pluie officiels + station à X km, pas d’ERA5 ni de JPEG IGN ; 1900 = « aucune mesure officielle » ; 1986 pluie héros **0,0 mm** ≠ ERA5 2,1 mm. Accueil : climat officiel LVD 2025 (min. 8,2 °C · écart min-max 11,4 °C · 144 j de pluie · 110 j ≥ 25 °C · 57 j ≥ 30 °C · 15 j ≥ 35 °C · 0 j ≥ 40 °C · 46 j de gel · 5 nuits tropicales) dans le premier HTML. Naissance : exemples officiels dans le premier HTML. Comparer : exemples Voiron / Crolles dans le premier HTML. Lighthouse lab 2026-09-07T00:45Z : perf 99, LCP **2178 ms**, CLS 0 — pas CrUX. Pas de bottom sheet GIS. Pas de CDN.
 
 ---
 

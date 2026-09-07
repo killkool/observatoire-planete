@@ -867,7 +867,8 @@ function emptyPayload(place: PlaceRow, computed: boolean): CommuneYearlyPayload 
       mostTropicalNights: null,
       mostDaysGe35: null,
       mostDaysGe25: null,
-      mostDaysRain: null
+      mostDaysRain: null,
+      largestAmplitude: null
     },
     warming: stationWarmingTrend([]),
     heat: emptyHeatStreaks()

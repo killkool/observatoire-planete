@@ -1,4 +1,5 @@
 import type { YearClimatePoint } from "./compareClimate";
+import { annualMeanAmplitudeC } from "../../packages/weather-core/src/units";
 
 export const DEFAULT_NORMAL_PERIOD = "1991-2020";
 export const DEFAULT_NORMAL_START = 1991;
@@ -39,6 +40,8 @@ export type ObservedYearRecords = {
   mostDaysGe25: ObservedYearRecord | null;
   /** Max de jours à précipitation > 0 mm, années climatiques à pluie complète seulement. 0 est un vrai zéro. */
   mostDaysRain: ObservedYearRecord | null;
+  /** Max de l’écart min-max annuel dérivé Tmin/Tmax, années climatiques seulement. 0.0 est un vrai zéro. */
+  largestAmplitude: ObservedYearRecord | null;
 };
 
 export function observedYearRecords(years: YearClimatePoint[]): ObservedYearRecords {
@@ -89,6 +92,17 @@ export function observedYearRecords(years: YearClimatePoint[]): ObservedYearReco
     (best, row) => (best == null || (row.daysRain as number) > (best.daysRain as number) ? row : best),
     null
   );
+  const withAmplitude = complete.filter((row) => annualMeanAmplitudeC(row.tminMean, row.tmaxMean) != null);
+  const largestAmplitude = withAmplitude.reduce<YearClimatePoint | null>(
+    (best, row) => {
+      const amp = annualMeanAmplitudeC(row.tminMean, row.tmaxMean) as number;
+      const bestAmp = best == null ? null : (annualMeanAmplitudeC(best.tminMean, best.tmaxMean) as number);
+      return best == null || amp > (bestAmp as number) ? row : best;
+    },
+    null
+  );
+  const largestAmplitudeValue =
+    largestAmplitude != null ? annualMeanAmplitudeC(largestAmplitude.tminMean, largestAmplitude.tmaxMean) : null;
   return {
     periodFrom: complete[0]?.year ?? null,
     periodTo: complete[complete.length - 1]?.year ?? null,
@@ -104,6 +118,10 @@ export function observedYearRecords(years: YearClimatePoint[]): ObservedYearReco
         : null,
     mostDaysGe35: mostDaysGe35?.daysGe35 != null ? { year: mostDaysGe35.year, value: mostDaysGe35.daysGe35 } : null,
     mostDaysGe25: mostDaysGe25?.daysGe25 != null ? { year: mostDaysGe25.year, value: mostDaysGe25.daysGe25 } : null,
-    mostDaysRain: mostDaysRain?.daysRain != null ? { year: mostDaysRain.year, value: mostDaysRain.daysRain } : null
+    mostDaysRain: mostDaysRain?.daysRain != null ? { year: mostDaysRain.year, value: mostDaysRain.daysRain } : null,
+    largestAmplitude:
+      largestAmplitudeValue != null && largestAmplitude != null
+        ? { year: largestAmplitude.year, value: largestAmplitudeValue }
+        : null
   };
 }

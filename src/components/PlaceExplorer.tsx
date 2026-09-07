@@ -271,6 +271,7 @@ type YearlyPayload = {
     mostDaysGe35: { year: number; value: number } | null;
     mostDaysGe25: { year: number; value: number } | null;
     mostDaysRain: { year: number; value: number } | null;
+    largestAmplitude: { year: number; value: number } | null;
   };
   warming: {
     method: string;
@@ -1441,6 +1442,15 @@ export default function PlaceExplorer({
                       : "non disponible"}
                   </strong>
                   <small>précipitation &gt; 0 mm, années à pluie complète seulement</small>
+                </div>
+                <div>
+                  <span>Plus grand écart min-max</span>
+                  <strong>
+                    {yearly.yearRecords.largestAmplitude
+                      ? `${yearly.yearRecords.largestAmplitude.year} · ${formatCelsius(yearly.yearRecords.largestAmplitude.value)}`
+                      : "non disponible"}
+                  </strong>
+                  <small>maximale moyenne − minimale moyenne, années climatiques seulement</small>
                 </div>
               </div>
               {data?.place?.insee_code || yearly?.commune?.insee ? (

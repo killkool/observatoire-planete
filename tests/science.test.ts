@@ -741,7 +741,7 @@ assert.ok(homePageSrc.includes("shareHomeCardPath"), "home OG card is an officia
 assert.ok(homePageSrc.includes("buildHomeOgModel"));
 const homeCacheSrc = fs.readFileSync(path.join(process.cwd(), "src/lib/sqliteReadCache.ts"), "utf8");
 assert.ok(homeCacheSrc.includes("featured-climate-v12"));
-assert.ok(homeCacheSrc.includes("commune-yearly-page-v15"));
+assert.ok(homeCacheSrc.includes("commune-yearly-page-v16"));
 const birthExSrc = fs.readFileSync(path.join(process.cwd(), "src/components/BirthExamples.tsx"), "utf8");
 assert.ok(birthExSrc.includes("Aucune mesure officielle"));
 assert.ok(birthExSrc.includes("formatCelsius"));
@@ -788,6 +788,8 @@ assert.ok(explorerSrc.includes("Plus de jours ≥ 25 °C"), "year records show t
 assert.ok(explorerSrc.includes("yearRecords.mostDaysGe25"));
 assert.ok(explorerSrc.includes("Plus de jours de pluie"), "year records show the observed rain-day maximum of the series");
 assert.ok(explorerSrc.includes("yearRecords.mostDaysRain"));
+assert.ok(explorerSrc.includes("Plus grand écart min-max"), "year records show the observed min-max gap maximum of the series");
+assert.ok(explorerSrc.includes("yearRecords.largestAmplitude"));
 assert.ok(explorerSrc.includes("Jours ≥ 35 °C"), "climate hero shows official days at or above 35 °C");
 assert.ok(explorerSrc.includes("climateLead.daysGe35"));
 assert.ok(explorerSrc.includes("Jours ≥ 40 °C"), "climate hero shows official days at or above 40 °C, including a true zero");
@@ -1309,6 +1311,9 @@ assert.equal(yearRecords.hottest?.value, 22);
 assert.equal(yearRecords.mostDaysGe30?.year, 2003);
 assert.equal(yearRecords.mostDaysGe30?.value, 20);
 assert.notEqual(yearRecords.mostDaysGe30?.value, 80, "incomplete years must not set the hot-day year record");
+assert.equal(yearRecords.largestAmplitude?.year, 2003);
+assert.equal(yearRecords.largestAmplitude?.value, 16);
+assert.notEqual(yearRecords.largestAmplitude?.value, 40, "incomplete years must not set the amplitude year record");
 assert.equal(yearRecords.mostFrost, null, "missing frost counts must not invent a frost year record");
 assert.equal(yearRecords.mostTropicalNights, null, "missing tropical-night counts must not invent a tropical-night year record");
 assert.equal(yearRecords.mostDaysGe35, null, "missing 35 °C counts must not invent a 35 °C year record");
@@ -1398,6 +1403,22 @@ const tiedDaysRain = observedYearRecords([
 ]);
 assert.equal(tiedDaysRain.mostDaysRain?.year, 2001, "a rain-day record tie keeps the earlier complete year");
 assert.equal(tiedDaysRain.mostDaysRain?.value, 210);
+const amplitudeRecords = observedYearRecords([
+  { year: 2026, tminMean: 8, tmaxMean: 21.8, precipitationSum: null, daysGe30: 1, yearComplete: false, precipComplete: false },
+  { year: 2003, tminMean: 6.8, tmaxMean: 19.0, precipitationSum: 400, daysGe30: 20, yearComplete: true, precipComplete: true },
+  { year: 2022, tminMean: 6.8, tmaxMean: 19.0, precipitationSum: 700, daysGe30: 18, yearComplete: true, precipComplete: true },
+  { year: 2025, tminMean: 8.2, tmaxMean: 19.6, precipitationSum: 901.1, daysGe30: 15, yearComplete: true, precipComplete: true }
+]);
+assert.equal(amplitudeRecords.largestAmplitude?.year, 2003);
+assert.equal(amplitudeRecords.largestAmplitude?.value, 12.2);
+assert.notEqual(amplitudeRecords.largestAmplitude?.value, 13.8, "incomplete 2026 amplitude must not set the amplitude year record");
+assert.notEqual(amplitudeRecords.largestAmplitude?.value, 11.4, "2025 amplitude must not become the series maximum");
+assert.notEqual(amplitudeRecords.largestAmplitude?.year, 2022, "a 12.2 °C amplitude tie keeps the earlier complete year");
+const missingAmplitude = observedYearRecords([
+  { year: 2000, tminMean: null, tmaxMean: 18, precipitationSum: 800, daysGe30: 5, yearComplete: true, precipComplete: true },
+  { year: 2001, tminMean: 8, tmaxMean: null, precipitationSum: 700, daysGe30: 6, yearComplete: true, precipComplete: true }
+]);
+assert.equal(missingAmplitude.largestAmplitude, null, "missing Tmin or Tmax must not invent an amplitude year record");
 const tiedHotDays = observedYearRecords([
   { year: 2001, tminMean: 8, tmaxMean: 18, precipitationSum: 500, daysGe30: 20, yearComplete: true, precipComplete: true },
   { year: 2003, tminMean: 8, tmaxMean: 18, precipitationSum: 500, daysGe30: 20, yearComplete: true, precipComplete: true }
@@ -2182,6 +2203,15 @@ if (obsCount === 0) {
   assert.equal(mostRainYear?.yearComplete, true);
   assert.equal(mostRainYear?.precipComplete, true);
   assert.equal(mostRainYear?.daysRain, 210);
+  assert.equal(yearly.yearRecords.largestAmplitude?.year, 2003, "LVD amplitude year record is 2003, not 2022");
+  assert.equal(yearly.yearRecords.largestAmplitude?.value, 12.2);
+  assert.notEqual(yearly.yearRecords.largestAmplitude?.value, 11.4, "year records must not paste 2025 onto the amplitude maximum");
+  assert.notEqual(yearly.yearRecords.largestAmplitude?.value, 13.8, "incomplete 2026 amplitude must not set the amplitude year record");
+  assert.notEqual(yearly.yearRecords.largestAmplitude?.value, 10.1, "2013 amplitude is a low, not the series maximum");
+  assert.notEqual(yearly.yearRecords.largestAmplitude?.year, 2022, "2022 also has 12.2 °C, but the tie keeps 2003");
+  const largestAmpYear = yearly.years.find((row) => row.year === yearly.yearRecords.largestAmplitude?.year);
+  assert.equal(largestAmpYear?.yearComplete, true);
+  assert.equal(annualMeanAmplitudeC(largestAmpYear?.tminMean, largestAmpYear?.tmaxMean), 12.2);
   if (yearly.normal.available && !yearly.normal.sameStation) {
     assert.ok(yearly.normal.station, "nearby 1991-2020 normal must name one station");
     assert.notEqual(yearly.normal.station?.id, yearly.station?.id);
