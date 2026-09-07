@@ -190,6 +190,7 @@ export function getCommuneYearly(
       daysGe25: row.days_ge_25,
       daysGe30: row.days_ge_30,
       daysGe35: row.days_ge_35,
+      daysGe40: row.days_ge_40,
       daysFrost: row.days_frost,
       tropicalNights: row.tropical_nights,
       yearComplete,
@@ -278,6 +279,7 @@ export function climateCopyFromYearly(yearly: CommuneYearlyPayload | null): {
   daysGe25?: number;
   daysGe30: number;
   daysGe35?: number;
+  daysGe40?: number;
   daysFrost?: number;
   tropicalNights?: number;
   stationName: string;
@@ -295,6 +297,7 @@ export function climateCopyFromYearly(yearly: CommuneYearlyPayload | null): {
     daysGe25: last.daysGe25,
     daysGe30: last.daysGe30,
     daysGe35: last.daysGe35,
+    daysGe40: last.daysGe40,
     daysFrost: last.daysFrost,
     tropicalNights: last.tropicalNights,
     stationName: yearly.station.name,
@@ -315,6 +318,7 @@ export type FeaturedClimateCard = {
     daysGe25?: number;
     daysGe30: number;
     daysGe35?: number;
+    daysGe40?: number;
     daysFrost?: number;
     tropicalNights?: number;
   } | null;
@@ -346,6 +350,7 @@ export function featuredClimateCards(places: PlaceRow[]): FeaturedClimateCard[] 
             daysGe25: last.daysGe25,
             daysGe30: last.daysGe30,
             daysGe35: last.daysGe35,
+            daysGe40: last.daysGe40,
             daysFrost: last.daysFrost,
             tropicalNights: last.tropicalNights
           }

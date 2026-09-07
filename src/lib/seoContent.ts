@@ -1,4 +1,4 @@
-import { formatCelsius, formatDaysFrost, formatDaysGe25, formatDaysGe30, formatDaysGe35, formatMm, formatTropicalNights, roundToPrecision } from "../../packages/weather-core/src/units";
+import { formatCelsius, formatDaysFrost, formatDaysGe25, formatDaysGe30, formatDaysGe35, formatDaysGe40, formatMm, formatTropicalNights, roundToPrecision } from "../../packages/weather-core/src/units";
 import { frenchLongDate } from "./birthDay";
 import { formatSignedCelsius, formatSignedMm } from "./compareClimate";
 import {
@@ -123,6 +123,7 @@ export type CommuneCopyClimate = {
   daysGe25?: number | null;
   daysGe30?: number | null;
   daysGe35?: number | null;
+  daysGe40?: number | null;
   daysFrost?: number | null;
   tropicalNights?: number | null;
   stationName: string;
@@ -166,6 +167,8 @@ export function communePageCopy(input: {
         input.climate.daysGe30 != null ? `, ${formatDaysGe30(input.climate.daysGe30)}` : "";
       const veryHotDaysBit =
         input.climate.daysGe35 != null ? `, ${formatDaysGe35(input.climate.daysGe35)}` : "";
+      const extremeHotDaysBit =
+        input.climate.daysGe40 != null ? `, ${formatDaysGe40(input.climate.daysGe40)}` : "";
       const frostBit =
         input.climate.daysFrost != null ? `, ${formatDaysFrost(input.climate.daysFrost)}` : "";
       const tropicalBit =
@@ -174,7 +177,7 @@ export function communePageCopy(input: {
           : "";
       return {
         title: `${input.placeName} — ${input.climate.year} · max. ${tmax} | Observatoire Planète`,
-        description: `Dernière année climatique complète observée pour ${input.placeName} (${input.department}) : ${input.climate.year}, ${tminBit}maximale moyenne ${tmax}${rainBit}${warmDaysBit}${hotDaysBit}${veryHotDaysBit}${frostBit}${tropicalBit}. Station ${station}. Ce n’est pas une prévision.`
+        description: `Dernière année climatique complète observée pour ${input.placeName} (${input.department}) : ${input.climate.year}, ${tminBit}maximale moyenne ${tmax}${rainBit}${warmDaysBit}${hotDaysBit}${veryHotDaysBit}${extremeHotDaysBit}${frostBit}${tropicalBit}. Station ${station}. Ce n’est pas une prévision.`
       };
     }
     return { title: genericTitle, description: genericDescription };

@@ -14,7 +14,7 @@ export const getFeaturedPlacesCached = unstable_cache(
 
 export const getFeaturedClimateCached = unstable_cache(
   async () => featuredClimateCards(listFeaturedPlaces()),
-  ["featured-climate-v9"],
+  ["featured-climate-v10"],
   { revalidate: 3600 }
 );
 
@@ -51,7 +51,7 @@ export const getCommuneYearlyCached = unstable_cache(
 /** Sans mois / saisons / chaleur : premier HTML plus léger. L’API /yearly reste complète. */
 export const getCommuneYearlyPageCached = unstable_cache(
   async (insee: string) => getCommuneYearly(insee, { includeDetailRows: false }),
-  ["commune-yearly-page-v6"],
+  ["commune-yearly-page-v7"],
   { revalidate: 3600 }
 );
 

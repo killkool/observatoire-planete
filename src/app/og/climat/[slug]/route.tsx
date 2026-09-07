@@ -24,6 +24,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ slu
         daysGe25: climate.daysGe25,
         daysGe30: climate.daysGe30,
         daysGe35: climate.daysGe35,
+        daysGe40: climate.daysGe40,
         daysFrost: climate.daysFrost,
         tropicalNights: climate.tropicalNights,
         stationName: climate.stationName,
@@ -71,7 +72,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ slu
               <div style={{ fontSize: 36, fontWeight: 700 }}>{card.precipDisplay ?? "non disponible"}</div>
             </div>
           </div>
-          <div style={{ display: "flex", gap: 28 }}>
+          <div style={{ display: "flex", gap: 18 }}>
             <div style={{ display: "flex", flexDirection: "column" }}>
               <div style={{ fontSize: 16, color: "#88a0a8" }}>Jours à 25 °C ou plus</div>
               <div style={{ fontSize: 36, fontWeight: 700 }}>{card.daysGe25Display ?? "non disponible"}</div>
@@ -83,6 +84,10 @@ export async function GET(_request: Request, { params }: { params: Promise<{ slu
             <div style={{ display: "flex", flexDirection: "column" }}>
               <div style={{ fontSize: 16, color: "#88a0a8" }}>Jours à 35 °C ou plus</div>
               <div style={{ fontSize: 36, fontWeight: 700 }}>{card.daysGe35Display ?? "non disponible"}</div>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <div style={{ fontSize: 16, color: "#88a0a8" }}>Jours à 40 °C ou plus</div>
+              <div style={{ fontSize: 36, fontWeight: 700 }}>{card.daysGe40Display ?? "non disponible"}</div>
             </div>
           </div>
           <div style={{ display: "flex", gap: 28 }}>

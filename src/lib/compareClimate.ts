@@ -6,6 +6,7 @@ export type YearClimatePoint = {
   daysGe25?: number;
   daysGe30: number;
   daysGe35?: number;
+  daysGe40?: number;
   daysFrost?: number;
   tropicalNights?: number;
   yearComplete: boolean;

@@ -4,7 +4,7 @@ import OriginKinds from "./OriginKinds";
 import PlaceSearch from "./PlaceSearch";
 import { IGN_PHOTO_CREDIT, HERO_IMAGE_SIZES, placePhotoSrc } from "@/lib/placeMedia";
 import { departmentLabel } from "@/lib/placeUrl";
-import { formatCelsius, formatDaysFrost, formatDaysGe25, formatDaysGe30, formatDaysGe35, formatMm, formatTropicalNights, roundToPrecision } from "../../packages/weather-core/src/units";
+import { formatCelsius, formatDaysFrost, formatDaysGe25, formatDaysGe30, formatDaysGe35, formatDaysGe40, formatMm, formatTropicalNights, roundToPrecision } from "../../packages/weather-core/src/units";
 
 type HomeClimateCard = {
   place: {
@@ -24,6 +24,7 @@ type HomeClimateCard = {
     daysGe25?: number;
     daysGe30: number;
     daysGe35?: number;
+    daysGe40?: number;
     daysFrost?: number;
     tropicalNights?: number;
   } | null;
@@ -74,6 +75,8 @@ export default function ObservatoryHome({ cards }: { cards: HomeClimateCard[] })
             card.lastComplete != null ? ` · ${formatDaysGe30(card.lastComplete.daysGe30)}` : "";
           const veryHotDays =
             card.lastComplete?.daysGe35 != null ? ` · ${formatDaysGe35(card.lastComplete.daysGe35)}` : "";
+          const extremeHotDays =
+            card.lastComplete?.daysGe40 != null ? ` · ${formatDaysGe40(card.lastComplete.daysGe40)}` : "";
           const frost =
             card.lastComplete?.daysFrost != null ? ` · ${formatDaysFrost(card.lastComplete.daysFrost)}` : "";
           const tropical =
@@ -110,6 +113,7 @@ export default function ObservatoryHome({ cards }: { cards: HomeClimateCard[] })
                       {warmDays}
                       {hotDays}
                       {veryHotDays}
+                      {extremeHotDays}
                       {frost}
                       {tropical}
                     </strong>

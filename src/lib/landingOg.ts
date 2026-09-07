@@ -45,6 +45,7 @@ export function buildHomeOgModel(): HomeOgModel | null {
     daysGe25: climate.daysGe25,
     daysGe30: climate.daysGe30,
     daysGe35: climate.daysGe35,
+    daysGe40: climate.daysGe40,
     daysFrost: climate.daysFrost,
     tropicalNights: climate.tropicalNights,
     stationName: climate.stationName,
