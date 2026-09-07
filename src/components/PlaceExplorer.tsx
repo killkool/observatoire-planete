@@ -333,7 +333,9 @@ export default function PlaceExplorer({
   initialHistory = null,
   initialYearly = null,
   initialChildhood = null,
-  histoire = false
+  histoire = false,
+  dateInQuery = false,
+  climateLead = null
 }: {
   slug: string;
   initialDate: string;
@@ -341,6 +343,15 @@ export default function PlaceExplorer({
   initialYearly?: YearlyPayload | null;
   initialChildhood?: ChildhoodPayload | null;
   histoire?: boolean;
+  dateInQuery?: boolean;
+  climateLead?: {
+    year: number;
+    tmaxMean: number | null;
+    precipitationSum: number | null;
+    precipComplete: boolean;
+    stationName: string;
+    distanceKm: number | null;
+  } | null;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -369,6 +380,12 @@ export default function PlaceExplorer({
   const [monthYearB, setMonthYearB] = useState<number | null>(null);
 
   const ready = Boolean(data && data.date === date);
+  const showClimateHero =
+    !histoire &&
+    !dateInQuery &&
+    climateLead != null &&
+    climateLead.tmaxMean != null &&
+    date === initialDate;
 
   useEffect(() => {
     setDate(initialDate);
@@ -640,10 +657,39 @@ export default function PlaceExplorer({
               {place?.name || slug}
             </span>
           </p>
-          <p className="eyebrow">{histoire ? "JOUR DE NAISSANCE · MESURE OFFICIELLE" : "HISTOIRE MÉTÉO · MESURE OFFICIELLE"}</p>
+          <p className="eyebrow">
+            {histoire
+              ? "JOUR DE NAISSANCE · MESURE OFFICIELLE"
+              : showClimateHero
+                ? "CLIMAT OBSERVÉ · ANNÉE COMPLÈTE"
+                : "HISTOIRE MÉTÉO · MESURE OFFICIELLE"}
+          </p>
           <h1>{place?.name || slug}</h1>
-          <p>{date.split("-").reverse().join("/")}</p>
-          {data && data.date === date && data.observation ? (
+          {showClimateHero ? null : <p>{date.split("-").reverse().join("/")}</p>}
+          {showClimateHero && climateLead ? (
+            <>
+              <p className="heroTemps">
+                <span>
+                  <em>Année</em>
+                  {climateLead.year}
+                </span>
+                <span>
+                  <em>Maximale</em>
+                  {formatCelsius(climateLead.tmaxMean)}
+                </span>
+                {climateLead.precipComplete && climateLead.precipitationSum != null ? (
+                  <span>
+                    <em>Pluie</em>
+                    {formatMm(climateLead.precipitationSum)}
+                  </span>
+                ) : null}
+              </p>
+              <p className="heroStation">
+                Station {climateLead.stationName}
+                {climateLead.distanceKm != null ? ` (${climateLead.distanceKm} km)` : ""}. Année climatique complète, pas une prévision.
+              </p>
+            </>
+          ) : data && data.date === date && data.observation ? (
             <>
               <p className="heroTemps">
                 <span>

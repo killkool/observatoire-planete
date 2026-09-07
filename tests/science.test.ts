@@ -329,6 +329,10 @@ assert.ok(heroChunk.includes("data.observation.tminDisplay"));
 assert.ok(heroChunk.includes("data.observation.tmaxDisplay"));
 assert.ok(heroChunk.includes("data.observation.precipDisplay"), "hero rain must be the official millimetres, not ERA5");
 assert.ok(heroChunk.includes("stationDisclaimer"), "hero must name the station and distance, not imply the thermometer is in town");
+assert.ok(heroChunk.includes("climateLead"), "canonical commune hero shows last complete climate year, not the default day");
+assert.ok(heroChunk.includes("formatCelsius"));
+assert.ok(heroChunk.includes("formatMm"));
+assert.ok(heroChunk.includes("Année climatique complète"));
 assert.ok(heroChunk.includes("buildBirthLead"), "naissance story must reuse official Tmin/Tmax/rain + station");
 assert.ok(!heroChunk.includes("era5"), "hero must not show ERA5 as the first answer");
 assert.ok(!heroChunk.includes("placePhotoSrc"), "hero must not load the IGN photo on the LCP path");
@@ -680,6 +684,8 @@ const communePageSrc = fs.readFileSync(
 );
 assert.ok(communePageSrc.includes("climateCopyFromYearly"), "commune metadata without query must use last complete climate year");
 assert.ok(communePageSrc.includes("getCommuneYearlyPageCached"));
+assert.ok(communePageSrc.includes("climateLead"), "canonical commune first HTML must carry the last complete climate year");
+assert.ok(communePageSrc.includes("dateInQuery || histoire ? observed : null"), "JSON-LD WeatherObservation is only for a requested day");
 
 assert.equal(warmerThanPercent(null, [1, 2, 3, 4, 5]), null);
 assert.equal(warmerThanPercent(21.6, [10, 12, 15, 18, 20, 21.6, 22]), 71);

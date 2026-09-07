@@ -17,13 +17,13 @@ France : slugs stables + INSEE en donnée, pas comme seul URL si le nom change. 
 
 ## Livré V1 Isère (2026-09-06)
 
-- Titre / description / canonical par commune réelle (`generateMetadata`). URL **sans** `?date=` : titre générique. URL **avec** date ou `histoire=naissance` : titre et description = mesure officielle (Tmin/Tmax/pluie + station), jamais ERA5, jamais un 0 inventé. Canonical reste la commune (pas des millions d’URL date).
+- Titre / description / canonical par commune réelle (`generateMetadata`). URL **sans** `?date=` : titre = dernière année climatique officielle (Grenoble 2025 · max. 19,6 °C, pas le record 2022). URL **avec** date ou `histoire=naissance` : titre et description = mesure officielle (Tmin/Tmax/pluie + station), jamais ERA5, jamais un 0 inventé. Canonical reste la commune (pas des millions d’URL date).
 - `/comparer?a=&b=` : titre = stations officielles (Grenoble vs Voiron : Tmax moyenne réelle ; Grenoble vs Crolles : même poste, pas d’écart inventé). Canonical reste `/comparer`. Pas des 512×511 URL dans le sitemap.
 - `sitemap.xml` : accueil, comparer, naissance, sources, méthode + communes **indexables** (`seo_content_score` ≥ 50, `seo-content-v1`). Identité officielle + années climatiques réelles ou au moins une mesure **OBSERVED**. Pas d’ERA5, pas de millions de coquilles, pas de `hasDistinctiveHistory: true` inventé.
 - `robots.txt` : `/dashboard` et `/api/` non indexés.
 - Origine des URL : `NEXT_PUBLIC_SITE_URL` si défini, sinon `http://localhost:3000`.
 - Hreflang V1 : `fr` + `x-default` vers la même URL française. **Pas** de lien `en` tant qu’il n’existe pas de page anglaise (routage `en` = [BACKLOG_V2_GLOBAL.md](./BACKLOG_V2_GLOBAL.md)).
-- JSON-LD : `WebSite` (accueil), `WebPage` + `City` (INSEE, geo) + `BreadcrumbList` sur la commune. `WeatherObservation` seulement si une mesure **OBSERVED** existe pour la date ; Tmin/Tmax/pluie omises si NULL, jamais inventées. Pas d’ERA5 dans le graphe.
+- JSON-LD : `WebSite` (accueil), `WebPage` + `City` (INSEE, geo) + `BreadcrumbList` sur la commune. `WeatherObservation` seulement si l’URL demande une date (`?date=` ou naissance) **et** qu’une mesure **OBSERVED** existe ; Tmin/Tmax/pluie omises si NULL, jamais inventées. Pas d’ERA5 dans le graphe. URL canonique sans query : pas la mesure du jour par défaut collée sur 2025.
 - `seo_content_score` (`seo-content-v1`) : 40 identité officielle + 20/40 années climatiques (1 / ≥ 10) + 20 historique distinctif (série annuelle ou jours observés). Seuil 50. Page sous le seuil : visitable, `noindex`. Ce n’est **pas** un scorer de volume de texte.
 - Pas encore : pages `en`, SearchAction (la recherche est un GET `/api/` non indexé).
 - Cartes de partage : `/og/{slug}/{date}` (PNG serveur). Températures seulement si une observation existe. Pas d’ERA5 sur la carte.

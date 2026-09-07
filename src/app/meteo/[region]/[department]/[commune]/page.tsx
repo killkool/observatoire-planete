@@ -91,6 +91,7 @@ export default async function CommunePage({
       ? getCommuneChildhoodCached(place.insee_code, birthYear)
       : Promise.resolve(null)
   ]);
+  const climate = !dateInQuery && !histoire ? climateCopyFromYearly(yearly) : null;
   const copy = communePageCopy({
     placeName: place.name,
     department: departmentLabel(place.department_slug),
@@ -98,7 +99,7 @@ export default async function CommunePage({
     dateInQuery,
     naissance: histoire,
     observation: dateInQuery || histoire ? officialCopyFromDay(getPlaceDayObservation(commune, isoDate)) : null,
-    climate: !dateInQuery && !histoire ? climateCopyFromYearly(yearly) : null
+    climate
   });
   const observed =
     history?.observation?.originType === "OBSERVED" && history.preferredStation
@@ -119,7 +120,7 @@ export default async function CommunePage({
           path,
           title: copy.title,
           description: copy.description,
-          observation: observed
+          observation: dateInQuery || histoire ? observed : null
         })}
       />
       <PlaceExplorer
@@ -129,6 +130,8 @@ export default async function CommunePage({
         initialYearly={yearly}
         initialChildhood={childhood}
         histoire={histoire}
+        dateInQuery={dateInQuery}
+        climateLead={climate}
       />
     </>
   );
