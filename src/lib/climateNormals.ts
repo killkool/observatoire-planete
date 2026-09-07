@@ -31,6 +31,8 @@ export type ObservedYearRecords = {
   mostDaysGe30: ObservedYearRecord | null;
   /** Max de jours Tmin < 0 °C, années climatiques seulement. 0 est un vrai zéro. */
   mostFrost: ObservedYearRecord | null;
+  /** Max de nuits Tmin ≥ 20 °C, années climatiques seulement. 0 est un vrai zéro. */
+  mostTropicalNights: ObservedYearRecord | null;
 };
 
 export function observedYearRecords(years: YearClimatePoint[]): ObservedYearRecords {
@@ -60,6 +62,12 @@ export function observedYearRecords(years: YearClimatePoint[]): ObservedYearReco
     (best, row) => (best == null || (row.daysFrost as number) > (best.daysFrost as number) ? row : best),
     null
   );
+  const withTropicalNights = complete.filter((row) => row.tropicalNights != null);
+  const mostTropicalNights = withTropicalNights.reduce<YearClimatePoint | null>(
+    (best, row) =>
+      best == null || (row.tropicalNights as number) > (best.tropicalNights as number) ? row : best,
+    null
+  );
   return {
     periodFrom: complete[0]?.year ?? null,
     periodTo: complete[complete.length - 1]?.year ?? null,
@@ -68,6 +76,10 @@ export function observedYearRecords(years: YearClimatePoint[]): ObservedYearReco
     coldest: coldest?.tminMean != null ? { year: coldest.year, value: coldest.tminMean } : null,
     wettest: wettest?.precipitationSum != null ? { year: wettest.year, value: wettest.precipitationSum } : null,
     mostDaysGe30: mostDaysGe30 != null ? { year: mostDaysGe30.year, value: mostDaysGe30.daysGe30 } : null,
-    mostFrost: mostFrost?.daysFrost != null ? { year: mostFrost.year, value: mostFrost.daysFrost } : null
+    mostFrost: mostFrost?.daysFrost != null ? { year: mostFrost.year, value: mostFrost.daysFrost } : null,
+    mostTropicalNights:
+      mostTropicalNights?.tropicalNights != null
+        ? { year: mostTropicalNights.year, value: mostTropicalNights.tropicalNights }
+        : null
   };
 }
