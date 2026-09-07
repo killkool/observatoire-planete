@@ -17,7 +17,7 @@ import {
   formatSignedCelsius,
   formatSignedMm
 } from "@/lib/compareClimate";
-import { formatCelsius, formatMeanAmplitudeC, formatMm } from "../../packages/weather-core/src/units";
+import { formatCelsius, formatDaysGe30, formatMeanAmplitudeC, formatMm } from "../../packages/weather-core/src/units";
 import { ERA5_FRANCE_DAILY_2T_CELLS, ERA5_FRANCE_DAILY_2T_DATES, ERA5_POINT_DATES } from "@/lib/era5France";
 import { formatSignedPerDecade } from "@/lib/climateTrend";
 import {
@@ -265,6 +265,7 @@ type YearlyPayload = {
     hottest: { year: number; value: number } | null;
     coldest: { year: number; value: number } | null;
     wettest: { year: number; value: number } | null;
+    mostDaysGe30: { year: number; value: number } | null;
   };
   warming: {
     method: string;
@@ -1381,6 +1382,15 @@ export default function PlaceExplorer({
                       : "non disponible"}
                   </strong>
                   <small>pluie annuelle complète seulement</small>
+                </div>
+                <div>
+                  <span>Plus de jours ≥ 30 °C</span>
+                  <strong>
+                    {yearly.yearRecords.mostDaysGe30
+                      ? `${yearly.yearRecords.mostDaysGe30.year} · ${formatDaysGe30(yearly.yearRecords.mostDaysGe30.value)}`
+                      : "non disponible"}
+                  </strong>
+                  <small>Tmax ≥ 30 °C, années climatiques seulement</small>
                 </div>
               </div>
               {data?.place?.insee_code || yearly?.commune?.insee ? (

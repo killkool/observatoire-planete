@@ -27,6 +27,8 @@ export type ObservedYearRecords = {
   hottest: ObservedYearRecord | null;
   coldest: ObservedYearRecord | null;
   wettest: ObservedYearRecord | null;
+  /** Max de jours Tmax ≥ 30 °C, années climatiques seulement. 0 est un vrai zéro. */
+  mostDaysGe30: ObservedYearRecord | null;
 };
 
 export function observedYearRecords(years: YearClimatePoint[]): ObservedYearRecords {
@@ -47,12 +49,17 @@ export function observedYearRecords(years: YearClimatePoint[]): ObservedYearReco
       best == null || (row.precipitationSum as number) > (best.precipitationSum as number) ? row : best,
     null
   );
+  const mostDaysGe30 = complete.reduce<YearClimatePoint | null>(
+    (best, row) => (best == null || row.daysGe30 > best.daysGe30 ? row : best),
+    null
+  );
   return {
     periodFrom: complete[0]?.year ?? null,
     periodTo: complete[complete.length - 1]?.year ?? null,
     yearsUsed: complete.length,
     hottest: hottest?.tmaxMean != null ? { year: hottest.year, value: hottest.tmaxMean } : null,
     coldest: coldest?.tminMean != null ? { year: coldest.year, value: coldest.tminMean } : null,
-    wettest: wettest?.precipitationSum != null ? { year: wettest.year, value: wettest.precipitationSum } : null
+    wettest: wettest?.precipitationSum != null ? { year: wettest.year, value: wettest.precipitationSum } : null,
+    mostDaysGe30: mostDaysGe30 != null ? { year: mostDaysGe30.year, value: mostDaysGe30.daysGe30 } : null
   };
 }

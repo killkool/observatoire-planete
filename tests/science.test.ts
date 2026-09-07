@@ -741,7 +741,7 @@ assert.ok(homePageSrc.includes("shareHomeCardPath"), "home OG card is an officia
 assert.ok(homePageSrc.includes("buildHomeOgModel"));
 const homeCacheSrc = fs.readFileSync(path.join(process.cwd(), "src/lib/sqliteReadCache.ts"), "utf8");
 assert.ok(homeCacheSrc.includes("featured-climate-v12"));
-assert.ok(homeCacheSrc.includes("commune-yearly-page-v9"));
+assert.ok(homeCacheSrc.includes("commune-yearly-page-v10"));
 const birthExSrc = fs.readFileSync(path.join(process.cwd(), "src/components/BirthExamples.tsx"), "utf8");
 assert.ok(birthExSrc.includes("Aucune mesure officielle"));
 assert.ok(birthExSrc.includes("formatCelsius"));
@@ -776,6 +776,8 @@ assert.ok(explorerSrc.includes("Jours ≥ 25 °C"), "climate hero shows official
 assert.ok(explorerSrc.includes("climateLead.daysGe25"));
 assert.ok(explorerSrc.includes("Jours ≥ 30 °C"), "climate hero shows official days at or above 30 °C");
 assert.ok(explorerSrc.includes("daysGe30"));
+assert.ok(explorerSrc.includes("Plus de jours ≥ 30 °C"), "year records show the observed hot-day maximum of the series");
+assert.ok(explorerSrc.includes("yearRecords.mostDaysGe30"));
 assert.ok(explorerSrc.includes("Jours ≥ 35 °C"), "climate hero shows official days at or above 35 °C");
 assert.ok(explorerSrc.includes("climateLead.daysGe35"));
 assert.ok(explorerSrc.includes("Jours ≥ 40 °C"), "climate hero shows official days at or above 40 °C, including a true zero");
@@ -1294,6 +1296,15 @@ assert.equal(yearRecords.hottest?.year, 2003);
 assert.equal(yearRecords.coldest?.year, 2010);
 assert.equal(yearRecords.wettest?.year, 2000);
 assert.equal(yearRecords.hottest?.value, 22);
+assert.equal(yearRecords.mostDaysGe30?.year, 2003);
+assert.equal(yearRecords.mostDaysGe30?.value, 20);
+assert.notEqual(yearRecords.mostDaysGe30?.value, 80, "incomplete years must not set the hot-day year record");
+const tiedHotDays = observedYearRecords([
+  { year: 2001, tminMean: 8, tmaxMean: 18, precipitationSum: 500, daysGe30: 20, yearComplete: true, precipComplete: true },
+  { year: 2003, tminMean: 8, tmaxMean: 18, precipitationSum: 500, daysGe30: 20, yearComplete: true, precipComplete: true }
+]);
+assert.equal(tiedHotDays.mostDaysGe30?.year, 2001, "a hot-day record tie keeps the earlier complete year");
+assert.equal(tiedHotDays.mostDaysGe30?.value, 20);
 
 const trendYears = (n: number, start = 2000, tmaxAt: (i: number) => number, complete = true) =>
   Array.from({ length: n }, (_, i) => ({
@@ -2029,6 +2040,13 @@ if (obsCount === 0) {
     const wet = yearly.years.find((row) => row.year === yearly.yearRecords.wettest?.year);
     assert.equal(wet?.precipComplete, true);
   }
+  assert.equal(yearly.yearRecords.mostDaysGe30?.year, 2003, "LVD hot-day year record is 2003, not 2022");
+  assert.equal(yearly.yearRecords.mostDaysGe30?.value, 73);
+  assert.notEqual(yearly.yearRecords.mostDaysGe30?.value, 71, "2022 has 71 days ≥ 30 °C, not the series maximum");
+  assert.notEqual(yearly.yearRecords.mostDaysGe30?.value, 57, "year records must not paste 2025 onto the hot-day maximum");
+  const mostHot = yearly.years.find((row) => row.year === yearly.yearRecords.mostDaysGe30?.year);
+  assert.equal(mostHot?.yearComplete, true);
+  assert.equal(mostHot?.daysGe30, 73);
   if (yearly.normal.available && !yearly.normal.sameStation) {
     assert.ok(yearly.normal.station, "nearby 1991-2020 normal must name one station");
     assert.notEqual(yearly.normal.station?.id, yearly.station?.id);
@@ -2194,7 +2212,8 @@ if (obsCount === 0) {
   assert.notEqual(grenobleHome.lastComplete?.daysGe25, 126, "home cards must not paste the 2022 25 °C count onto 2025");
   assert.equal(grenobleHome.lastComplete?.daysGe30, 57);
   assert.equal(grenobleHome.lastComplete?.daysGe30, yearly2025.daysGe30);
-  assert.notEqual(grenobleHome.lastComplete?.daysGe30, 71, "home cards must not paste the 2022 hot-day record onto 2025");
+  assert.notEqual(grenobleHome.lastComplete?.daysGe30, 71, "home cards must not paste the 2022 hot-day count onto 2025");
+  assert.notEqual(grenobleHome.lastComplete?.daysGe30, 73, "home cards must not paste the 2003 hot-day record onto 2025");
   assert.equal(grenobleHome.lastComplete?.daysGe35, 15);
   assert.equal(grenobleHome.lastComplete?.daysGe35, yearly2025.daysGe35);
   assert.notEqual(grenobleHome.lastComplete?.daysGe35, 18, "home cards must not paste the 2022 35 °C count onto 2025");
@@ -2249,7 +2268,8 @@ if (obsCount === 0) {
   assert.notEqual(grenobleClimate?.daysGe25, 135, "canonical climate is 2025 25 °C days, not the 2018 record");
   assert.notEqual(grenobleClimate?.daysGe25, 126, "canonical climate is 2025 25 °C days, not the 2022 count");
   assert.equal(grenobleClimate?.daysGe30, 57);
-  assert.notEqual(grenobleClimate?.daysGe30, 71, "canonical climate is 2025 hot days, not the 2022 record");
+  assert.notEqual(grenobleClimate?.daysGe30, 73, "canonical climate is 2025 hot days, not the 2003 record");
+  assert.notEqual(grenobleClimate?.daysGe30, 71, "canonical climate is 2025 hot days, not the 2022 count");
   assert.equal(grenobleClimate?.daysGe35, 15);
   assert.notEqual(grenobleClimate?.daysGe35, 18, "canonical climate is 2025 35 °C days, not the 2022 count");
   assert.notEqual(grenobleClimate?.daysGe35, 22, "canonical climate is 2025 35 °C days, not the 2003 record");

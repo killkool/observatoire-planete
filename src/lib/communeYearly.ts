@@ -855,7 +855,15 @@ function emptyPayload(place: PlaceRow, computed: boolean): CommuneYearlyPayload 
         }
       : emptyNormal(),
     monthNormal: emptyMonthNormal(computed),
-    yearRecords: { periodFrom: null, periodTo: null, yearsUsed: 0, hottest: null, coldest: null, wettest: null },
+    yearRecords: {
+      periodFrom: null,
+      periodTo: null,
+      yearsUsed: 0,
+      hottest: null,
+      coldest: null,
+      wettest: null,
+      mostDaysGe30: null
+    },
     warming: stationWarmingTrend([]),
     heat: emptyHeatStreaks()
   };
