@@ -33,6 +33,8 @@ export type ObservedYearRecords = {
   mostFrost: ObservedYearRecord | null;
   /** Max de nuits Tmin ≥ 20 °C, années climatiques seulement. 0 est un vrai zéro. */
   mostTropicalNights: ObservedYearRecord | null;
+  /** Max de jours Tmax ≥ 35 °C, années climatiques seulement. 0 est un vrai zéro. */
+  mostDaysGe35: ObservedYearRecord | null;
 };
 
 export function observedYearRecords(years: YearClimatePoint[]): ObservedYearRecords {
@@ -68,6 +70,11 @@ export function observedYearRecords(years: YearClimatePoint[]): ObservedYearReco
       best == null || (row.tropicalNights as number) > (best.tropicalNights as number) ? row : best,
     null
   );
+  const withDaysGe35 = complete.filter((row) => row.daysGe35 != null);
+  const mostDaysGe35 = withDaysGe35.reduce<YearClimatePoint | null>(
+    (best, row) => (best == null || (row.daysGe35 as number) > (best.daysGe35 as number) ? row : best),
+    null
+  );
   return {
     periodFrom: complete[0]?.year ?? null,
     periodTo: complete[complete.length - 1]?.year ?? null,
@@ -80,6 +87,7 @@ export function observedYearRecords(years: YearClimatePoint[]): ObservedYearReco
     mostTropicalNights:
       mostTropicalNights?.tropicalNights != null
         ? { year: mostTropicalNights.year, value: mostTropicalNights.tropicalNights }
-        : null
+        : null,
+    mostDaysGe35: mostDaysGe35?.daysGe35 != null ? { year: mostDaysGe35.year, value: mostDaysGe35.daysGe35 } : null
   };
 }

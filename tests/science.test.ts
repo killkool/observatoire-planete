@@ -741,7 +741,7 @@ assert.ok(homePageSrc.includes("shareHomeCardPath"), "home OG card is an officia
 assert.ok(homePageSrc.includes("buildHomeOgModel"));
 const homeCacheSrc = fs.readFileSync(path.join(process.cwd(), "src/lib/sqliteReadCache.ts"), "utf8");
 assert.ok(homeCacheSrc.includes("featured-climate-v12"));
-assert.ok(homeCacheSrc.includes("commune-yearly-page-v12"));
+assert.ok(homeCacheSrc.includes("commune-yearly-page-v13"));
 const birthExSrc = fs.readFileSync(path.join(process.cwd(), "src/components/BirthExamples.tsx"), "utf8");
 assert.ok(birthExSrc.includes("Aucune mesure officielle"));
 assert.ok(birthExSrc.includes("formatCelsius"));
@@ -782,6 +782,8 @@ assert.ok(explorerSrc.includes("Plus de jours de gel"), "year records show the o
 assert.ok(explorerSrc.includes("yearRecords.mostFrost"));
 assert.ok(explorerSrc.includes("Plus de nuits tropicales"), "year records show the observed tropical-night maximum of the series");
 assert.ok(explorerSrc.includes("yearRecords.mostTropicalNights"));
+assert.ok(explorerSrc.includes("Plus de jours ≥ 35 °C"), "year records show the observed very-hot-day maximum of the series");
+assert.ok(explorerSrc.includes("yearRecords.mostDaysGe35"));
 assert.ok(explorerSrc.includes("Jours ≥ 35 °C"), "climate hero shows official days at or above 35 °C");
 assert.ok(explorerSrc.includes("climateLead.daysGe35"));
 assert.ok(explorerSrc.includes("Jours ≥ 40 °C"), "climate hero shows official days at or above 40 °C, including a true zero");
@@ -1305,6 +1307,7 @@ assert.equal(yearRecords.mostDaysGe30?.value, 20);
 assert.notEqual(yearRecords.mostDaysGe30?.value, 80, "incomplete years must not set the hot-day year record");
 assert.equal(yearRecords.mostFrost, null, "missing frost counts must not invent a frost year record");
 assert.equal(yearRecords.mostTropicalNights, null, "missing tropical-night counts must not invent a tropical-night year record");
+assert.equal(yearRecords.mostDaysGe35, null, "missing 35 °C counts must not invent a 35 °C year record");
 const frostRecords = observedYearRecords([
   { year: 2024, tminMean: 0, tmaxMean: 40, precipitationSum: null, daysGe30: 1, daysFrost: 99, yearComplete: false, precipComplete: false },
   { year: 2000, tminMean: 8, tmaxMean: 18, precipitationSum: 800, daysGe30: 5, daysFrost: 10, yearComplete: true, precipComplete: true },
@@ -1336,6 +1339,23 @@ const tiedTropicalNights = observedYearRecords([
 ]);
 assert.equal(tiedTropicalNights.mostTropicalNights?.year, 2015, "a tropical-night record tie keeps the earlier complete year");
 assert.equal(tiedTropicalNights.mostTropicalNights?.value, 7);
+const daysGe35Records = observedYearRecords([
+  { year: 2026, tminMean: 9, tmaxMean: 22, precipitationSum: null, daysGe30: 1, daysGe35: 99, yearComplete: false, precipComplete: false },
+  { year: 2003, tminMean: 8, tmaxMean: 22, precipitationSum: 400, daysGe30: 20, daysGe35: 22, yearComplete: true, precipComplete: true },
+  { year: 2022, tminMean: 8, tmaxMean: 20, precipitationSum: 700, daysGe30: 18, daysGe35: 18, yearComplete: true, precipComplete: true },
+  { year: 2025, tminMean: 8, tmaxMean: 19, precipitationSum: 900, daysGe30: 15, daysGe35: 15, yearComplete: true, precipComplete: true }
+]);
+assert.equal(daysGe35Records.mostDaysGe35?.year, 2003);
+assert.equal(daysGe35Records.mostDaysGe35?.value, 22);
+assert.notEqual(daysGe35Records.mostDaysGe35?.value, 99, "incomplete years must not set the 35 °C year record");
+assert.notEqual(daysGe35Records.mostDaysGe35?.value, 18, "2022 35 °C days must not become the series maximum");
+assert.notEqual(daysGe35Records.mostDaysGe35?.value, 15, "2025 35 °C days must not become the series maximum");
+const tiedDaysGe35 = observedYearRecords([
+  { year: 2003, tminMean: 8, tmaxMean: 18, precipitationSum: 500, daysGe30: 20, daysGe35: 22, yearComplete: true, precipComplete: true },
+  { year: 2022, tminMean: 8, tmaxMean: 18, precipitationSum: 500, daysGe30: 20, daysGe35: 22, yearComplete: true, precipComplete: true }
+]);
+assert.equal(tiedDaysGe35.mostDaysGe35?.year, 2003, "a 35 °C record tie keeps the earlier complete year");
+assert.equal(tiedDaysGe35.mostDaysGe35?.value, 22);
 const tiedHotDays = observedYearRecords([
   { year: 2001, tminMean: 8, tmaxMean: 18, precipitationSum: 500, daysGe30: 20, yearComplete: true, precipComplete: true },
   { year: 2003, tminMean: 8, tmaxMean: 18, precipitationSum: 500, daysGe30: 20, yearComplete: true, precipComplete: true }
@@ -2097,6 +2117,13 @@ if (obsCount === 0) {
   const mostTropYear = yearly.years.find((row) => row.year === yearly.yearRecords.mostTropicalNights?.year);
   assert.equal(mostTropYear?.yearComplete, true);
   assert.equal(mostTropYear?.tropicalNights, 7);
+  assert.equal(yearly.yearRecords.mostDaysGe35?.year, 2003, "LVD 35 °C year record is 2003, not 2022");
+  assert.equal(yearly.yearRecords.mostDaysGe35?.value, 22);
+  assert.notEqual(yearly.yearRecords.mostDaysGe35?.value, 18, "2022 has 18 days ≥ 35 °C, not the series maximum");
+  assert.notEqual(yearly.yearRecords.mostDaysGe35?.value, 15, "year records must not paste 2025 onto the 35 °C maximum");
+  const mostGe35Year = yearly.years.find((row) => row.year === yearly.yearRecords.mostDaysGe35?.year);
+  assert.equal(mostGe35Year?.yearComplete, true);
+  assert.equal(mostGe35Year?.daysGe35, 22);
   if (yearly.normal.available && !yearly.normal.sameStation) {
     assert.ok(yearly.normal.station, "nearby 1991-2020 normal must name one station");
     assert.notEqual(yearly.normal.station?.id, yearly.station?.id);
