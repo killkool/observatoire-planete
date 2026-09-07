@@ -49,6 +49,7 @@ import {
 import { communeSnapshotChecksum } from "../src/lib/ingestCommunes";
 import { buildBirthLead, buildShareText, communeHistoryHref, frenchLongDate, yearsElapsed } from "../src/lib/birthDay";
 import { birthExampleCards } from "../src/lib/birthExamples";
+import { compareExampleCards } from "../src/lib/compareExamples";
 import { filterDailyResources } from "../src/lib/meteoFrance";
 import { isAllowedIgnLayer, parseIgnTile } from "../src/lib/ignTiles";
 import db from "../src/lib/db";
@@ -564,7 +565,12 @@ const comparerPageSrc = fs.readFileSync(
 );
 assert.ok(comparerPageSrc.includes("comparePageCopy"));
 assert.ok(comparerPageSrc.includes("getCommuneCityCompareCached"));
+assert.ok(comparerPageSrc.includes("getCompareExamplesCached"), "comparer landing must carry official example pairs");
 assert.ok(comparerPageSrc.includes('frenchLanguageAlternates("/comparer")'), "canonical stays /comparer");
+const compareExSrc = fs.readFileSync(path.join(process.cwd(), "src/components/CompareExamples.tsx"), "utf8");
+assert.equal(compareExSrc.includes("ERA5"), false, "comparer examples must not show reanalysis");
+const compareCacheSrc = fs.readFileSync(path.join(process.cwd(), "src/lib/sqliteReadCache.ts"), "utf8");
+assert.ok(compareCacheSrc.includes("compare-examples-v1"));
 
 const lastCompleteOnlyTemps: Parameters<typeof lastCompleteClimateYear>[0] = [
   {
@@ -1764,6 +1770,27 @@ if (obsCount === 0) {
       );
     }
   }
+  const compareExamples = compareExampleCards();
+  assert.equal(compareExamples.length, 2);
+  const voironExample = compareExamples.find((card) => card.inseeB === "38563");
+  const crollesExample = compareExamples.find((card) => card.inseeB === "38140");
+  assert.ok(voironExample && crollesExample);
+  assert.equal(voironExample.sameStation, false);
+  assert.ok(voironExample.summary.includes("18.5 °C"));
+  assert.ok(voironExample.summary.includes("18.2 °C"));
+  assert.ok(voironExample.description.includes("COUBLEVIE"));
+  assert.ok(voironExample.description.includes("980.8 mm"));
+  assert.equal(voironExample.description.includes("ERA5"), false);
+  assert.ok(voironExample.path.includes("a=38185"));
+  assert.ok(voironExample.path.includes("b=38563"));
+  assert.equal(crollesExample.sameStation, true);
+  assert.ok(crollesExample.summary.includes("même station"));
+  assert.ok(crollesExample.description.includes("aucun écart n’est inventé"));
+  assert.equal(
+    crollesExample.summary.includes("18.5 °C"),
+    false,
+    "same-station example must not paste Voiron's overlap onto Crolles"
+  );
   const homeCards = featuredClimateCards(listFeaturedPlaces());
   assert.equal(homeCards.length, 3);
   const grenobleHome = homeCards.find((card) => card.place.insee_code === "38185");

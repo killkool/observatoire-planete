@@ -154,6 +154,8 @@
 .communePicker{position:relative}
 .compareFeatured{color:var(--muted);font-size:14px}
 .compareFeatured a{color:var(--accent2)}
+.compareExamples{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin:28px 0 0}
+.compareExamples .placeCard h2{font-size:18px;line-height:1.3}
 .compareMetrics a{color:var(--accent2)}
 .warmingMetrics,.heatMetrics{grid-template-columns:repeat(3,minmax(0,1fr))}
 .monthNormalBlock{margin:22px 0 8px}
@@ -167,7 +169,7 @@
 .shareBtn,.mapToolbar button,.yearCell,.btnPrimary,.btnGhost{min-height:44px}
 
 @media(max-width:1000px){
-  .placeCards,.originStory,.storyGrid,.methodSteps,.placeSearch{grid-template-columns:1fr}
+  .placeCards,.originStory,.storyGrid,.methodSteps,.placeSearch,.compareExamples{grid-template-columns:1fr}
   .placeSearch .btnPrimary{justify-content:center}
   .metricRow{grid-template-columns:1fr 1fr}
   .sameDayMetrics,.compareRow,.compareMetrics,.comparePickers,.warmingMetrics,.heatMetrics,.sourceCompareGrid{grid-template-columns:1fr}

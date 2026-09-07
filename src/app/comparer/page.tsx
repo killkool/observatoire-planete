@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import CompareCities from "@/components/CompareCities";
+import CompareExamples from "@/components/CompareExamples";
 import { comparePageCopy, frenchLanguageAlternates } from "@/lib/seoContent";
-import { getCommuneCityCompareCached } from "@/lib/sqliteReadCache";
+import { getCommuneCityCompareCached, getCompareExamplesCached } from "@/lib/sqliteReadCache";
 
 type CompareQuery = { a?: string; b?: string };
 
@@ -57,6 +58,7 @@ export default async function ComparerPage({
   const inseeB = query.b?.trim() ?? "";
   const initialCompare =
     inseeA && inseeB ? await getCommuneCityCompareCached(inseeA, inseeB) : null;
+  const examples = inseeA && inseeB ? [] : await getCompareExamplesCached();
   return (
     <main className="compareShell">
       <p className="eyebrow">VILLE VS VILLE</p>
@@ -71,6 +73,7 @@ export default async function ComparerPage({
       <Suspense fallback={<p className="note">Chargement…</p>}>
         <CompareCities initialCompare={initialCompare} />
       </Suspense>
+      {examples.length ? <CompareExamples cards={examples} /> : null}
     </main>
   );
 }
