@@ -11,7 +11,7 @@ Nom de travail. Les fournisseurs (Météo-France, Copernicus, NOAA, ECMWF, IGN) 
 **Priorité :** utilité → simplicité → fiabilité → rapidité → beauté → complexité technique.  
 Les cases `[x]` = livré **et** vérifié (preuve). Un fichier vide ne compte pas.
 
-Dernière mise à jour : 2026-09-07 (heatmap « ce jour » en liens date). Tableau : [STATUS.md](./STATUS.md).
+Dernière mise à jour : 2026-09-07 (héros = mesure officielle, LCP lab 2168 ms). Tableau : [STATUS.md](./STATUS.md).
 
 ---
 
@@ -49,8 +49,9 @@ Dernière mise à jour : 2026-09-07 (heatmap « ce jour » en liens date). Table
 30. [x] Phase R9 suite — quotidien 2t bbox France **3 jours** (11–13 mai 1983, 2709 mailles JSON) ; preuve du 12 mai non réécrite ; pas SQL, pas 1940–2026
 31. [x] Phase R9 suite — point Grenoble **11 et 13 mai 1983** (mêmes 14 variables, maille 45,25 / 5,75) ; 2t = quotidien France ; 12 mai non réécrit ; pas fusionné, pas JSON-LD
 32. [x] Phase R9 suite — point Grenoble **12 mai 1982 et 1986** (records CORENC du 12 mai, 5,1 / 32,1 °C) ; même maille ; 1983 non réécrit ; pas fusionné, pas JSON-LD
-33. [x] Phase R12 suite — heatmap « ce jour » en liens `?date=` (1986 → 1982 : CORENC 5,1 / 26,1 °C) ; pas de prefetch des 8 années ; LCP lab inchangé **2535 ms**
-34. Ne **pas** extraire ERA5 mondial. Ne **pas** activer océan / NOAA / API commerciale. Ne **pas** feindre Vercel/Supabase. Ne **pas** extraire massivement les tuiles IGN.
+33. [x] Phase R12 suite — heatmap « ce jour » en liens `?date=` (1986 → 1982 : CORENC 5,1 / 26,1 °C) ; pas de prefetch des 8 années ; LCP lab alors **2535 ms**
+34. [x] Phase R12 suite — héros = Tmin/Tmax officiels (pas de photo IGN, pas d’ERA5) ; 1900 sans invention ; Lighthouse lab LCP **2168 ms**
+35. Ne **pas** extraire ERA5 mondial. Ne **pas** activer océan / NOAA / API commerciale. Ne **pas** feindre Vercel/Supabase. Ne **pas** extraire massivement les tuiles IGN.
 
 Héritage déjà vérifié (ne pas recommencer) : licences Phase 0, import Isère 1 208 439 obs, Grenoble 1983-05-12 (CORENC, 6,6 / 21,6 °C), matching station v1, carte IGN, provenance. Runtime encore SQLite. Cible prod : [ARCHITECTURE_PRODUCTION.md](./ARCHITECTURE_PRODUCTION.md).
 
@@ -211,12 +212,12 @@ Reste : France entière (autres départements) en R10. Isère : 512 communes imp
 - [ ] Core Web Vitals
 - [ ] cache Next.js / CDN / vues matérialisées
 - [x] cache local tuiles IGN affichées (`data/tiles/ign/`, pas d’extract massif)
-- [x] optimisation charts / images (Recharts/MapLibre hors écran ; JPEG des visuels déjà présents ; HTML page sans mois/saisons/chaleur ; LCP lab **2535 ms**, pas un pass)
+- [x] optimisation charts / images (Recharts/MapLibre hors écran ; JPEG des visuels déjà présents ; HTML page sans mois/saisons/chaleur ; héros sans photo IGN ; LCP lab **2168 ms**, pas CrUX)
 - [x] HTML initial de la page commune = mesure du jour (SSR `getPlaceHistory`, pas d’attente API pour Tmin/Tmax)
 - [x] HTML initial = climat annuel (SSR `getCommuneYearly`) ; date sans observation ≠ « import manquant »
 - [x] HTML initial = enfance si `histoire=naissance` (SSR `getCommuneChildhood`)
 
-**État :** premier HTML Grenoble **56 Ko** (sans mois, saisons ni épisodes de chaleur). Années / normales / records restent dans le HTML. Détails via `/yearly` à l’approche de `#mois`. Un payload chaleur vide n’est pas « aucun épisode ». Heatmap « ce jour » : liens réels `?date=` (`prefetch` off) ; 1986 → 1982 vérifié. Lighthouse lab 2026-09-06T22:26Z : perf 97, LCP **2535 ms**, CLS 0 — pas CrUX, seuil 2500 ms non tenu. Tentative héros WebP hors optimizer : LCP **2779 ms**, revert. Pas de bottom sheet GIS. Pas de CDN.
+**État :** premier HTML Grenoble **56 Ko** (sans mois, saisons ni épisodes de chaleur). Années / normales / records restent dans le HTML. Détails via `/yearly` à l’approche de `#mois`. Un payload chaleur vide n’est pas « aucun épisode ». Heatmap « ce jour » : liens réels `?date=` (`prefetch` off). Héros : Tmin/Tmax officiels dans le HTML, pas de JPEG IGN ni d’ERA5 ; 1900 = « aucune mesure officielle ». Lighthouse lab 2026-09-07T00:39Z : perf 99, LCP **2168 ms**, CLS 0 — pas CrUX. Pas de bottom sheet GIS. Pas de CDN.
 
 ---
 

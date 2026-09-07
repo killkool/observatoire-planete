@@ -74,13 +74,14 @@
 .chip-disabled,.chip-restricted{background:#3a1518;color:#ffb4b4}
 
 .placeVisual{padding-bottom:70px}
-.placeHero{position:relative;min-height:420px;display:flex;align-items:flex-end}
-.placeHero img{object-fit:cover}
-.placeHero:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(7,16,20,.2),rgba(7,16,20,.88));pointer-events:none}
-.placeHeroContent{position:relative;z-index:1;width:min(1480px,94vw);margin:0 auto 28px}
+.placeHero{position:relative;display:flex;align-items:flex-end;padding:28px 0 8px;border-bottom:1px solid var(--line);background:radial-gradient(circle at 12% 0%,#12262c 0,transparent 46%),var(--bg)}
+.placeHeroContent{position:relative;z-index:1;width:min(1480px,94vw);margin:0 auto 20px}
 .placeHeroContent h1{font-size:clamp(40px,7vw,84px);margin:6px 0 10px;letter-spacing:-.05em}
 .placeHero .datePick{max-width:240px;margin-top:14px}
 .placeHero .crumb{color:#c9d8dc}
+.heroTemps{display:flex;flex-wrap:wrap;gap:28px 40px;margin:12px 0 0;font-size:clamp(28px,5vw,48px);font-weight:800;letter-spacing:-.04em;line-height:1.05}
+.heroTemps em{display:block;font-style:normal;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:800;margin-bottom:6px}
+.heroTempsEmpty{margin:12px 0 0;max-width:36rem;font-size:16px;font-weight:600;line-height:1.45;color:#d7e6ea}
 .photoCredit{color:#c9d8dc;font-size:12px;margin:8px 0 0}
 
 .mapBlock,.storyGrid,.placeVisual .chartPanel,.placeVisual .empty,.placeVisual .error,.placeVisual .loadingNote,.sourceCompare,.placeDayFlow,.placeClimateFlow{width:min(1480px,94vw);margin:16px auto}
@@ -179,8 +180,9 @@
   .placeDayFlow{order:1}
   .mapBlock{order:2}
   .placeClimateFlow{order:3}
-  .placeHero{min-height:280px}
+  .placeHero{padding:18px 0 4px}
   .placeHeroContent h1{font-size:clamp(32px,12vw,48px)}
+  .heroTemps{font-size:clamp(26px,10vw,36px);gap:16px 28px}
   .heroActions{flex-direction:column;align-items:stretch}
   .shareBtn{width:100%}
   .datePick input,.placeVisual input[type=date],.placeVisual select,.placeSearch input,.placeSearchField input,.communePicker input{font-size:16px;min-height:44px}

@@ -320,6 +320,14 @@ assert.equal(
 const heatmapSrc = fs.readFileSync(path.join(process.cwd(), "src/components/YearHeatmap.tsx"), "utf8");
 assert.ok(heatmapSrc.includes("prefetch={false}"), "heatmap years must not prefetch 8 commune RSC payloads");
 assert.ok(heatmapSrc.includes("hrefFor"), "heatmap years must be real date links");
+const explorerSrc = fs.readFileSync(path.join(process.cwd(), "src/components/PlaceExplorer.tsx"), "utf8");
+const heroChunk = explorerSrc.slice(explorerSrc.indexOf("placeHero"), explorerSrc.indexOf("mapBlock"));
+assert.ok(heroChunk.includes("heroTemps"), "hero must show official Tmin/Tmax on the first screen");
+assert.ok(heroChunk.includes("data.observation.tminDisplay"));
+assert.ok(heroChunk.includes("data.observation.tmaxDisplay"));
+assert.ok(!heroChunk.includes("era5"), "hero must not show ERA5 as the first answer");
+assert.ok(!heroChunk.includes("placePhotoSrc"), "hero must not load the IGN photo on the LCP path");
+assert.ok(!explorerSrc.includes("origin-observed.jpg"), "observation card must not duplicate origin-observed as a large LCP image");
 assert.equal(yearsElapsed("1983-05-12", "2026-09-06"), 43);
 assert.equal(yearsElapsed("1983-10-01", "2026-09-06"), 42);
 assert.equal(yearsElapsed("2027-01-01", "2026-09-06"), null);

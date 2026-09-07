@@ -2,14 +2,12 @@
 
 import { useEffect, useMemo, useState, type ComponentProps } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import Image from "next/image";
 import Link from "next/link";
 import dynamic from "next/dynamic";
 import DeferInView from "./DeferInView";
 import TempRange from "./TempRange";
 import YearHeatmap from "./YearHeatmap";
 import OriginBadge from "./OriginBadge";
-import { IGN_PHOTO_CREDIT, HERO_IMAGE_SIZES, placePhotoSrc } from "@/lib/placeMedia";
 import { departmentLabel } from "@/lib/placeUrl";
 import { buildShareText, communeHistoryHref, frenchLongDate, yearsElapsed } from "@/lib/birthDay";
 import {
@@ -633,15 +631,6 @@ export default function PlaceExplorer({
   return (
     <main className="placeVisual">
       <section className="placeHero">
-        <Image
-          src={placePhotoSrc(slug)}
-          alt={place ? `Vue aérienne IGN de ${place.name}` : ""}
-          fill
-          priority
-          quality={60}
-          decoding="sync"
-          sizes={HERO_IMAGE_SIZES}
-        />
         <div className="placeHeroContent">
           <p className="crumb">
             <Link href="/">Accueil</Link>
@@ -654,7 +643,22 @@ export default function PlaceExplorer({
           <p className="eyebrow">{histoire ? "JOUR DE NAISSANCE · MESURE OFFICIELLE" : "HISTOIRE MÉTÉO · MESURE OFFICIELLE"}</p>
           <h1>{place?.name || slug}</h1>
           <p>{date.split("-").reverse().join("/")}</p>
-          <p className="photoCredit">{IGN_PHOTO_CREDIT}</p>
+          {data && data.date === date && data.observation ? (
+            <p className="heroTemps">
+              <span>
+                <em>Minimale</em>
+                {data.observation.tminDisplay}
+              </span>
+              <span>
+                <em>Maximale</em>
+                {data.observation.tmaxDisplay}
+              </span>
+            </p>
+          ) : data && data.date === date && !data.observation ? (
+            <p className="heroTempsEmpty">
+              Aucune mesure officielle n’est disponible pour cette date. Aucune valeur n’est inventée.
+            </p>
+          ) : null}
           <div className="heroActions">
             <label className="datePick">
               <span>{histoire ? "Date de naissance" : "Quel temps faisait-il ?"}</span>
@@ -729,16 +733,6 @@ export default function PlaceExplorer({
         <div className="placeDayFlow">
           <section className="storyGrid">
             <article className="panel storyMain">
-              <div className="storyPhoto">
-                <Image
-                  src="/images/origin-observed.jpg"
-                  alt=""
-                  fill
-                  sizes="(max-width:650px) 100vw, 720px"
-                  quality={60}
-                  fetchPriority="low"
-                />
-              </div>
               <OriginBadge kind="OBSERVED" caption={data.observation?.originLabel} />
               <TempRange tmin={data.observation?.tmin ?? null} tmax={data.observation?.tmax ?? null} />
               {data.sameDayContext ? <p className="sameDayStory">{data.sameDayContext.label}</p> : null}
