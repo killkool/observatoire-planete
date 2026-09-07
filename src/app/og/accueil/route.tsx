@@ -69,7 +69,7 @@ export async function GET() {
               <div style={{ fontSize: 36, fontWeight: 700 }}>{card.daysGe40Display ?? "non disponible"}</div>
             </div>
           </div>
-          <div style={{ display: "flex", gap: 28 }}>
+          <div style={{ display: "flex", gap: 18 }}>
             <div style={{ display: "flex", flexDirection: "column" }}>
               <div style={{ fontSize: 16, color: "#88a0a8" }}>Jours de gel</div>
               <div style={{ fontSize: 36, fontWeight: 700 }}>{card.daysFrostDisplay ?? "non disponible"}</div>
@@ -77,6 +77,10 @@ export async function GET() {
             <div style={{ display: "flex", flexDirection: "column" }}>
               <div style={{ fontSize: 16, color: "#88a0a8" }}>Nuits tropicales</div>
               <div style={{ fontSize: 36, fontWeight: 700 }}>{card.tropicalNightsDisplay ?? "non disponible"}</div>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <div style={{ fontSize: 16, color: "#88a0a8" }}>Écart min-max</div>
+              <div style={{ fontSize: 36, fontWeight: 700 }}>{card.amplitudeDisplay ?? "non disponible"}</div>
             </div>
           </div>
         </div>

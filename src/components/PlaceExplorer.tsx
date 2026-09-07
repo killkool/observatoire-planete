@@ -17,7 +17,7 @@ import {
   formatSignedCelsius,
   formatSignedMm
 } from "@/lib/compareClimate";
-import { formatCelsius, formatMm } from "../../packages/weather-core/src/units";
+import { formatCelsius, formatMeanAmplitudeC, formatMm } from "../../packages/weather-core/src/units";
 import { ERA5_FRANCE_DAILY_2T_CELLS, ERA5_FRANCE_DAILY_2T_DATES, ERA5_POINT_DATES } from "@/lib/era5France";
 import { formatSignedPerDecade } from "@/lib/climateTrend";
 import {
@@ -176,6 +176,7 @@ type YearRow = {
   daysGe40?: number;
   daysFrost?: number;
   tropicalNights?: number;
+  amplitude?: number;
   yearComplete: boolean;
   precipComplete: boolean;
   tminAnomaly?: number | null;
@@ -364,6 +365,7 @@ export default function PlaceExplorer({
     daysGe40?: number;
     daysFrost?: number;
     tropicalNights?: number;
+    amplitude?: number;
     stationName: string;
     distanceKm: number | null;
   } | null;
@@ -728,6 +730,12 @@ export default function PlaceExplorer({
                   <em>Maximale moyenne</em>
                   {formatCelsius(climateLead.tmaxMean)}
                 </span>
+                {climateLead.amplitude != null ? (
+                  <span>
+                    <em>Écart min-max</em>
+                    {formatCelsius(climateLead.amplitude)}
+                  </span>
+                ) : null}
                 {climateLead.precipComplete && climateLead.precipitationSum != null ? (
                   <span>
                     <em>Pluie</em>
@@ -1150,7 +1158,7 @@ export default function PlaceExplorer({
                 {(() => {
                   const last = [...yearly.years].reverse().find((row) => row.yearComplete && row.precipComplete);
                   return last
-                    ? `${last.year} · ${last.precipitationSum ?? "non disponible"} mm${last.daysRain != null ? ` · ${last.daysRain} jour${last.daysRain > 1 ? "s" : ""} de pluie` : ""} · ${last.daysGe25 != null ? `${last.daysGe25} jour${last.daysGe25 > 1 ? "s" : ""} ≥ 25 °C · ` : ""}${last.daysGe30} jour${last.daysGe30 > 1 ? "s" : ""} ≥ 30 °C${last.daysGe35 != null ? ` · ${last.daysGe35} jour${last.daysGe35 > 1 ? "s" : ""} ≥ 35 °C` : ""}${last.daysGe40 != null ? ` · ${last.daysGe40} jour${last.daysGe40 > 1 ? "s" : ""} ≥ 40 °C` : ""}${last.daysFrost != null ? ` · ${last.daysFrost} jour${last.daysFrost > 1 ? "s" : ""} de gel` : ""}${last.tropicalNights != null ? ` · ${last.tropicalNights} nuit${last.tropicalNights > 1 ? "s" : ""} tropicale${last.tropicalNights > 1 ? "s" : ""}` : ""}`
+                    ? `${last.year} · ${last.amplitude != null ? `${formatMeanAmplitudeC(last.amplitude)} · ` : ""}${last.precipitationSum ?? "non disponible"} mm${last.daysRain != null ? ` · ${last.daysRain} jour${last.daysRain > 1 ? "s" : ""} de pluie` : ""} · ${last.daysGe25 != null ? `${last.daysGe25} jour${last.daysGe25 > 1 ? "s" : ""} ≥ 25 °C · ` : ""}${last.daysGe30} jour${last.daysGe30 > 1 ? "s" : ""} ≥ 30 °C${last.daysGe35 != null ? ` · ${last.daysGe35} jour${last.daysGe35 > 1 ? "s" : ""} ≥ 35 °C` : ""}${last.daysGe40 != null ? ` · ${last.daysGe40} jour${last.daysGe40 > 1 ? "s" : ""} ≥ 40 °C` : ""}${last.daysFrost != null ? ` · ${last.daysFrost} jour${last.daysFrost > 1 ? "s" : ""} de gel` : ""}${last.tropicalNights != null ? ` · ${last.tropicalNights} nuit${last.tropicalNights > 1 ? "s" : ""} tropicale${last.tropicalNights > 1 ? "s" : ""}` : ""}`
                     : "non disponible";
                 })()}
               </p>

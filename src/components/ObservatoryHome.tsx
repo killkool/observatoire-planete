@@ -4,7 +4,7 @@ import OriginKinds from "./OriginKinds";
 import PlaceSearch from "./PlaceSearch";
 import { IGN_PHOTO_CREDIT, HERO_IMAGE_SIZES, placePhotoSrc } from "@/lib/placeMedia";
 import { departmentLabel } from "@/lib/placeUrl";
-import { formatCelsius, formatDaysFrost, formatDaysGe25, formatDaysGe30, formatDaysGe35, formatDaysGe40, formatDaysRain, formatMm, formatTropicalNights, roundToPrecision } from "../../packages/weather-core/src/units";
+import { annualMeanAmplitudeC, formatCelsius, formatDaysFrost, formatDaysGe25, formatDaysGe30, formatDaysGe35, formatDaysGe40, formatDaysRain, formatMeanAmplitudeC, formatMm, formatTropicalNights, roundToPrecision } from "../../packages/weather-core/src/units";
 
 type HomeClimateCard = {
   place: {
@@ -28,6 +28,7 @@ type HomeClimateCard = {
     daysGe40?: number;
     daysFrost?: number;
     tropicalNights?: number;
+    amplitude?: number;
   } | null;
 };
 
@@ -70,6 +71,11 @@ export default function ObservatoryHome({ cards }: { cards: HomeClimateCard[] })
             card.lastComplete?.precipComplete && card.lastComplete.precipitationSum != null
               ? ` · ${formatMm(card.lastComplete.precipitationSum)}`
               : "";
+          const amplitude =
+            card.lastComplete != null
+              ? annualMeanAmplitudeC(card.lastComplete.tminMean, card.lastComplete.tmaxMean)
+              : null;
+          const ampBit = amplitude != null ? ` · ${formatMeanAmplitudeC(amplitude)}` : "";
           const rainDays =
             card.lastComplete?.precipComplete && card.lastComplete.daysRain != null
               ? ` · ${formatDaysRain(card.lastComplete.daysRain)}`
@@ -114,6 +120,7 @@ export default function ObservatoryHome({ cards }: { cards: HomeClimateCard[] })
                         ? ` · min. ${formatCelsius(card.lastComplete.tminMean)}`
                         : ""}{" "}
                       · max.                       {formatCelsius(card.lastComplete.tmaxMean)}
+                      {ampBit}
                       {rain}
                       {rainDays}
                       {warmDays}

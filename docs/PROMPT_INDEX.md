@@ -92,7 +92,7 @@ Source : sections 0 à 187 du prompt maître.
 | 77 | FEATURE "LE JOUR DE MA NAISSANCE" | [ ] *partiel* (page /naissance + récit pluie/station + titres date officiels + exemples SSR 1983/1986/1900 + OG `/og/naissance` 1983 CORENC ; pas de SDK social) |
 | 78 | FEATURE "CE JOUR DANS L'HISTOIRE" | [x] (moyenne + percentile + records + courbe, un poste ; pas une normale) |
 | 79 | FEATURE "QUAND J'ÉTAIS ENFANT" | [ ] *partiel* (moyennes d’années complètes, un poste, fenêtre 2016–2025 pour un né en 1983) |
-| 80 | FEATURE "MA VILLE SE RÉCHAUFFE-T-ELLE ?" | [ ] *partiel* (OLS Isère, un poste, ≥ 15 ans ; héros 2025 = **144 j de pluie**, **110 j ≥ 25 °C**, **57 j ≥ 30 °C**, **15 j ≥ 35 °C**, **0 j ≥ 40 °C**, **46 j de gel** et **5 nuits tropicales** observés, pas 2022 71/18 j ni 2003 22 j ni 2018 135 j ni 2022 126 j ni 8 j ≥ 40 °C d’un autre poste ni 2001 210 j ni 2014 205 j ni 2005 94 j ni 2024 7 nuits ; pas LSH, pas France) |
+| 80 | FEATURE "MA VILLE SE RÉCHAUFFE-T-ELLE ?" | [ ] *partiel* (OLS Isère, un poste, ≥ 15 ans ; héros 2025 = **écart min-max 11,4 °C**, **144 j de pluie**, **110 j ≥ 25 °C**, **57 j ≥ 30 °C**, **15 j ≥ 35 °C**, **0 j ≥ 40 °C**, **46 j de gel** et **5 nuits tropicales** observés, pas 2022 71/18 j ni 2003 22 j ni 2018 135 j ni 2022 126 j ni 8 j ≥ 40 °C d’un autre poste ni 2001 210 j ni 2014 205 j ni 2003/2022 12,2 °C d’écart ni 2013 10,1 °C ni 2005 94 j ni 2024 7 nuits ; pas LSH, pas France) |
 | 81 | FEATURE "100 ANS EN 30 SECONDES" | [ ] |
 | 82 | FEATURE OCEAN TIME MACHINE | [ ] |
 | 83 | FEATURE SOURCE INSPECTOR | [ ] *partiel* |
@@ -134,13 +134,13 @@ Source : sections 0 à 187 du prompt maître.
 | 119 | PHASE 20 — SCALE | [ ] |
 | 120 | MVP EXACT | [ ] *partiel* |
 | 121 | POURQUOI LA FRANCE EN PREMIER | [ ] |
-| 122 | UX ACCUEIL | [ ] *partiel* (recherche commune + CTAs 390 px + cartes climat officiel LVD 2025 min. 8,2 / max. 19,6 °C · 144 j de pluie · 110 j ≥ 25 °C · 57 j ≥ 30 °C · 15 j ≥ 35 °C · 0 j ≥ 40 °C · 46 j de gel · 5 nuits tropicales + OG `/og/accueil` exemple Grenoble ; pas France entière) |
+| 122 | UX ACCUEIL | [ ] *partiel* (recherche commune + CTAs 390 px + cartes climat officiel LVD 2025 min. 8,2 / max. 19,6 °C · écart min-max 11,4 °C · 144 j de pluie · 110 j ≥ 25 °C · 57 j ≥ 30 °C · 15 j ≥ 35 °C · 0 j ≥ 40 °C · 46 j de gel · 5 nuits tropicales + OG `/og/accueil` exemple Grenoble ; pas France entière) |
 | 123 | DESIGN | [ ] *partiel* |
 | 124 | HOME HERO | [ ] *partiel* (hero compact 390 px, JPEG, `decoding=sync`, `quality=70`, sizes ≤ 1480 px) |
-| 125 | PAGE MOBILE | [ ] *partiel* (390 px ; HTML page 56 Ko si `?date=` ; héros sans query = climat LVD 2025 min. 8,2 / max. 19,6 °C · 144 j de pluie · 110 j ≥ 25 °C · 57 j ≥ 30 °C · 15 j ≥ 35 °C · 0 j ≥ 40 °C · 46 j de gel · 5 nuits tropicales, date vide, partage année ; héros `?date=` = Tmin/Tmax/pluie + station à X km ; accueil = climat officiel LVD ; naissance / comparer = exemples officiels ; Lighthouse lab LCP 2178 ms ; pas CrUX ; pas de bottom sheet GIS) |
-| 126 | SEO | [ ] *partiel* (titres, héros et OG commune sans query = dernière année climatique officielle min. 8,2 / max. 19,6 °C · **144 j de pluie** · **110 j ≥ 25 °C** · **57 j ≥ 30 °C** · **15 j ≥ 35 °C** · **0 j ≥ 40 °C** · **46 j de gel** · **5 nuits tropicales** ; landings OG accueil/naissance/comparer = exemples officiels ; pas le jour par défaut ; JSON-LD jour seulement si `?date=` ; titres `?date=` / naissance / comparer = mesure officielle ; comparer landing = exemples officiels ; sitemap filtré + hreflang fr + JSON-LD + score v1 ; pas de pages en) |
+| 125 | PAGE MOBILE | [ ] *partiel* (390 px ; HTML page 56 Ko si `?date=` ; héros sans query = climat LVD 2025 min. 8,2 / max. 19,6 °C · écart min-max 11,4 °C · 144 j de pluie · 110 j ≥ 25 °C · 57 j ≥ 30 °C · 15 j ≥ 35 °C · 0 j ≥ 40 °C · 46 j de gel · 5 nuits tropicales, date vide, partage année ; héros `?date=` = Tmin/Tmax/pluie + station à X km ; accueil = climat officiel LVD ; naissance / comparer = exemples officiels ; Lighthouse lab LCP 2178 ms ; pas CrUX ; pas de bottom sheet GIS) |
+| 126 | SEO | [ ] *partiel* (titres, héros et OG commune sans query = dernière année climatique officielle min. 8,2 / max. 19,6 °C · **écart min-max 11,4 °C** · **144 j de pluie** · **110 j ≥ 25 °C** · **57 j ≥ 30 °C** · **15 j ≥ 35 °C** · **0 j ≥ 40 °C** · **46 j de gel** · **5 nuits tropicales** ; landings OG accueil/naissance/comparer = exemples officiels ; pas le jour par défaut ; JSON-LD jour seulement si `?date=` ; titres `?date=` / naissance / comparer = mesure officielle ; comparer landing = exemples officiels ; sitemap filtré + hreflang fr + JSON-LD + score v1 ; pas de pages en) |
 | 127 | INTERNATIONALISATION | [ ] *partiel* (html lang=fr, hreflang fr/x-default ; routage `en` = V2) |
-| 128 | PARTAGE SOCIAL | [ ] *partiel* (carte PNG + copie URL ; OG commune `/og/climat/{slug}` = min./max./pluie/**144 j de pluie**/**110 j ≥ 25 °C**/**57 j ≥ 30 °C**/**15 j ≥ 35 °C**/**0 j ≥ 40 °C**/**46 j de gel**/**5 nuits tropicales** ; landings `/og/accueil` `/og/naissance` `/og/comparer` = exemples officiels étiquetés ; « Partager cette année » sans `?date=` ; mesure officielle si `?date=` ; pas de SDK) |
+| 128 | PARTAGE SOCIAL | [ ] *partiel* (carte PNG + copie URL ; OG commune `/og/climat/{slug}` = min./max./**écart 11,4 °C**/pluie/**144 j de pluie**/**110 j ≥ 25 °C**/**57 j ≥ 30 °C**/**15 j ≥ 35 °C**/**0 j ≥ 40 °C**/**46 j de gel**/**5 nuits tropicales** ; landings `/og/accueil` `/og/naissance` `/og/comparer` = exemples officiels étiquetés ; « Partager cette année » sans `?date=` ; mesure officielle si `?date=` ; pas de SDK) |
 | 129 | BUSINESS MODEL | [ ] |
 | 130 | OCEAN BUSINESS | [ ] |
 | 131 | WEATHER BUSINESS | [ ] |
@@ -150,7 +150,7 @@ Source : sections 0 à 187 du prompt maître.
 | 135 | FINOPS | [ ] |
 | 136 | NE PAS STOCKER L'INUTILE | [ ] |
 | 137 | HOT/WARM/COLD DATA | [ ] |
-| 138 | CACHE | [ ] *partiel* (`unstable_cache` 1 h ; yearly **page** `commune-yearly-page-v8` `detailRows: false` ; comparer ville vs ville + `compare-examples-v1` ; accueil `featured-climate-v11` ; naissance `birth-examples-v1` ; `/yearly` complet à la demande ; pas CDN) |
+| 138 | CACHE | [ ] *partiel* (`unstable_cache` 1 h ; yearly **page** `commune-yearly-page-v9` `detailRows: false` ; comparer ville vs ville + `compare-examples-v1` ; accueil `featured-climate-v12` ; naissance `birth-examples-v1` ; `/yearly` complet à la demande ; pas CDN) |
 | 139 | PRECOMPUTATION | [ ] |
 | 140 | POSTGRES PARTITIONING | [ ] |
 | 141 | INDEXATION SPATIALE | [ ] |

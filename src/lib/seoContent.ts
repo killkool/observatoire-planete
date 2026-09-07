@@ -1,4 +1,4 @@
-import { formatCelsius, formatDaysFrost, formatDaysGe25, formatDaysGe30, formatDaysGe35, formatDaysGe40, formatDaysRain, formatMm, formatTropicalNights, roundToPrecision } from "../../packages/weather-core/src/units";
+import { annualMeanAmplitudeC, formatCelsius, formatDaysFrost, formatDaysGe25, formatDaysGe30, formatDaysGe35, formatDaysGe40, formatDaysRain, formatMeanAmplitudeC, formatMm, formatTropicalNights, roundToPrecision } from "../../packages/weather-core/src/units";
 import { frenchLongDate } from "./birthDay";
 import { formatSignedCelsius, formatSignedMm } from "./compareClimate";
 import {
@@ -166,6 +166,8 @@ export function communePageCopy(input: {
           : "";
       const tminBit =
         input.climate.tminMean != null ? `minimale moyenne ${formatCelsius(input.climate.tminMean)}, ` : "";
+      const amplitude = annualMeanAmplitudeC(input.climate.tminMean, input.climate.tmaxMean);
+      const ampBit = amplitude != null ? `, ${formatMeanAmplitudeC(amplitude)}` : "";
       const warmDaysBit =
         input.climate.daysGe25 != null ? `, ${formatDaysGe25(input.climate.daysGe25)}` : "";
       const hotDaysBit =
@@ -182,7 +184,7 @@ export function communePageCopy(input: {
           : "";
       return {
         title: `${input.placeName} — ${input.climate.year} · max. ${tmax} | Observatoire Planète`,
-        description: `Dernière année climatique complète observée pour ${input.placeName} (${input.department}) : ${input.climate.year}, ${tminBit}maximale moyenne ${tmax}${rainBit}${rainDaysBit}${warmDaysBit}${hotDaysBit}${veryHotDaysBit}${extremeHotDaysBit}${frostBit}${tropicalBit}. Station ${station}. Ce n’est pas une prévision.`
+        description: `Dernière année climatique complète observée pour ${input.placeName} (${input.department}) : ${input.climate.year}, ${tminBit}maximale moyenne ${tmax}${ampBit}${rainBit}${rainDaysBit}${warmDaysBit}${hotDaysBit}${veryHotDaysBit}${extremeHotDaysBit}${frostBit}${tropicalBit}. Station ${station}. Ce n’est pas une prévision.`
       };
     }
     return { title: genericTitle, description: genericDescription };

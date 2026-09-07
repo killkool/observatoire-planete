@@ -1,5 +1,5 @@
 import { rankStationsForPlace } from "../../packages/source-engine/src/stationMatch";
-import { roundToPrecision } from "../../packages/weather-core/src/units";
+import { annualMeanAmplitudeC, roundToPrecision } from "../../packages/weather-core/src/units";
 import {
   childhoodVsRecent,
   compareCityClimate,
@@ -194,6 +194,7 @@ export function getCommuneYearly(
       daysGe40: row.days_ge_40,
       daysFrost: row.days_frost,
       tropicalNights: row.tropical_nights,
+      amplitude: annualMeanAmplitudeC(tminMean, tmaxMean) ?? undefined,
       yearComplete,
       precipComplete: row.precip_complete === 1,
       tminAnomaly: yearComplete && ownComplete ? roundToPrecision(anomaly(tminMean, ownTmin), 1) : null,
@@ -284,6 +285,7 @@ export function climateCopyFromYearly(yearly: CommuneYearlyPayload | null): {
   daysGe40?: number;
   daysFrost?: number;
   tropicalNights?: number;
+  amplitude?: number;
   stationName: string;
   distanceKm: number | null;
 } | null {
@@ -303,6 +305,7 @@ export function climateCopyFromYearly(yearly: CommuneYearlyPayload | null): {
     daysGe40: last.daysGe40,
     daysFrost: last.daysFrost,
     tropicalNights: last.tropicalNights,
+    amplitude: annualMeanAmplitudeC(last.tminMean, last.tmaxMean) ?? undefined,
     stationName: yearly.station.name,
     distanceKm: yearly.station.distanceKm != null ? roundToPrecision(yearly.station.distanceKm, 1) : null
   };
@@ -325,6 +328,7 @@ export type FeaturedClimateCard = {
     daysGe40?: number;
     daysFrost?: number;
     tropicalNights?: number;
+    amplitude?: number;
   } | null;
 };
 
@@ -357,7 +361,8 @@ export function featuredClimateCards(places: PlaceRow[]): FeaturedClimateCard[] 
             daysGe35: last.daysGe35,
             daysGe40: last.daysGe40,
             daysFrost: last.daysFrost,
-            tropicalNights: last.tropicalNights
+            tropicalNights: last.tropicalNights,
+            amplitude: annualMeanAmplitudeC(last.tminMean, last.tmaxMean) ?? undefined
           }
         : null
     };

@@ -80,6 +80,23 @@ export function formatTropicalNights(count: number | null | undefined): string {
   return `${count} nuit${count > 1 ? "s" : ""} tropicale${count > 1 ? "s" : ""}`;
 }
 
+/** Écart entre maximale moyenne et minimale moyenne, après arrondi d’affichage à 1 décimale. Ce n’est pas une amplitude quotidienne. */
+export function annualMeanAmplitudeC(
+  tminMean: number | null | undefined,
+  tmaxMean: number | null | undefined
+): number | null {
+  const tmin = roundToPrecision(tminMean, DISPLAY_PRECISION.air_temperature);
+  const tmax = roundToPrecision(tmaxMean, DISPLAY_PRECISION.air_temperature);
+  if (tmin == null || tmax == null) return null;
+  return roundToPrecision(tmax - tmin, DISPLAY_PRECISION.air_temperature);
+}
+
+/** Libellé grand public de l’écart min-max annuel. 0.0 est un vrai zéro, pas une valeur manquante. */
+export function formatMeanAmplitudeC(valueC: number | null | undefined): string {
+  const n = roundToPrecision(valueC, DISPLAY_PRECISION.air_temperature);
+  return n == null ? "non disponible" : `écart min-max ${n.toFixed(1)} °C`;
+}
+
 export function formatKmhFromMs(valueMs: number | null | undefined): string {
   if (valueMs == null || !Number.isFinite(valueMs)) return "non disponible";
   const n = roundToPrecision(valueMs * 3.6, DISPLAY_PRECISION.wind_speed);

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
-import { currentTowardsUv, formatCelsius, formatDaysFrost, formatDaysGe25, formatDaysGe30, formatDaysGe35, formatDaysGe40, formatDaysRain, formatHpaFromPa, formatKmhFromMs, formatMjFromJm2, formatMmWaterFromM, formatTropicalNights, formatWindFromDeg, roundToPrecision, windFromUv } from "../packages/weather-core/src/units";
+import { annualMeanAmplitudeC, currentTowardsUv, formatCelsius, formatDaysFrost, formatDaysGe25, formatDaysGe30, formatDaysGe35, formatDaysGe40, formatDaysRain, formatHpaFromPa, formatKmhFromMs, formatMeanAmplitudeC, formatMjFromJm2, formatMmWaterFromM, formatTropicalNights, formatWindFromDeg, roundToPrecision, windFromUv } from "../packages/weather-core/src/units";
 import { ORIGIN_LABEL_PUBLIC_FR } from "../packages/weather-core/src/origin";
 import { warmerThanPercent, meanOfKnown, describeSameDayLead } from "../packages/weather-core/src/sameDayStats";
 import { scoreConfidence } from "../packages/confidence-engine/src/score";
@@ -85,6 +85,13 @@ assert.equal(formatDaysRain(0), "0 jour de pluie");
 assert.equal(formatDaysRain(1), "1 jour de pluie");
 assert.equal(formatDaysRain(144), "144 jours de pluie");
 assert.equal(formatDaysRain(null), "non disponible");
+assert.equal(annualMeanAmplitudeC(8.2, 19.6), 11.4);
+assert.equal(annualMeanAmplitudeC(6.8, 19.0), 12.2);
+assert.equal(annualMeanAmplitudeC(null, 19.6), null);
+assert.equal(annualMeanAmplitudeC(8.2, null), null);
+assert.equal(formatMeanAmplitudeC(11.4), "écart min-max 11.4 °C");
+assert.equal(formatMeanAmplitudeC(0), "écart min-max 0.0 °C");
+assert.equal(formatMeanAmplitudeC(null), "non disponible");
 assert.equal(formatDaysFrost(0), "0 jour de gel");
 assert.equal(formatDaysFrost(1), "1 jour de gel");
 assert.equal(formatDaysFrost(46), "46 jours de gel");
@@ -497,6 +504,7 @@ assert.ok(climateCopy.description.includes("901.1 mm"));
 assert.ok(climateCopy.description.includes("GRENOBLE - LVD"));
 assert.ok(climateCopy.description.includes("10.2 km"));
 assert.equal(climateCopy.description.includes("8.2"), false, "fixture without tminMean must not invent a mean minimum");
+assert.equal(climateCopy.description.includes("écart min-max"), false, "fixture without tminMean must not invent a min-max gap");
 assert.equal(climateCopy.description.includes("57"), false, "fixture without daysGe30 must not invent hot days");
 assert.equal(climateCopy.description.includes("25 °C"), false, "fixture without daysGe25 must not invent warm days");
 assert.equal(climateCopy.description.includes("35 °C"), false, "fixture without daysGe35 must not invent very hot days");
@@ -721,6 +729,7 @@ assert.ok(homeSrc.includes("formatDaysGe30"), "home cards show official days at 
 assert.ok(homeSrc.includes("formatDaysGe35"), "home cards show official days at or above 35 °C");
 assert.ok(homeSrc.includes("formatDaysGe40"), "home cards show official days at or above 40 °C, including a true zero");
 assert.ok(homeSrc.includes("formatDaysRain"), "home cards show official rain days when precip is complete");
+assert.ok(homeSrc.includes("formatMeanAmplitudeC"), "home cards show the derived min-max gap when both means exist");
 assert.ok(homeSrc.includes("formatDaysFrost"), "home cards show official frost days when they exist");
 assert.ok(homeSrc.includes("formatTropicalNights"), "home cards show official tropical nights when they exist");
 assert.ok(homeSrc.includes("roundToPrecision"));
@@ -731,8 +740,8 @@ assert.ok(homePageSrc.includes("getFeaturedClimateCached"), "home first HTML mus
 assert.ok(homePageSrc.includes("shareHomeCardPath"), "home OG card is an official Grenoble climate example");
 assert.ok(homePageSrc.includes("buildHomeOgModel"));
 const homeCacheSrc = fs.readFileSync(path.join(process.cwd(), "src/lib/sqliteReadCache.ts"), "utf8");
-assert.ok(homeCacheSrc.includes("featured-climate-v11"));
-assert.ok(homeCacheSrc.includes("commune-yearly-page-v8"));
+assert.ok(homeCacheSrc.includes("featured-climate-v12"));
+assert.ok(homeCacheSrc.includes("commune-yearly-page-v9"));
 const birthExSrc = fs.readFileSync(path.join(process.cwd(), "src/components/BirthExamples.tsx"), "utf8");
 assert.ok(birthExSrc.includes("Aucune mesure officielle"));
 assert.ok(birthExSrc.includes("formatCelsius"));
@@ -761,6 +770,8 @@ assert.ok(
   "climate landing must not crash when the default day is absent"
 );
 assert.ok(explorerSrc.includes("Minimale moyenne"), "climate hero shows the official mean minimum, not a daily Tmin");
+assert.ok(explorerSrc.includes("Écart min-max"), "climate hero shows the derived annual min-max gap");
+assert.ok(explorerSrc.includes("climateLead.amplitude"));
 assert.ok(explorerSrc.includes("Jours ≥ 25 °C"), "climate hero shows official days at or above 25 °C");
 assert.ok(explorerSrc.includes("climateLead.daysGe25"));
 assert.ok(explorerSrc.includes("Jours ≥ 30 °C"), "climate hero shows official days at or above 30 °C");
@@ -784,6 +795,8 @@ assert.ok(climateOgSrc.includes("climateCopyFromYearly"));
 assert.ok(climateOgSrc.includes("buildClimateShareCardModel"));
 assert.ok(climateOgSrc.includes("tminMean"), "climate OG card includes the official mean minimum");
 assert.ok(climateOgSrc.includes("Minimale moyenne"));
+assert.ok(climateOgSrc.includes("Écart min-max"));
+assert.ok(climateOgSrc.includes("amplitudeDisplay"));
 assert.ok(climateOgSrc.includes("daysGe30"), "climate OG card includes official days at or above 30 °C");
 assert.ok(climateOgSrc.includes("Jours à 25 °C ou plus"));
 assert.ok(climateOgSrc.includes("daysGe25"));
@@ -802,6 +815,7 @@ const homeOgSrc = fs.readFileSync(path.join(process.cwd(), "src/app/og/accueil/r
 assert.ok(homeOgSrc.includes("buildHomeOgModel"));
 assert.ok(homeOgSrc.includes("exampleLine"), "home OG must label Grenoble as an example, not France-wide climate");
 assert.ok(homeOgSrc.includes("Jours de gel"));
+assert.ok(homeOgSrc.includes("Écart min-max"));
 assert.ok(homeOgSrc.includes("Jours à 25 °C ou plus"));
 assert.ok(homeOgSrc.includes("Jours à 35 °C ou plus"));
 assert.ok(homeOgSrc.includes("Jours à 40 °C ou plus"));
@@ -1447,6 +1461,10 @@ assert.ok(climateCard);
 assert.equal(climateCard.year, 2025);
 assert.ok(climateCard.tminDisplay?.includes("8.2"));
 assert.ok(climateCard.tmaxDisplay.includes("19.6"));
+assert.equal(climateCard.amplitudeDisplay, "11.4 °C");
+assert.equal(climateCard.amplitudeDisplay?.includes("12.2"), false, "climate OG amplitude is 2025, not the 2003/2022 record");
+assert.equal(climateCard.amplitudeDisplay?.includes("10.1"), false, "climate OG amplitude is 2025, not the 2013 low");
+assert.equal(climateCard.amplitudeDisplay?.includes("13.8"), false, "climate OG amplitude is 2025, not incomplete 2026");
 assert.equal(climateCard.precipDisplay, "901.1 mm");
 assert.equal(climateCard.daysRainDisplay, "144 j");
 assert.equal(climateCard.daysRainDisplay?.includes("210"), false, "climate OG rain days are 2025, not the 2001 record");
@@ -1492,6 +1510,7 @@ const climateShare = buildClimateShareText({
 assert.ok(climateShare.includes("année climatique 2025"));
 assert.ok(climateShare.includes("8.2 °C"));
 assert.ok(climateShare.includes("19.6 °C"));
+assert.ok(climateShare.includes("écart min-max 11.4 °C"));
 assert.ok(climateShare.includes("901.1 mm"));
 assert.ok(climateShare.includes("144 jours de pluie"));
 assert.ok(climateShare.includes("110 jours ≥ 25 °C"));
@@ -1513,6 +1532,9 @@ assert.equal(climateShare.includes("71"), false, "share text must not paste the 
 assert.ok(climateShare.includes("GRENOBLE - LVD"));
 assert.equal(climateShare.includes("?date="), false, "climate share copies the canonical URL");
 assert.equal(climateShare.includes("20.2"), false);
+assert.equal(climateShare.includes("12.2 °C"), false, "share text must not paste the 2003/2022 amplitude record");
+assert.equal(climateShare.includes("10.1 °C"), false, "share text must not paste the 2013 amplitude low");
+assert.equal(climateShare.includes("13.8 °C"), false, "share text must not paste incomplete 2026 amplitude");
 assert.equal(climateShare.includes("6.6"), false);
 assert.equal(climateShare.includes("ERA5"), false);
 const climateShareNoMin = buildClimateShareText({
@@ -1528,6 +1550,7 @@ const climateShareNoMin = buildClimateShareText({
   url: "http://localhost:3001/meteo/auvergne-rhone-alpes/isere/grenoble"
 });
 assert.equal(climateShareNoMin.includes("minimale moyenne"), false, "missing tmin must not be invented in the share text");
+assert.equal(climateShareNoMin.includes("écart min-max"), false, "missing tmin must not invent a min-max gap in the share text");
 assert.equal(climateShareNoMin.includes("mm"), false, "incomplete precip must not invent millimetres in the share text");
 assert.equal(climateShareNoMin.includes("jours de pluie"), false, "incomplete rain-day count must not be invented in the share text");
 assert.equal(climateShareNoMin.includes("25 °C"), false, "omitted 25 °C count must not be invented in the share text");
@@ -1547,6 +1570,7 @@ const climateCardNoRain = buildClimateShareCardModel({
   distanceKm: 10.2
 });
 assert.equal(climateCardNoRain?.precipDisplay, null, "incomplete precip must not invent millimetres on the OG card");
+assert.equal(climateCardNoRain?.amplitudeDisplay, null, "missing tmin must not invent a min-max gap on the OG card");
 assert.equal(climateCardNoRain?.daysRainDisplay, null, "incomplete rain-day count must not be invented on the OG card");
 assert.equal(climateCardNoRain?.daysGe25Display, null, "omitted 25 °C count must not be invented on the OG card");
 assert.equal(climateCardNoRain?.daysGe30Display, null, "omitted hot-day count must not be invented on the OG card");
@@ -2154,6 +2178,11 @@ if (obsCount === 0) {
   assert.equal(grenobleHome.lastComplete?.precipitationSum, 901.1);
   assert.equal(grenobleHome.lastComplete?.tminMean, 8.2);
   assert.equal(grenobleHome.lastComplete?.tmaxMean, 19.6);
+  assert.equal(grenobleHome.lastComplete?.amplitude, 11.4);
+  assert.equal(grenobleHome.lastComplete?.amplitude, yearly2025.amplitude);
+  assert.notEqual(grenobleHome.lastComplete?.amplitude, 12.2, "home cards must not paste the 2003/2022 amplitude record onto 2025");
+  assert.notEqual(grenobleHome.lastComplete?.amplitude, 10.1, "home cards must not paste the 2013 amplitude low onto 2025");
+  assert.notEqual(grenobleHome.lastComplete?.amplitude, 13.8, "home cards must not paste incomplete 2026 amplitude onto 2025");
   assert.equal(grenobleHome.lastComplete?.daysRain, 144);
   assert.equal(grenobleHome.lastComplete?.daysRain, yearly2025.daysRain);
   assert.notEqual(grenobleHome.lastComplete?.daysRain, 210, "home cards must not paste the 2001 rain-day record onto 2025");
@@ -2194,6 +2223,7 @@ if (obsCount === 0) {
   assert.equal(pierreHome.station?.distanceKm, 11.6);
   assert.equal(crollesHome.lastComplete?.year, grenobleHome.lastComplete?.year);
   assert.equal(crollesHome.lastComplete?.tmaxMean, grenobleHome.lastComplete?.tmaxMean);
+  assert.equal(crollesHome.lastComplete?.amplitude, grenobleHome.lastComplete?.amplitude);
   assert.equal(crollesHome.lastComplete?.precipitationSum, grenobleHome.lastComplete?.precipitationSum);
   assert.equal(crollesHome.lastComplete?.daysRain, grenobleHome.lastComplete?.daysRain);
   assert.equal(crollesHome.lastComplete?.daysGe25, grenobleHome.lastComplete?.daysGe25);
@@ -2206,6 +2236,10 @@ if (obsCount === 0) {
   assert.equal(grenobleClimate?.year, 2025);
   assert.equal(grenobleClimate?.tminMean, 8.2);
   assert.equal(grenobleClimate?.tmaxMean, 19.6);
+  assert.equal(grenobleClimate?.amplitude, 11.4);
+  assert.notEqual(grenobleClimate?.amplitude, 12.2, "canonical climate is 2025 amplitude, not the 2003/2022 record");
+  assert.notEqual(grenobleClimate?.amplitude, 10.1, "canonical climate is 2025 amplitude, not the 2013 low");
+  assert.notEqual(grenobleClimate?.amplitude, 13.8, "canonical climate is 2025 amplitude, not incomplete 2026");
   assert.equal(grenobleClimate?.precipitationSum, 901.1);
   assert.equal(grenobleClimate?.daysRain, 144);
   assert.notEqual(grenobleClimate?.daysRain, 210, "canonical climate is 2025 rain days, not the 2001 record");
@@ -2230,6 +2264,8 @@ if (obsCount === 0) {
   const incomplete2026 = yearly.years.find((row) => row.year === 2026);
   assert.ok(incomplete2026);
   assert.equal(incomplete2026.precipComplete, false);
+  assert.equal(incomplete2026.amplitude, 13.8, "incomplete 2026 still has a derived amplitude on the series row");
+  assert.notEqual(grenobleClimate?.amplitude, incomplete2026.amplitude, "canonical climate must not use incomplete 2026 amplitude");
   assert.equal(incomplete2026.daysRain, undefined, "incomplete 2026 rain-day count must not be shown");
   assert.notEqual(incomplete2026.daysRain, 89);
   const incomplete1999 = yearly.years.find((row) => row.year === 1999);
@@ -2246,6 +2282,9 @@ if (obsCount === 0) {
   assert.ok(homeOg.exampleLine.includes("Exemple"));
   assert.ok(homeOg.tminDisplay?.includes("8.2"));
   assert.ok(homeOg.tmaxDisplay.includes("19.6"));
+  assert.equal(homeOg.amplitudeDisplay, "11.4 °C");
+  assert.equal(homeOg.amplitudeDisplay?.includes("12.2"), false);
+  assert.equal(homeOg.amplitudeDisplay?.includes("13.8"), false);
   assert.equal(homeOg.precipDisplay, "901.1 mm");
   assert.equal(homeOg.daysRainDisplay, "144 j");
   assert.equal(homeOg.daysRainDisplay?.includes("210"), false);
@@ -2298,6 +2337,7 @@ if (obsCount === 0) {
   assert.ok(grenobleClimateCopy.title.includes("19.6 °C"));
   assert.equal(grenobleClimateCopy.title.includes("20.2"), false);
   assert.ok(grenobleClimateCopy.description.includes("8.2 °C"));
+  assert.ok(grenobleClimateCopy.description.includes("écart min-max 11.4 °C"));
   assert.ok(grenobleClimateCopy.description.includes("901.1 mm"));
   assert.ok(grenobleClimateCopy.description.includes("144 jours de pluie"));
   assert.ok(grenobleClimateCopy.description.includes("110 jours ≥ 25 °C"));
@@ -2320,11 +2360,14 @@ if (obsCount === 0) {
   assert.ok(grenobleClimateCopy.description.includes("10.2 km"));
   assert.equal(grenobleClimateCopy.description.includes("6.6"), false);
   assert.equal(grenobleClimateCopy.description.includes("6.2"), false, "canonical description is not the coldest-year record");
+  assert.equal(grenobleClimateCopy.description.includes("12.2 °C"), false, "canonical description is not the 2003/2022 amplitude record");
+  assert.equal(grenobleClimateCopy.description.includes("13.8 °C"), false, "canonical description is not incomplete 2026 amplitude");
   assert.equal(grenobleClimateCopy.description.includes("ERA5"), false);
   const crollesClimate = climateCopyFromYearly(getCommuneYearly("38140", { includeDetailRows: false }));
   assert.equal(crollesClimate?.year, grenobleClimate?.year);
   assert.equal(crollesClimate?.tminMean, grenobleClimate?.tminMean);
   assert.equal(crollesClimate?.tmaxMean, grenobleClimate?.tmaxMean);
+  assert.equal(crollesClimate?.amplitude, grenobleClimate?.amplitude);
   assert.equal(crollesClimate?.precipitationSum, grenobleClimate?.precipitationSum);
   assert.equal(crollesClimate?.daysRain, grenobleClimate?.daysRain);
   assert.equal(crollesClimate?.daysGe25, grenobleClimate?.daysGe25);

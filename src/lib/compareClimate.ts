@@ -10,6 +10,7 @@ export type YearClimatePoint = {
   daysGe40?: number;
   daysFrost?: number;
   tropicalNights?: number;
+  amplitude?: number;
   yearComplete: boolean;
   precipComplete: boolean;
   tminAnomaly?: number | null;
