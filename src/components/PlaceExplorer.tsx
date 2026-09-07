@@ -9,7 +9,7 @@ import TempRange from "./TempRange";
 import YearHeatmap from "./YearHeatmap";
 import OriginBadge from "./OriginBadge";
 import { departmentLabel } from "@/lib/placeUrl";
-import { buildShareText, communeHistoryHref, frenchLongDate, yearsElapsed } from "@/lib/birthDay";
+import { buildBirthLead, buildShareText, communeHistoryHref, frenchLongDate, yearsElapsed } from "@/lib/birthDay";
 import {
   compareCompleteSeasons,
   compareCompleteYears,
@@ -701,9 +701,13 @@ export default function PlaceExplorer({
             })()}
           </div>
           <p className="birthLead">
-            {data.observation
-              ? `${data.observation.tminDisplay} le matin, ${data.observation.tmaxDisplay} l’après-midi. ${data.stationDisclaimer || ""}`
-              : "Aucune mesure officielle n’est disponible pour cette date. Aucune valeur n’est inventée."}
+            {buildBirthLead({
+              hasObservation: Boolean(data.observation),
+              tminDisplay: data.observation?.tminDisplay,
+              tmaxDisplay: data.observation?.tmaxDisplay,
+              precipDisplay: data.observation?.precipDisplay,
+              stationDisclaimer: data.stationDisclaimer
+            })}
           </p>
         </section>
       )}

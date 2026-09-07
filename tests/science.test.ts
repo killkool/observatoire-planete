@@ -33,7 +33,7 @@ import {
   wettestCompleteMonth,
   yearsWithTwelveCompleteMonths
 } from "../src/lib/climateMonths";
-import { seoContentScore, frenchLanguageAlternates, publicAbsoluteUrl, seoFactsForPlace, listIndexablePlaces, SEO_CONTENT_METHOD } from "../src/lib/seoContent";
+import { seoContentScore, frenchLanguageAlternates, publicAbsoluteUrl, seoFactsForPlace, listIndexablePlaces, SEO_CONTENT_METHOD, communePageCopy, officialCopyFromDay } from "../src/lib/seoContent";
 import { communeJsonLd, websiteJsonLd } from "../src/lib/seoJsonLd";
 import { coldestCompleteSeason, seasonPublicLabel } from "../src/lib/climateSeasons";
 import { buildShareCardModel, shareCardPath } from "../src/lib/shareCard";
@@ -47,7 +47,7 @@ import {
   TREND_WINDOW_YEARS
 } from "../src/lib/climateTrend";
 import { communeSnapshotChecksum } from "../src/lib/ingestCommunes";
-import { buildShareText, communeHistoryHref, frenchLongDate, yearsElapsed } from "../src/lib/birthDay";
+import { buildBirthLead, buildShareText, communeHistoryHref, frenchLongDate, yearsElapsed } from "../src/lib/birthDay";
 import { filterDailyResources } from "../src/lib/meteoFrance";
 import { isAllowedIgnLayer, parseIgnTile } from "../src/lib/ignTiles";
 import db from "../src/lib/db";
@@ -327,6 +327,7 @@ assert.ok(heroChunk.includes("data.observation.tminDisplay"));
 assert.ok(heroChunk.includes("data.observation.tmaxDisplay"));
 assert.ok(heroChunk.includes("data.observation.precipDisplay"), "hero rain must be the official millimetres, not ERA5");
 assert.ok(heroChunk.includes("stationDisclaimer"), "hero must name the station and distance, not imply the thermometer is in town");
+assert.ok(heroChunk.includes("buildBirthLead"), "naissance story must reuse official Tmin/Tmax/rain + station");
 assert.ok(!heroChunk.includes("era5"), "hero must not show ERA5 as the first answer");
 assert.ok(!heroChunk.includes("placePhotoSrc"), "hero must not load the IGN photo on the LCP path");
 assert.ok(!explorerSrc.includes("origin-observed.jpg"), "observation card must not duplicate origin-observed as a large LCP image");
@@ -358,6 +359,127 @@ const shareMissing = buildShareText({
 });
 assert.ok(shareMissing.includes("aucune mesure officielle"));
 assert.ok(!shareMissing.includes("0 °C"));
+
+const birthOk = buildBirthLead({
+  hasObservation: true,
+  tminDisplay: "6.6 °C",
+  tmaxDisplay: "21.6 °C",
+  precipDisplay: "0.1 mm",
+  stationDisclaimer: "Mesures provenant de la station CORENC LA REVIREE située à 4.7 km."
+});
+assert.ok(birthOk.includes("6.6 °C"));
+assert.ok(birthOk.includes("21.6 °C"));
+assert.ok(birthOk.includes("0.1 mm"));
+assert.ok(birthOk.includes("CORENC LA REVIREE"));
+assert.equal(birthOk.includes("14.2"), false, "naissance lead must not use ERA5 Tmax");
+assert.equal(birthOk.includes("0.3 mm"), false, "naissance lead must not use ERA5 rain");
+const birthHot = buildBirthLead({
+  hasObservation: true,
+  tminDisplay: "11.6 °C",
+  tmaxDisplay: "32.1 °C",
+  precipDisplay: "0.0 mm",
+  stationDisclaimer: "Mesures provenant de la station CORENC LA REVIREE située à 4.7 km."
+});
+assert.ok(birthHot.includes("0.0 mm"));
+assert.equal(birthHot.includes("2.1 mm"), false, "1986 naissance rain is CORENC 0.0 mm, not ERA5 2.1 mm");
+const birthMissing = buildBirthLead({ hasObservation: false, precipDisplay: "0.0 mm" });
+assert.ok(birthMissing.includes("Aucune mesure officielle"));
+assert.equal(birthMissing.includes("0.0 mm"), false, "missing day must not invent 0 mm");
+
+const genericCopy = communePageCopy({
+  placeName: "Grenoble",
+  department: "Isère",
+  isoDate: "1983-05-12",
+  dateInQuery: false,
+  naissance: false,
+  observation: {
+    tmin: 6.6,
+    tmax: 21.6,
+    precipitationMm: 0.1,
+    stationName: "CORENC LA REVIREE",
+    distanceKm: 4.7
+  }
+});
+assert.equal(genericCopy.title, "Grenoble — histoire météo | Observatoire Planète");
+assert.equal(genericCopy.description.includes("6.6"), false, "canonical commune title stays generic");
+const datedCopy = communePageCopy({
+  placeName: "Grenoble",
+  department: "Isère",
+  isoDate: "1983-05-12",
+  dateInQuery: true,
+  naissance: false,
+  observation: {
+    tmin: 6.6,
+    tmax: 21.6,
+    precipitationMm: 0.1,
+    stationName: "CORENC LA REVIREE",
+    distanceKm: 4.7
+  }
+});
+assert.ok(datedCopy.title.includes("6.6 °C"));
+assert.ok(datedCopy.title.includes("21.6 °C"));
+assert.ok(datedCopy.description.includes("0.1 mm"));
+assert.ok(datedCopy.description.includes("CORENC LA REVIREE"));
+assert.ok(datedCopy.description.includes("4.7 km"));
+assert.equal(datedCopy.title.includes("14.2"), false);
+assert.equal(datedCopy.description.includes("0.3 mm"), false, "SEO description rain is CORENC, not ERA5");
+const birthCopy = communePageCopy({
+  placeName: "Grenoble",
+  department: "Isère",
+  isoDate: "1983-05-12",
+  dateInQuery: true,
+  naissance: true,
+  observation: {
+    tmin: 6.6,
+    tmax: 21.6,
+    precipitationMm: 0.1,
+    stationName: "CORENC LA REVIREE",
+    distanceKm: 4.7
+  }
+});
+assert.ok(birthCopy.title.startsWith("Naissance à Grenoble"));
+assert.ok(birthCopy.title.includes("6.6 °C"));
+assert.equal(birthCopy.description.includes("14.2"), false);
+const hotCopy = communePageCopy({
+  placeName: "Grenoble",
+  department: "Isère",
+  isoDate: "1986-05-12",
+  dateInQuery: true,
+  naissance: true,
+  observation: {
+    tmin: 11.6,
+    tmax: 32.1,
+    precipitationMm: 0,
+    stationName: "CORENC LA REVIREE",
+    distanceKm: 4.7
+  }
+});
+assert.ok(hotCopy.description.includes("0.0 mm"));
+assert.equal(hotCopy.description.includes("2.1 mm"), false, "1986 SEO rain is 0.0 mm, not ERA5 2.1 mm");
+const missingCopy = communePageCopy({
+  placeName: "Grenoble",
+  department: "Isère",
+  isoDate: "1900-01-01",
+  dateInQuery: true,
+  naissance: true,
+  observation: null
+});
+assert.ok(missingCopy.title.includes("aucune mesure officielle"));
+assert.ok(missingCopy.description.includes("inventée"));
+assert.equal(missingCopy.description.includes("0.0 mm"), false);
+assert.equal(missingCopy.description.includes("0 °C"), false);
+assert.equal(
+  officialCopyFromDay({
+    originType: "REANALYSIS",
+    tmin: 3.4,
+    tmax: 14.2,
+    precipitationMm: 0.3,
+    station: { name: "ERA5", distanceKm: 0 }
+  }),
+  null,
+  "ERA5 must not enter commune titles"
+);
+assert.equal(officialCopyFromDay(null), null);
 
 assert.equal(warmerThanPercent(null, [1, 2, 3, 4, 5]), null);
 assert.equal(warmerThanPercent(21.6, [10, 12, 15, 18, 20, 21.6, 22]), 71);
@@ -1127,6 +1249,21 @@ if (obsCount === 0) {
   assert.equal(daySeo.tmin, 6.6);
   assert.equal(daySeo.tmax, 21.6);
   assert.equal(daySeo.precipitationMm, 0.1);
+  const birthSeo = communePageCopy({
+    placeName: grenoble.place.name,
+    department: "Isère",
+    isoDate: "1983-05-12",
+    dateInQuery: true,
+    naissance: true,
+    observation: officialCopyFromDay(daySeo)
+  });
+  assert.ok(birthSeo.title.startsWith("Naissance à Grenoble"));
+  assert.ok(birthSeo.description.includes("0.1 mm"));
+  assert.ok(birthSeo.description.includes("CORENC LA REVIREE"));
+  assert.ok(birthSeo.description.includes("4.7 km"));
+  assert.equal(birthSeo.description.includes("4.73"), false);
+  assert.equal(birthSeo.description.includes("0.3 mm"), false);
+  assert.equal(birthSeo.description.includes("14.2"), false);
   assert.ok(grenoble.sameDayContext);
   assert.equal(grenoble.sameDayContext.n, 8);
   assert.equal(grenoble.sameDayContext.tminMean, 7.3);
@@ -1263,6 +1400,17 @@ if (obsCount === 0) {
   const daySeo86 = getPlaceDayObservation("grenoble", "1986-05-12");
   assert.equal(daySeo86?.tmax, 32.1);
   assert.notEqual(daySeo86?.tmax, grenoble86.era5.tmax);
+  assert.equal(daySeo86?.precipitationMm, 0);
+  const birthSeo86 = communePageCopy({
+    placeName: "Grenoble",
+    department: "Isère",
+    isoDate: "1986-05-12",
+    dateInQuery: true,
+    naissance: true,
+    observation: officialCopyFromDay(daySeo86)
+  });
+  assert.ok(birthSeo86.description.includes("0.0 mm"));
+  assert.equal(birthSeo86.description.includes("2.1 mm"), false);
 
   const missingDay = getPlaceHistory("grenoble", "1900-01-01");
   assert.ok(missingDay, "Grenoble must still resolve for a date without observations");

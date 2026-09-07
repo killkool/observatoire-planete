@@ -36,6 +36,23 @@ export function communeHistoryHref(
   return `${path}?${params.toString()}`;
 }
 
+export function buildBirthLead(input: {
+  hasObservation: boolean;
+  tminDisplay?: string | null;
+  tmaxDisplay?: string | null;
+  precipDisplay?: string | null;
+  stationDisclaimer?: string | null;
+}): string {
+  if (!input.hasObservation) {
+    return "Aucune mesure officielle n’est disponible pour cette date. Aucune valeur n’est inventée.";
+  }
+  const tmin = input.tminDisplay || "non disponible";
+  const tmax = input.tmaxDisplay || "non disponible";
+  const rain = input.precipDisplay || "non disponible";
+  const station = input.stationDisclaimer?.trim() ? ` ${input.stationDisclaimer.trim()}` : "";
+  return `${tmin} le matin, ${tmax} l’après-midi, ${rain} de pluie.${station}`;
+}
+
 export function buildShareText(input: {
   placeName: string;
   isoDate: string;

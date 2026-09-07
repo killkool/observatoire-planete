@@ -11,7 +11,7 @@ Nom de travail. Les fournisseurs (Météo-France, Copernicus, NOAA, ECMWF, IGN) 
 **Priorité :** utilité → simplicité → fiabilité → rapidité → beauté → complexité technique.  
 Les cases `[x]` = livré **et** vérifié (preuve). Un fichier vide ne compte pas.
 
-Dernière mise à jour : 2026-09-07 (héros : pluie officielle + station). Tableau : [STATUS.md](./STATUS.md).
+Dernière mise à jour : 2026-09-07 (naissance : pluie officielle + titres date). Tableau : [STATUS.md](./STATUS.md).
 
 ---
 
@@ -52,7 +52,8 @@ Dernière mise à jour : 2026-09-07 (héros : pluie officielle + station). Table
 33. [x] Phase R12 suite — heatmap « ce jour » en liens `?date=` (1986 → 1982 : CORENC 5,1 / 26,1 °C) ; pas de prefetch des 8 années ; LCP lab alors **2535 ms**
 34. [x] Phase R12 suite — héros = Tmin/Tmax officiels (pas de photo IGN, pas d’ERA5) ; 1900 sans invention ; Lighthouse lab LCP **2168 ms**
 35. [x] Phase R12 suite — héros = pluie officielle + station à X km (1983 : 0,1 mm, CORENC 4,7 km ; 1986 : 0,0 mm ≠ ERA5 2,1 mm) ; LCP lab **2178 ms**
-36. Ne **pas** extraire ERA5 mondial. Ne **pas** activer océan / NOAA / API commerciale. Ne **pas** feindre Vercel/Supabase. Ne **pas** extraire massivement les tuiles IGN.
+36. [x] Phase R6/R11 suite — récit naissance = pluie officielle + station ; titres `?date=` / `histoire=naissance` = mesure officielle (1983 : 0,1 mm CORENC ; 1986 : 0,0 mm ≠ ERA5 2,1 mm ; 1900 sans invention) ; canonical inchangé
+37. Ne **pas** extraire ERA5 mondial. Ne **pas** activer océan / NOAA / API commerciale. Ne **pas** feindre Vercel/Supabase. Ne **pas** extraire massivement les tuiles IGN.
 
 Héritage déjà vérifié (ne pas recommencer) : licences Phase 0, import Isère 1 208 439 obs, Grenoble 1983-05-12 (CORENC, 6,6 / 21,6 °C), matching station v1, carte IGN, provenance. Runtime encore SQLite. Cible prod : [ARCHITECTURE_PRODUCTION.md](./ARCHITECTURE_PRODUCTION.md).
 
@@ -149,7 +150,7 @@ Reste : France entière (autres départements) en R10. Isère : 512 communes imp
 - [x] ma ville se réchauffe-t-elle ? (OLS `ols-complete-years-v1`, un poste, ≥ 15 années climatiques, série brute pas LSH)
 - [x] partage social (carte PNG `/og/{slug}/{date}`, mesures réelles seulement)
 
-**État :** `/naissance` + page commune `?histoire=naissance` + carte de partage + « ce jour » (moyenne si ≥ 5 années, pas une normale). Pas de SDK Facebook/Twitter. Pas d’homogénéisation.
+**État :** `/naissance` + page commune `?histoire=naissance` (récit = Tmin/Tmax/pluie officiels + station ; titres date = mesure officielle) + carte de partage + « ce jour » (moyenne si ≥ 5 années, pas une normale). Pas de SDK Facebook/Twitter. Pas d’homogénéisation.
 
 ---
 
@@ -202,7 +203,7 @@ Reste : France entière (autres départements) en R10. Isère : 512 communes imp
 - [x] métadonnées / sitemap / canonical / carte OG PNG / hreflang `fr` + `x-default` / JSON-LD (City + mesure officielle si OBSERVED)
 - [x] `seo_content_score` — seuil 50 au sitemap et `noindex` si sous le seuil ; pas un scorer éditorial
 
-**État :** titres et descriptions issus du nom officiel. Sitemap = communes dont le score repose sur l’identité INSEE **et** des années climatiques ou des mesures OBSERVED. Hreflang français seulement. JSON-LD : lieu + WeatherObservation Météo-France si une mesure existe ; pas d’ERA5. Pas de millions de coquilles.
+**État :** titres et descriptions issus du nom officiel ; `?date=` et `histoire=naissance` = mesure officielle (pas ERA5). Sitemap = communes dont le score repose sur l’identité INSEE **et** des années climatiques ou des mesures OBSERVED. Hreflang français seulement. JSON-LD : lieu + WeatherObservation Météo-France si une mesure existe ; pas d’ERA5. Pas de millions de coquilles.
 
 ---
 

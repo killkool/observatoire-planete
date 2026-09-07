@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import JsonLd from "@/components/JsonLd";
 import PlaceExplorer from "@/components/PlaceExplorer";
 import { isIsoDate } from "@/lib/birthDay";
-import { defaultDateForPlace, getPlaceByPath } from "@/lib/placeHistory";
+import { defaultDateForPlace, getPlaceByPath, getPlaceDayObservation } from "@/lib/placeHistory";
 import { communePath, departmentLabel } from "@/lib/placeUrl";
-import { frenchLanguageAlternates, seoFactsForPlace } from "@/lib/seoContent";
+import { communePageCopy, frenchLanguageAlternates, officialCopyFromDay, seoFactsForPlace } from "@/lib/seoContent";
 import { communeJsonLd } from "@/lib/seoJsonLd";
 import { shareCardPath } from "@/lib/shareCard";
 import { getCommuneChildhoodCached, getCommuneYearlyPageCached, getPlaceHistoryCached } from "@/lib/sqliteReadCache";
@@ -26,28 +26,36 @@ export async function generateMetadata({
     return { title: "Commune introuvable — Observatoire Planète" };
   }
   const dept = departmentLabel(place.department_slug);
-  const date = query.date && isIsoDate(query.date) ? query.date : defaultDateForPlace(commune);
-  const title = `${place.name} — histoire météo | Observatoire Planète`;
-  const description = `Températures, pluie et records observés à ${place.name} (${dept}). La station et la source sont indiquées. Ce n’est pas une prévision.`;
+  const dateInQuery = Boolean(query.date && isIsoDate(query.date));
+  const naissance = query.histoire === "naissance";
+  const date = dateInQuery ? (query.date as string) : defaultDateForPlace(commune);
+  const copy = communePageCopy({
+    placeName: place.name,
+    department: dept,
+    isoDate: date,
+    dateInQuery,
+    naissance,
+    observation: dateInQuery || naissance ? officialCopyFromDay(getPlaceDayObservation(commune, date)) : null
+  });
   const path = communePath(place);
   const image = shareCardPath(place.slug, date);
   const seo = seoFactsForPlace(place);
   return {
-    title,
-    description,
+    title: copy.title,
+    description: copy.description,
     alternates: frenchLanguageAlternates(path),
     robots: seo.indexable ? { index: true, follow: true } : { index: false, follow: true },
     openGraph: {
-      title,
-      description,
+      title: copy.title,
+      description: copy.description,
       locale: "fr_FR",
       type: "website",
       images: image ? [{ url: image, width: 1200, height: 630, alt: `${place.name}, ${date}` }] : undefined
     },
     twitter: {
       card: "summary_large_image",
-      title,
-      description,
+      title: copy.title,
+      description: copy.description,
       images: image ? [image] : undefined
     }
   };
@@ -66,9 +74,17 @@ export default async function CommunePage({
   if (!place) notFound();
   const date = query.date || defaultDateForPlace(commune);
   const histoire = query.histoire === "naissance";
+  const dateInQuery = Boolean(query.date && isIsoDate(query.date));
+  const isoDate = isIsoDate(date) ? date : defaultDateForPlace(commune);
   const path = communePath(place);
-  const title = `${place.name} — histoire météo | Observatoire Planète`;
-  const description = `Températures, pluie et records observés à ${place.name} (${departmentLabel(place.department_slug)}). La station et la source sont indiquées. Ce n’est pas une prévision.`;
+  const copy = communePageCopy({
+    placeName: place.name,
+    department: departmentLabel(place.department_slug),
+    isoDate,
+    dateInQuery,
+    naissance: histoire,
+    observation: dateInQuery || histoire ? officialCopyFromDay(getPlaceDayObservation(commune, isoDate)) : null
+  });
   const birthYear = isIsoDate(date) ? Number(date.slice(0, 4)) : NaN;
   const [history, yearly, childhood] = await Promise.all([
     isIsoDate(date) ? getPlaceHistoryCached(commune, date) : Promise.resolve(null),
@@ -94,8 +110,8 @@ export default async function CommunePage({
         data={communeJsonLd({
           place,
           path,
-          title,
-          description,
+          title: copy.title,
+          description: copy.description,
           observation: observed
         })}
       />

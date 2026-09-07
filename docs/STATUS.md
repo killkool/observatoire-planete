@@ -1,6 +1,6 @@
 # Avancement — Observatoire Planète
 
-**Date de revue :** 2026-09-07 (héros : pluie officielle + station)  
+**Date de revue :** 2026-09-07 (naissance : pluie officielle + titres date)  
 **Constitution définitive :** [PROMPT_MAITRE_V2.md](./PROMPT_MAITRE_V2.md) — mot pour mot, sections 0–187.  
 **Livraison V1 :** [V1_FRANCE_REFOCUS.md](./V1_FRANCE_REFOCUS.md) + [ROADMAP.md](./ROADMAP.md).  
 **Stack cible :** [ARCHITECTURE_PRODUCTION.md](./ARCHITECTURE_PRODUCTION.md) — [ADR-0002](./adr/ADR-0002-production-stack-v1.md). Runtime encore SQLite.
@@ -11,7 +11,7 @@ Les fournisseurs sont des **sources**, jamais des partenaires.
 
 ## En une phrase
 
-Le parcours **Isère → Météo-France → Grenoble → 1983-05-12 → ERA5 point (2t + rosée + pluie + vent 10 m + MSL + SP + neige SWE + SSRD + rafale) → comparaison sans fusion → provenance → confiance** est livré. Même point **5 jours**. Quotidien 2t bbox France : **3 jours**. Héros = Tmin/Tmax/pluie officiels + station à X km (pas d’ERA5, pas de photo IGN). LCP lab **2178 ms**.
+Le parcours **Isère → Météo-France → Grenoble → 1983-05-12 → ERA5 point (2t + rosée + pluie + vent 10 m + MSL + SP + neige SWE + SSRD + rafale) → comparaison sans fusion → provenance → confiance** est livré. Même point **5 jours**. Quotidien 2t bbox France : **3 jours**. Héros = Tmin/Tmax/pluie officiels + station à X km. Naissance = même pluie/station dans le récit ; titres `?date=` / `histoire=naissance` = mesure officielle. LCP lab **2178 ms**.
 
 ## Prochaine action
 
@@ -27,11 +27,11 @@ Ne pas : E-OBS, ERA5 mondial, océan, extract massif IGN, migrer vers un faux Su
 | R2 communes Isère | **Fait (38 seulement)** | 512 communes |
 | R3 Isère obs | **Fait** | 1 208 439 obs |
 | R4 climat annuel | **Fait** | yearly API + graphique |
-| R6 naissance | **Fait** | `/naissance` + enfance + OG PNG + ce jour (moyenne ≥ 5 ans) ; pas de SDK social |
+| R6 naissance | **Fait** | `/naissance` + enfance + OG PNG + ce jour (moyenne ≥ 5 ans) ; récit + titres = mesure officielle ; pas de SDK social |
 | R7 mois/saisons/normales | **Partiel** | mois + 4 saisons + normale annuelle et mensuelle 1991-2020 + épisodes Tmax ; pas d’anomalies LSH, pas de canicule officielle |
 | R8 comparateur | **Partiel** | année vs année + saison vs **même** saison + ville vs ville Isère ; pas hiver vs été, pas France entière |
 | R9 ERA5 | **Partiel** | point Grenoble toutes variables essentielles **5 jours** (12 mai 1982/1986 + 11–13 mai 1983) ; quotidien 2t bbox France **3 jours** (JSON) ; pas 1940–2026 |
-| R11 SEO | **Fait (Isère)** | titres + sitemap filtré + OG + hreflang fr/x-default + JSON-LD + `seo-content-v1` ; pas de pages en |
+| R11 SEO | **Fait (Isère)** | titres commune + titres date/naissance officiels + sitemap filtré + OG + hreflang fr/x-default + JSON-LD + `seo-content-v1` ; pas de pages en |
 | R12 mobile | **Partiel** | 390 px ; HTML initial 56 Ko ; héros = Tmin/Tmax/pluie + station ; Lighthouse lab LCP 2178 ms ; pas CDN, pas CrUX |
 | PoC 1 ERA5 | **Fait** | `point_extractions` = 70 |
 
@@ -60,10 +60,10 @@ Seuils : année 330 j ; mois 25 j ; saison 75 j ; normale 24 années climatiques
 - Hivers DJF (LVD, 27 hivers complets 2000–2026) : plus froid **2017**, min. moyenne **−2,9 °C**. Décembre compte pour l’hiver suivant. Pas une comparaison hiver vs été.
 - Épisodes Tmax (LVD, `heat-streak-tmax-v1`, pas une canicule officielle) : 131 épisodes ≥ 30 °C (856 j). Plus long **43 j** du 13 juin au 25 juillet 2026 (max. moyenne 33,9 °C, pic 38,3 °C). Plus chaud **1–17 août 2003** (max. moyenne 36,2 °C, pic 39,5 °C). ≥ 35 °C : plus long **12 j** du 3 au 14 août 2003. Aucun épisode de 3 jours ≥ 40 °C. Observé sur ce poste, série jusqu’au 4 septembre 2026.
 - Carte de partage : `/og/grenoble/1983-05-12` → PNG. Date sans mesure : `/og/grenoble/1900-01-01` → PNG « aucune mesure officielle », pas de 0 inventé. Pas d’ERA5 sur la carte.
-- SEO page commune : canonical + hreflang `fr` / `x-default` vers `/meteo/auvergne-rhone-alpes/isere/grenoble`. JSON-LD `City` INSEE **38185**, geo 45,1885 / 5,7245. Pour `?date=1983-05-12` : `WeatherObservation` CORENC 6,6 / 21,6 °C, 0,1 mm. Pas d’ERA5 dans le graphe.
+- SEO page commune : canonical + hreflang `fr` / `x-default` vers `/meteo/auvergne-rhone-alpes/isere/grenoble`. JSON-LD `City` INSEE **38185**, geo 45,1885 / 5,7245. Pour `?date=1983-05-12` : titre **6.6 / 21.6 °C**, `WeatherObservation` CORENC 6,6 / 21,6 °C, 0,1 mm. `?histoire=naissance` : titre « Naissance à Grenoble ». `?date=1986-05-12` : pluie **0.0 mm**, pas 2,1 mm ERA5. `?date=1900-01-01` : « aucune mesure officielle », pas de 0 inventé. URL sans query : titre générique. Pas d’ERA5 dans le graphe ni dans les balises.
 - `seo_content_score` `seo-content-v1` : Grenoble **100**/100 (identité + **26** années climatiques LVD `38538002` + historique observé). Sitemap Isère : **512 / 512** indexables — chaque commune a une station climatique proche avec ≥ 10 années, ce n’est pas un `true` forcé. Une coquille sans mesure ni série annuelle n’entre pas (`noindex`). ERA5 ne compte pas.
 - Ce jour (CORENC, 8 × 12 mai) : maximale moyenne **21,6 °C**, minimale moyenne **7,3 °C**, plus chaude que **50 %**. Records 5,1 °C (1982) / 32,1 °C (1986). Heatmap : liens `?date=` (`prefetch` off). Depuis `?date=1986-05-12`, ouvrir 1982 affiche CORENC **5,1 / 26,1 °C** et ERA5 **2,8 / 18,6 °C**. Pas une normale climatique.
-- Page commune 390×844 : nav horizontale défilable, date + partage en colonne, héros = **Tmin/Tmax/pluie officiels** + station à X km (CORENC 4,7 km), pas d’ERA5. Carte IGN au scroll. Cibles ≥ 44 px. Pas de bottom sheet.
+- Page commune 390×844 : nav horizontale défilable, date + partage en colonne, héros = **Tmin/Tmax/pluie officiels** + station à X km (CORENC 4,7 km), pas d’ERA5. Naissance : récit **0,1 mm** + CORENC. Carte IGN au scroll. Cibles ≥ 44 px. Pas de bottom sheet.
 - Accueil / naissance / comparer 390×844 : recherche et CTA pleine largeur, 1 colonne, overflow-x absent, cibles ≥ 44 px. Comparer Grenoble vs Voiron : LVD vs COUBLEVIE, 21 années, écarts inchangés.
 - Graphiques commune : Recharts **et** MapLibre chargés seulement près du viewport (`DeferInView`). HTML initial Grenoble naissance : placeholder « Carte IGN… », **sans** `maplibre` / `recharts` dans le premier HTML. Après scroll : Photo IGN + pins CORENC.
 - Cache Next `unstable_cache` 1 h : accueil + sitemap **517** URL + historique d’un jour + climat annuel (page : **sans** mois / saisons / chaleur, `commune-yearly-page-v2`, `detailRows: false`) + enfance. HTML Grenoble 1983-05-12 : **56 Ko** (avant 78 Ko), jour CORENC 6,6 / 21,6 °C, climat LVD 2025 · 901,1 mm. Les détails se chargent à l’approche de `#mois` (`GET /yearly` complet). Un payload chaleur vide n’affiche pas « aucun épisode » : texte de chargement jusqu’à l’API. Date 1900-01-01 : aucune mesure inventée.
@@ -74,7 +74,7 @@ Ville vs ville (preuve 2026-09-06) :
 - Grenoble vs Crolles / La Pierre : **même poste GRENOBLE - LVD** → aucun écart affiché.
 - Grenoble vs Voiron : LVD vs **COUBLEVIE**, 21 années climatiques 2005–2025. Max. moyenne 18,5 → 18,2 °C (−0,3) ; min. 7,3 → 8,4 °C (+1,1) ; pluie 980,8 → 1117,6 mm. Pas de normale 1991-2020 (LVD n’a que 21 ans sur la période).
 
-Tests : `npm run test:science`. Pages : `/meteo/auvergne-rhone-alpes/isere/grenoble?date=1983-05-12` (héros 6.6 °C / 21.6 °C / 0.1 mm, CORENC 4.7 km, pas d’ERA5) · `?date=1986-05-12` (pluie 0.0 mm, pas 2.1 mm ERA5) · `?date=1900-01-01` (aucune mesure) · heatmap 1986 → 1982 · `/` · `/naissance` · `/comparer?a=38185&b=38563`.
+Tests : `npm run test:science`. Pages : `/meteo/auvergne-rhone-alpes/isere/grenoble?date=1983-05-12` (héros 6.6 °C / 21.6 °C / 0.1 mm, CORENC 4.7 km, pas d’ERA5) · `?date=1986-05-12` (pluie 0.0 mm, pas 2.1 mm ERA5) · `?date=1900-01-01` (aucune mesure) · `?date=1983-05-12&histoire=naissance` (récit 0.1 mm + CORENC ; titre Naissance) · heatmap 1986 → 1982 · `/` · `/naissance` · `/comparer?a=38185&b=38563`.
 
 ## Runtime
 
