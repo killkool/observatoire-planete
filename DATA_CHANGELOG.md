@@ -2,6 +2,13 @@
 
 Journal des sources, versions et recalculs. Pas de remplacement silencieux d’un dataset.
 
+## 2026-09-07 (ERA5 point Grenoble 11 et 13 mai 1983)
+
+- Même maille ARCO 45,25°N, 5,75°E, 24 h UTC, mêmes 14 variables. Preuve **1983-05-12** non réécrite (SHA-256 `eece40036986b49aaab3e70d9e53ec8ae7fcfc1af8110ab5fa39b96d44062e82`). Quotidiens France 2t 11/12/13 non réécrits.
+- **1983-05-11** : 2t **277,4869 / 283,7463 K** (4,3 / 10,6 °C) = `grenoble_cell` du JSON France. Rosée **275,6774 / 278,4600 K**. TP somme **0,0035994900 m** → **3,6 mm** (CORENC 0,1 mm, écart +3,5 mm). Vent **2,0500 m/s** → **7,4 km/h**, 165°. MSL **100390,72 Pa** → **1004 hPa**. SP **89279,06 Pa** → **893 hPa**, orographie **985,5 m**. SWE **0,030805 m** → **30,8 mm d’eau**. SSRD somme (bruit nocturne −0,25 J m⁻² × 9 h ramené à 0) **12326047,5 J m⁻²** → **12,3 MJ/m²**. Rafale max **17,4831 m/s** → **62,9 km/h**. SHA-256 `4cd8ca90234fe597aae3eaa3584a39431972151d894b40b57c0367bbb602e14d`.
+- **1983-05-13** : 2t **279,6589 / 286,5999 K** (6,5 / 13,4 °C) = quotidien France. Rosée **277,7530 / 281,6832 K**. TP **0,0072199181 m** → **7,2 mm** (CORENC 2,8 mm, écart +4,4 mm). Vent **1,0613 m/s** → **3,8 km/h**, 166°. MSL **101063,17 Pa** → **1011 hPa**. SP **89978,54 Pa** → **900 hPa**. SWE **0,021134 m** → **21,1 mm d’eau**. SSRD **18394238,0 J m⁻²** → **18,4 MJ/m²**. Rafale **16,6731 m/s** → **60,0 km/h**. SHA-256 `c8173bd130bb9b7ebc0a2fa874e0ccb1045d3b8c335a0c9b38baf37a219255f7`.
+- Import : **42** lignes `point_extractions` (14 × 3). Pas fusionné, pas JSON-LD, pas 1940–2026.
+
 ## 2026-09-07 (ERA5 quotidien 2t France, 3 jours)
 
 - Même bbox V1, 2t min/max UTC, 2709 mailles, JSON hors SQL. Preuve **1983-05-12** inchangée (SHA-256 `9c7b9a9836b23b1252d09b3c410f96cbe5ccd61558b59c92f19b8f3fbfb1cbe2`, maille Grenoble 276,5640 / 287,3429 K).

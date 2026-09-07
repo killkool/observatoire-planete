@@ -1,6 +1,6 @@
 # Avancement — Observatoire Planète
 
-**Date de revue :** 2026-09-07 (ERA5 quotidien 2t France, 3 jours)  
+**Date de revue :** 2026-09-07 (ERA5 point Grenoble, 3 jours)  
 **Constitution définitive :** [PROMPT_MAITRE_V2.md](./PROMPT_MAITRE_V2.md) — mot pour mot, sections 0–187.  
 **Livraison V1 :** [V1_FRANCE_REFOCUS.md](./V1_FRANCE_REFOCUS.md) + [ROADMAP.md](./ROADMAP.md).  
 **Stack cible :** [ARCHITECTURE_PRODUCTION.md](./ARCHITECTURE_PRODUCTION.md) — [ADR-0002](./adr/ADR-0002-production-stack-v1.md). Runtime encore SQLite.
@@ -11,11 +11,11 @@ Les fournisseurs sont des **sources**, jamais des partenaires.
 
 ## En une phrase
 
-Le parcours **Isère → Météo-France → Grenoble → 1983-05-12 → ERA5 point (2t + rosée + pluie + vent 10 m + MSL + SP + neige SWE + SSRD + rafale) → comparaison sans fusion → provenance → confiance** est livré. Quotidien 2t bbox France : **3 jours** (11–13 mai 1983, 2709 mailles JSON, pas SQL). LCP lab **2535 ms** — pas un pass Core Web Vitals.
+Le parcours **Isère → Météo-France → Grenoble → 1983-05-12 → ERA5 point (2t + rosée + pluie + vent 10 m + MSL + SP + neige SWE + SSRD + rafale) → comparaison sans fusion → provenance → confiance** est livré. Même point **11 et 13 mai 1983** (42 lignes SQL). Quotidien 2t bbox France : **3 jours** (2709 mailles JSON, pas SQL). LCP lab **2535 ms** — pas un pass Core Web Vitals.
 
 ## Prochaine action
 
-1. **Science / R9 remainder :** quotidien France 2t = **3 jours**, pas 1940–2026. Pas d’import SQL de la grille.  
+1. **Science / R9 remainder :** point + quotidien France 2t = **3 jours**, pas 1940–2026. Pas d’import SQL de la grille.  
 2. **Produit :** LCP lab encore **2535 ms** (seuil 2500 ms) ; pas de CDN tant que le besoin n’est pas démontré.
 
 Ne pas : E-OBS, ERA5 mondial, océan, extract massif IGN, migrer vers un faux Supabase, déclencher un import à la page vue.
@@ -30,10 +30,10 @@ Ne pas : E-OBS, ERA5 mondial, océan, extract massif IGN, migrer vers un faux Su
 | R6 naissance | **Fait** | `/naissance` + enfance + OG PNG + ce jour (moyenne ≥ 5 ans) ; pas de SDK social |
 | R7 mois/saisons/normales | **Partiel** | mois + 4 saisons + normale annuelle et mensuelle 1991-2020 + épisodes Tmax ; pas d’anomalies LSH, pas de canicule officielle |
 | R8 comparateur | **Partiel** | année vs année + saison vs **même** saison + ville vs ville Isère ; pas hiver vs été, pas France entière |
-| R9 ERA5 | **Partiel** | point Grenoble toutes variables essentielles 1983-05-12 ; quotidien 2t bbox France **3 jours** (JSON) ; pas 1940–2026 |
+| R9 ERA5 | **Partiel** | point Grenoble toutes variables essentielles **3 jours** (11–13 mai 1983) ; quotidien 2t bbox France **3 jours** (JSON) ; pas 1940–2026 |
 | R11 SEO | **Fait (Isère)** | titres + sitemap filtré + OG + hreflang fr/x-default + JSON-LD + `seo-content-v1` ; pas de pages en |
 | R12 mobile | **Partiel** | 390 px ; HTML initial 56 Ko sans mois/saisons/chaleur ; Lighthouse lab LCP 2535 ms ; pas CDN, pas CrUX |
-| PoC 1 ERA5 | **Fait** | `point_extractions` = 14 |
+| PoC 1 ERA5 | **Fait** | `point_extractions` = 42 |
 
 ## Preuve statistiques `precompute-v2`
 
@@ -45,6 +45,8 @@ Seuils : année 330 j ; mois 25 j ; saison 75 j ; normale 24 années climatiques
 
 - Jour : CORENC LA REVIREE (`38126001`), 6,6 / 21,6 °C, 0,1 mm (1983-05-12), 4,7 km, Δz 15 m.
 - Estimation climatique ERA5 (réanalyse, pas une mesure) : maille **45,25°N, 5,75°E**, 24 h UTC. `2m_temperature` min/max **3,4 / 14,2 °C** (276,5640 / 287,3429 K, inchangés). Point de rosée `2m_dewpoint_temperature` min/max **2,0 / 6,9 °C** (275,1994 / 280,0102 K). Pluie `total_precipitation` : somme 24 h UTC **0,0003234409 m** → **0,3 mm** (CORENC 0,1 mm, écart **+0,2 mm**, pas une fusion). Vent 10 m : moyenne des hypot(u,v) **2,4516 m/s** → **8,8 km/h**, d’où il vient **169°** (moyenne vectorielle, pas un anémomètre). MSL moyenne 24 h **100523,66 Pa** → **1005 hPa**. SP moyenne 24 h **89517,36 Pa** → **895 hPa** (orographie modèle **985,5 m**, pas Grenoble 212 m). Neige `snow_depth` moyenne **0,027251 m** d’équivalent en eau → **27,3 mm d’eau** (pas une hauteur en ville). SSRD somme 24 h **20768388,375 J m⁻²** → **20,8 MJ/m²**. Rafale max `instantaneous_10m_wind_gust` **19,2916 m/s** → **69,4 km/h** (pas une rafale officielle). Accès ARCO, DOI 10.24381/cds.adbb2d47, SHA-256 `eece40036986b49aaab3e70d9e53ec8ae7fcfc1af8110ab5fa39b96d44062e82`. `method_version=era5-point-nearest-hourly-2t-d2m-tp-uv10-msl-sp-sd-ssrd-i10fg-v1`. Détail derrière « En savoir plus ». Pas dans le JSON-LD.
+- Même point **1983-05-11** : 2t **4,3 / 10,6 °C** (277,4869 / 283,7463 K = quotidien France). Rosée **2,5 / 5,3 °C**. Pluie **3,6 mm** vs CORENC **0,1 mm** (écart **+3,5 mm**). Vent **7,4 km/h**, 165°. MSL **1004 hPa**, SP **893 hPa**, neige **30,8 mm d’eau**, SSRD **12,3 MJ/m²** (9 h ARCO à −0,25 J m⁻² ramenées à 0 avant somme), rafale **62,9 km/h**. SHA-256 `4cd8ca90234fe597aae3eaa3584a39431972151d894b40b57c0367bbb602e14d`. Écart 2t : Tmin **−3,8 °C**, Tmax **−5,7 °C**. Pas fusionné, pas JSON-LD.
+- Même point **1983-05-13** : 2t **6,5 / 13,4 °C** (279,6589 / 286,5999 K = quotidien France). Rosée **4,6 / 8,5 °C**. Pluie **7,2 mm** vs CORENC **2,8 mm** (écart **+4,4 mm**). Vent **3,8 km/h**, 166°. MSL **1011 hPa**, SP **900 hPa**, neige **21,1 mm d’eau**, SSRD **18,4 MJ/m²**, rafale **60,0 km/h**. SHA-256 `c8173bd130bb9b7ebc0a2fa874e0ccb1045d3b8c335a0c9b38baf37a219255f7`. Écart 2t : Tmin **−8,3 °C**, Tmax **−2,7 °C** (grand écart affiché, pas fusionné, pas de bonus d’indépendance). Pas JSON-LD.
 - Quotidien 2t bbox France **3 jours** (11–13 mai 1983) : 2709 mailles / jour, JSON hors SQL. Preuve 12 mai SHA-256 `9c7b9a9836b23b1252d09b3c410f96cbe5ccd61558b59c92f19b8f3fbfb1cbe2` (inchangée). 11 mai maille Grenoble **4,3 / 10,6 °C** (277,4869 / 283,7463 K). 13 mai **6,5 / 13,4 °C** (279,6589 / 286,5999 K). Index `france-2t-daily-index.json`. Pas 1940–2026. Chunks ARCO = 1 h × globe.
 - Écart estimation − mesure : Tmin **−3,2 °C**, Tmax **−7,4 °C**. Pas de fusion, pas de correction d’altitude. ERA5 n’est pas une confirmation indépendante.
 - Confiance `confidence-v1-draft` : **90**/100 (observé + distance + Δz + couverture). Pas de bonus d’indépendance ERA5. Pas de bonus de cohérence (|ΔTmax| > 2 °C).
@@ -70,7 +72,7 @@ Ville vs ville (preuve 2026-09-06) :
 - Grenoble vs Crolles / La Pierre : **même poste GRENOBLE - LVD** → aucun écart affiché.
 - Grenoble vs Voiron : LVD vs **COUBLEVIE**, 21 années climatiques 2005–2025. Max. moyenne 18,5 → 18,2 °C (−0,3) ; min. 7,3 → 8,4 °C (+1,1) ; pluie 980,8 → 1117,6 mm. Pas de normale 1991-2020 (LVD n’a que 21 ans sur la période).
 
-Tests : `npm run test:science`. Pages : `/meteo/auvergne-rhone-alpes/isere/grenoble?date=1983-05-12` (CORENC 6,6 / 21,6 °C, ERA5 3,4 / 14,2 °C, rosée 2,0 / 6,9 °C, pluie 0,3 mm, vent 8,8 km/h / 169°, MSL 1005 hPa, SP 895 hPa, neige 27,3 mm d’eau, SSRD 20,8 MJ/m², rafale 69,4 km/h, quotidien France 3 jours / 2709 mailles dans En savoir plus) · `?date=1900-01-01` · `/` · `/naissance` · `/comparer?a=38185&b=38563`.
+Tests : `npm run test:science`. Pages : `/meteo/auvergne-rhone-alpes/isere/grenoble?date=1983-05-12` (CORENC 6,6 / 21,6 °C, ERA5 3,4 / 14,2 °C, …) · `?date=1983-05-11` (CORENC 8,1 / 16,3 °C, ERA5 4,3 / 10,6 °C, pluie 3,6 mm vs 0,1 mm) · `?date=1983-05-13` (CORENC 14,8 / 16,1 °C, ERA5 6,5 / 13,4 °C, ΔTmin −8,3 °C) · `?date=1900-01-01` · `/` · `/naissance` · `/comparer?a=38185&b=38563`.
 
 ## Runtime
 
@@ -78,7 +80,7 @@ Tests : `npm run test:science`. Pages : `/meteo/auvergne-rhone-alpes/isere/greno
 |---|---|
 | Communes | 512 (Isère) |
 | Observations | 1 208 439 |
-| ERA5 | 14 points (Grenoble 1983-05-12, 2t + d2m + pluie + vent + MSL + SP + neige SWE + SSRD + rafale) |
+| ERA5 | 42 points (Grenoble 11–13 mai 1983, 14 variables × 3) |
 | method_version stats | precompute-v2 |
 | method_version ERA5 | era5-point-nearest-hourly-2t-d2m-tp-uv10-msl-sp-sd-ssrd-i10fg-v1 |
 | method_version normale mensuelle | month-normal-1991-2020-v1 |

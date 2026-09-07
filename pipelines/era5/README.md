@@ -23,7 +23,7 @@ Méthode point : `nearest` (`method_version` `era5-point-nearest-hourly-2t-d2m-t
 - Vent 10 m : `10m_u_component_of_wind` / `10m_v_component_of_wind` (m s⁻¹). Vitesse quotidienne = **moyenne** des hypot(u,v) horaires. Direction = d’où vient le vent, **moyenne vectorielle** de u et v (pas la moyenne des angles). Pas une rafale, pas un anémomètre. Affichage km/h = × 3,6.
 - Pression mer : `mean_sea_level_pressure` moyenne 24 h UTC en **Pa**, affichage hPa. Pression surface : `surface_pressure` moyenne 24 h, avec orographie `geopotential_at_surface / 9,80665` (altitude de la **maille**, pas de la commune).
 - Neige : `snow_depth` ARCO = mètres d’**équivalent en eau**, moyenne 24 h. Affichage mm d’eau = × 1000. Pas une hauteur de manteau (`×100` en cm interdit).
-- SSRD : `surface_solar_radiation_downwards` en J m⁻², **somme** des 24 pas (comme TP, pas last−first). Affichage MJ/m² = / 1e6.
+- SSRD : `surface_solar_radiation_downwards` en J m⁻², **somme** des 24 pas (comme TP, pas last−first). Affichage MJ/m² = / 1e6. Un bruit nocturne ARCO < 1 J m⁻² peut être ramené à 0 avant la somme ; les heures brutes restent dans le JSON.
 - Rafale : `instantaneous_10m_wind_gust`, **max** des 24 pas, m s⁻¹, affichage km/h. Pas une rafale officielle.
 
 Quotidien bbox France (`method_version` `era5-france-daily-2t-minmax-v1`) : **3 jours** (11–13 mai 1983), 2t min/max seulement, 2709 mailles ~0,25° dans la bbox. Index `france-2t-daily-index.json`. Les longitudes ARCO sont 0–360° (5,5°W = 354,5°). Fichiers JSON, **pas** importés en SQLite. Un run `--france-only --dates=` accepte au plus **7** jours — pas l’archive 1940–2026. La preuve `france-1983-05-12-2t-daily.json` n’est pas réécrite.
@@ -34,7 +34,7 @@ Accès : miroir public **ARCO ERA5**
 `gs://gcp-public-data-arco-era5/ar/full_37-1h-0p25deg-chunk-1.zarr-v3`  
 (anonyme GCS). Même produit ERA5, même DOI — pas une autre réanalyse. Compte CDS non requis pour ce miroir.
 
-Pas d’ERA5-Land. Le point Grenoble un jour couvre 2t, rosée, TP, vent 10 m, MSL, SP, neige SWE, SSRD et rafale. Pas l’archive 1940–2026.
+Pas d’ERA5-Land. Le point Grenoble est importé pour **3 jours** (11–13 mai 1983) : 2t, rosée, TP, vent 10 m, MSL, SP, neige SWE, SSRD et rafale. La preuve `grenoble-1983-05-12.json` n’est pas réécrite. Pas l’archive 1940–2026.
 
 ## Comment extraire puis ingérer
 
@@ -45,10 +45,12 @@ py -3.12 -m venv pipelines/era5/.venv
 pipelines/era5/.venv/Scripts/python.exe -m pip install -r pipelines/era5/requirements.txt
 npm run era5:extract-point
 npm run import:era5
+npm run era5:extract-points-window
+npm run import:era5:window
 pipelines/era5/.venv/Scripts/python.exe pipelines/era5/extract_point.py --france-only --dates=1983-05-11,1983-05-13
 ```
 
-`era5:extract-point` n’écrase plus le quotidien 1983-05-12. Seul le JSON **point** est importé (`import:era5`).
+`era5:extract-point` n’écrase plus le quotidien 1983-05-12. `era5:extract-points-window` écrit `grenoble-1983-05-11.json` et `grenoble-1983-05-13.json` sans toucher au 12 mai. Seuls les JSON **point** sont importés (`import:era5` / `import:era5:window`).
 
 Schéma JSON point (valeurs illustratives sauf consigne) :
 

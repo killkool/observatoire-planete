@@ -19,7 +19,7 @@ import {
   formatSignedMm
 } from "@/lib/compareClimate";
 import { formatCelsius, formatMm } from "../../packages/weather-core/src/units";
-import { ERA5_FRANCE_DAILY_2T_CELLS, ERA5_FRANCE_DAILY_2T_DATES } from "@/lib/era5France";
+import { ERA5_FRANCE_DAILY_2T_CELLS, ERA5_FRANCE_DAILY_2T_DATES, ERA5_POINT_DATES } from "@/lib/era5France";
 import { formatSignedPerDecade } from "@/lib/climateTrend";
 import {
   coldestCompleteSeasonOf,
@@ -862,6 +862,9 @@ export default function PlaceExplorer({
                       : ""}
                     {" "}
                     Maille d’environ 0,25°. Aucune correction d’altitude ni moyenne avec la station.
+                    {(ERA5_POINT_DATES as readonly string[]).includes(date)
+                      ? ` Le point Grenoble est importé pour ${ERA5_POINT_DATES.length} jours (11–13 mai 1983), même maille. Pas une série 1940–2026.`
+                      : ""}
                     {(ERA5_FRANCE_DAILY_2T_DATES as readonly string[]).includes(date)
                       ? ` Un quotidien 2t bbox France existe pour ${ERA5_FRANCE_DAILY_2T_DATES.length} jours (11–13 mai 1983), ${ERA5_FRANCE_DAILY_2T_CELLS} mailles, JSON hors base. Pas l’archive 1940–2026.`
                       : ""}

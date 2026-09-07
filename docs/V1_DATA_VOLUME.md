@@ -18,7 +18,7 @@ Une page vue normale = 0 téléchargement source, 0 appel Météo-France / CDS.
 | Période | 1980-01-01 → 2026-09-04 | couverture réelle importée |
 | Fichiers source | 4 CSV.GZ, SHA-256 + lineage | `import_files` / `data_lineage` |
 | Lieux seed | 3 communes | Grenoble, Crolles, La Pierre |
-| Extractions ERA5 | **14** points Grenoble 1983-05-12 (SQL) + quotidien 2t France **3 jours** (JSON ~95 Ko / jour, 2709 mailles, pas SQL) | ARCO réel, aucune valeur inventée |
+| Extractions ERA5 | **42** points Grenoble 11–13 mai 1983 (SQL, 14 × 3) + quotidien 2t France **3 jours** (JSON ~95 Ko / jour, 2709 mailles, pas SQL) | ARCO réel, aucune valeur inventée |
 | Fichier SQLite | gitignoré (`data/meteo.sqlite`) | taille locale, à relire avec `Get-Item` sur la machine d’import |
 
 Le fichier SQLite n’est pas dans Git : sa taille exacte en octets n’est pas une preuve versionnée. L’ordre de grandeur attendu pour ~1,2 M lignes quotidiennes compactes est **centaines de Mo**, pas des To.

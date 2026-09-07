@@ -46,6 +46,7 @@ GOLDEN_POINT_DATE = "1983-05-12"
 GOLDEN_POINT_FILE = "grenoble-1983-05-12.json"
 GOLDEN_FRANCE_FILE = "france-1983-05-12-2t-daily.json"
 MAX_FRANCE_DAILY_DATES = 7
+MAX_POINT_DATES = 3
 T2M_PLAUSIBLE_K = (220.0, 330.0)
 
 
@@ -220,11 +221,24 @@ def daily_snow_point(date: str, hours_m: list[float]) -> dict:
     return {"date": date, "variable_id": "snow_depth", "value": sum(hours_m) / len(hours_m), "unit": "m"}
 
 
+# 1 J m-2 vs ~2e7 journaliers. ARCO peut renvoyer un bruit nocturne négatif ; pas une invention.
+SSRD_NOISE_J = 1.0
+
+
 def daily_ssrd_point(date: str, hours_j: list[float]) -> dict:
-    if any(v < -1e-6 for v in hours_j):
-        raise SystemExit("SSRD négatif : extraction refusée.")
+    worst = min(hours_j)
+    if worst < -SSRD_NOISE_J:
+        raise SystemExit(f"SSRD négatif hors bruit numérique ({worst} J m-2) : extraction refusée.")
+    n_clip = sum(1 for v in hours_j if v < 0)
+    cleaned = [0.0 if v < 0 else float(v) for v in hours_j]
+    if n_clip:
+        print(
+            f"{date} SSRD : {n_clip} heure(s) < 0 (min={worst:.6f} J m-2) ramenée(s) à 0 avant somme. "
+            "Heures brutes ARCO conservées dans hourly_ssrd_Jm2.",
+            flush=True,
+        )
     # Comme TP : accumulation horaire ARCO, non monotone, last−first = 0. Somme des 24 pas.
-    return {"date": date, "variable_id": "solar_radiation", "value": float(sum(hours_j)), "unit": "J m-2"}
+    return {"date": date, "variable_id": "solar_radiation", "value": float(sum(cleaned)), "unit": "J m-2"}
 
 
 def daily_gust_point(date: str, hours_ms: list[float]) -> dict:
@@ -334,7 +348,7 @@ def write_json(path: Path, payload: dict) -> str:
     return sha256_file(path)
 
 
-def parse_iso_dates(raw: str) -> list[str]:
+def parse_iso_dates(raw: str, max_dates: int = MAX_FRANCE_DAILY_DATES) -> list[str]:
     dates = [part.strip() for part in raw.split(",") if part.strip()]
     if not dates:
         raise SystemExit("Aucune date : rien n'est inventé.")
@@ -351,9 +365,9 @@ def parse_iso_dates(raw: str) -> list[str]:
             continue
         seen.add(date)
         ordered.append(date)
-    if len(ordered) > MAX_FRANCE_DAILY_DATES:
+    if len(ordered) > max_dates:
         raise SystemExit(
-            f"Pas l'archive 1940–2026 : max {MAX_FRANCE_DAILY_DATES} jours par run ({len(ordered)} demandés)."
+            f"Pas l'archive 1940–2026 : max {max_dates} jours par run ({len(ordered)} demandés)."
         )
     return ordered
 
@@ -452,75 +466,55 @@ def run_france_only(ds: xr.Dataset, lat: float, lon: float, dates: list[str], fr
     write_france_daily_index(extra)
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--lat", type=float, default=45.1885)
-    parser.add_argument("--lon", type=float, default=5.7245)
-    parser.add_argument("--date", default="1983-05-12")
-    parser.add_argument(
-        "--dates",
-        default="",
-        help="Liste YYYY-MM-DD (france-only). Max 7 jours. N'est pas l'archive 1940–2026.",
-    )
-    parser.add_argument(
-        "--out",
-        default=str(EXTRACTS_DIR / GOLDEN_POINT_FILE),
-    )
-    parser.add_argument(
-        "--france-out",
-        default="",
-        help="Chemin du JSON quotidien France (un seul --date). Sinon france-{date}-2t-daily.json.",
-    )
-    parser.add_argument("--skip-france-daily", action="store_true", help="N'écrit pas le quotidien bbox France.")
-    parser.add_argument(
-        "--france-only",
-        action="store_true",
-        help="N'extrait que le quotidien 2t bbox France (pas le point, pas les autres variables).",
-    )
-    parser.add_argument("--bbox-only", action="store_true", help="Vérifie la bbox France, n'ouvre pas ARCO.")
-    args = parser.parse_args()
-    assert_in_france(args.lat, args.lon)
-    if args.bbox_only:
-        print(f"bbox France ok {args.lat},{args.lon}")
+def assert_matches_france_daily(date: str, hours_2t: list[float]) -> None:
+    path = EXTRACTS_DIR / f"france-{date}-2t-daily.json"
+    if not path.is_file():
         return
-    if args.dates and not args.france_only:
-        raise SystemExit("--dates exige --france-only (pas un dump point multi-jours).")
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    cell = payload["grenoble_cell"]
+    if round(min(hours_2t), 4) != round(float(cell["tmin_K"]), 4) or round(max(hours_2t), 4) != round(float(cell["tmax_K"]), 4):
+        raise SystemExit(f"Point 2t {date} ≠ quotidien France déjà extrait : pas de mélange.")
 
-    out_path = Path(args.out)
-    if args.date != GOLDEN_POINT_DATE and out_path.name == GOLDEN_POINT_FILE:
+
+def extract_one_point(
+    ds: xr.Dataset,
+    arrays: dict[str, xr.DataArray],
+    lat: float,
+    lon: float,
+    date: str,
+    out_path: Path,
+    phi_zs: float,
+    grid_zs: tuple[float, float],
+    skip_france_daily: bool,
+    france_out: str,
+) -> None:
+    if out_path.name == GOLDEN_POINT_FILE and date != GOLDEN_POINT_DATE:
         raise SystemExit("Refus d'écraser la preuve point 1983-05-12.")
 
-    ds = open_era5()
-    if args.france_only:
-        dates = parse_iso_dates(args.dates or args.date)
-        run_france_only(ds, args.lat, args.lon, dates, args.france_out or None)
-        ds.close()
-        os._exit(0)
-
-    t2m = pick_var(ds, T2M_NAMES, "2m_temperature")
-    d2m = pick_var(ds, D2M_NAMES, "2m_dewpoint_temperature")
-    tp = pick_var(ds, TP_NAMES, "total_precipitation")
-    u10 = pick_var(ds, U10_NAMES, "10m_u_component_of_wind")
-    v10 = pick_var(ds, V10_NAMES, "10m_v_component_of_wind")
-    msl = pick_var(ds, MSL_NAMES, "mean_sea_level_pressure")
-    sp = pick_var(ds, SP_NAMES, "surface_pressure")
-    snow = pick_var(ds, SNOW_NAMES, "snow_depth")
-    ssrd = pick_var(ds, SSRD_NAMES, "surface_solar_radiation_downwards")
-    gust = pick_var(ds, GUST_NAMES, "instantaneous_10m_wind_gust")
-    zs = pick_var(ds, ZS_NAMES, "geopotential_at_surface")
-
-    day_2t = load_day(t2m, args.date, "2t")
-    hours_2t, times, grid_lat, grid_lon = point_from_day(day_2t, args.lat, args.lon, "2t")
-    hours_d2m, times_d2m, grid_lat_d, grid_lon_d = load_day_point(d2m, args.lat, args.lon, args.date, "d2m")
-    hours_tp, times_tp, grid_lat_p, grid_lon_p = load_day_point(tp, args.lat, args.lon, args.date, "tp")
-    hours_u, times_u, grid_lat_u, grid_lon_u = load_day_point(u10, args.lat, args.lon, args.date, "10u")
-    hours_v, times_v, grid_lat_v, grid_lon_v = load_day_point(v10, args.lat, args.lon, args.date, "10v")
-    hours_msl, times_msl, grid_lat_m, grid_lon_m = load_day_point(msl, args.lat, args.lon, args.date, "msl")
-    hours_sp, times_sp, grid_lat_sp, grid_lon_sp = load_day_point(sp, args.lat, args.lon, args.date, "sp")
-    hours_snow, times_snow, grid_lat_sd, grid_lon_sd = load_day_point(snow, args.lat, args.lon, args.date, "sd")
-    hours_ssrd, times_ssrd, grid_lat_ss, grid_lon_ss = load_day_point(ssrd, args.lat, args.lon, args.date, "ssrd")
-    hours_gust, times_gust, grid_lat_g, grid_lon_g = load_day_point(gust, args.lat, args.lon, args.date, "i10fg")
-    phi_zs, grid_lat_z, grid_lon_z = load_orography_point(zs, args.lat, args.lon, args.date)
+    print(f"point {date} -> {out_path.name}", flush=True)
+    t2m, d2m, tp, u10, v10, msl, sp, snow, ssrd, gust = (
+        arrays["t2m"],
+        arrays["d2m"],
+        arrays["tp"],
+        arrays["u10"],
+        arrays["v10"],
+        arrays["msl"],
+        arrays["sp"],
+        arrays["snow"],
+        arrays["ssrd"],
+        arrays["gust"],
+    )
+    day_2t = load_day(t2m, date, "2t")
+    hours_2t, times, grid_lat, grid_lon = point_from_day(day_2t, lat, lon, "2t")
+    hours_d2m, times_d2m, grid_lat_d, grid_lon_d = load_day_point(d2m, lat, lon, date, "d2m")
+    hours_tp, times_tp, grid_lat_p, grid_lon_p = load_day_point(tp, lat, lon, date, "tp")
+    hours_u, times_u, grid_lat_u, grid_lon_u = load_day_point(u10, lat, lon, date, "10u")
+    hours_v, times_v, grid_lat_v, grid_lon_v = load_day_point(v10, lat, lon, date, "10v")
+    hours_msl, times_msl, grid_lat_m, grid_lon_m = load_day_point(msl, lat, lon, date, "msl")
+    hours_sp, times_sp, grid_lat_sp, grid_lon_sp = load_day_point(sp, lat, lon, date, "sp")
+    hours_snow, times_snow, grid_lat_sd, grid_lon_sd = load_day_point(snow, lat, lon, date, "sd")
+    hours_ssrd, times_ssrd, grid_lat_ss, grid_lon_ss = load_day_point(ssrd, lat, lon, date, "ssrd")
+    hours_gust, times_gust, grid_lat_g, grid_lon_g = load_day_point(gust, lat, lon, date, "i10fg")
     grids = {
         "d2m": (grid_lat_d, grid_lon_d),
         "tp": (grid_lat_p, grid_lon_p),
@@ -531,7 +525,7 @@ def main() -> None:
         "sd": (grid_lat_sd, grid_lon_sd),
         "ssrd": (grid_lat_ss, grid_lon_ss),
         "i10fg": (grid_lat_g, grid_lon_g),
-        "zs": (grid_lat_z, grid_lon_z),
+        "zs": grid_zs,
     }
     for label, grid in grids.items():
         if grid != (grid_lat, grid_lon):
@@ -549,19 +543,20 @@ def main() -> None:
     ):
         if series_times != times:
             raise SystemExit(f"Heures UTC 2t / {label} différentes : pas de mélange.")
-    if args.date == GOLDEN_POINT_DATE:
+    if date == GOLDEN_POINT_DATE:
         if round(min(hours_2t), 4) != GRENOBLE_TMIN_K or round(max(hours_2t), 4) != GRENOBLE_TMAX_K:
             raise SystemExit("2t Grenoble a divergé de la preuve 276.5640 / 287.3429 K.")
+    assert_matches_france_daily(date, hours_2t)
 
-    precip = daily_precip_point(args.date, hours_tp)
-    wind_points = daily_wind_points(args.date, hours_u, hours_v)
-    msl_point = daily_msl_point(args.date, hours_msl)
-    sp_point = daily_sp_point(args.date, hours_sp)
-    snow_point = daily_snow_point(args.date, hours_snow)
-    ssrd_point = daily_ssrd_point(args.date, hours_ssrd)
-    gust_point = daily_gust_point(args.date, hours_gust)
+    precip = daily_precip_point(date, hours_tp)
+    wind_points = daily_wind_points(date, hours_u, hours_v)
+    msl_point = daily_msl_point(date, hours_msl)
+    sp_point = daily_sp_point(date, hours_sp)
+    snow_point = daily_snow_point(date, hours_snow)
+    ssrd_point = daily_ssrd_point(date, hours_ssrd)
+    gust_point = daily_gust_point(date, hours_gust)
     model_alt_m = phi_zs / G0
-    dataset_version = dataset_version_for(ds, args.date)
+    dataset_version = dataset_version_for(ds, date)
 
     payload = {
         "source_id": SOURCE_ID,
@@ -580,15 +575,16 @@ def main() -> None:
                 "moyenne vectorielle u/v (pas moyenne des angles). MSL = moyenne 24 h UTC en Pa. "
                 "SP = moyenne 24 h UTC à la surface du modèle (geopotential_at_surface / g0), pas l'altitude commune. "
                 "snow_depth ARCO = mètres d'équivalent en eau, pas une hauteur de manteau. "
-                "SSRD = somme des 24 pas horaires en J m-2 (comme TP, pas last−first). "
+                "SSRD = somme des 24 pas horaires en J m-2 (comme TP, pas last−first) ; "
+                "un bruit nocturne < 1 J m-2 peut être ramené à 0 avant la somme. "
                 "Rafale = max des instantaneous_10m_wind_gust, pas une rafale officielle."
             ),
         },
-        "latitude": args.lat,
-        "longitude": args.lon,
+        "latitude": lat,
+        "longitude": lon,
         "grid_latitude": round(grid_lat, 4),
         "grid_longitude": round(grid_lon, 4),
-        "date": args.date,
+        "date": date,
         "hours_used": len(hours_2t),
         "hourly_times_utc": times,
         "hourly_2t_K": [round(v, 4) for v in hours_2t],
@@ -604,8 +600,8 @@ def main() -> None:
         "model_surface_geopotential_m2s2": float(phi_zs),
         "model_surface_altitude_m": round(model_alt_m, 1),
         "extracted_at": datetime.now(timezone.utc).isoformat(),
-        "points": daily_points(args.date, hours_2t, "air_temperature_min", "air_temperature_max", "air_temperature")
-        + daily_points(args.date, hours_d2m, "dew_point_min", "dew_point_max", "dew_point")
+        "points": daily_points(date, hours_2t, "air_temperature_min", "air_temperature_max", "air_temperature")
+        + daily_points(date, hours_d2m, "dew_point_min", "dew_point_max", "dew_point")
         + [precip]
         + wind_points
         + [msl_point, sp_point, snow_point, ssrd_point, gust_point],
@@ -631,21 +627,116 @@ def main() -> None:
     print(f"gust_max_ms={gust_point['value']:.4f} gust_kmh={gust_point['value'] * 3.6:.1f}", flush=True)
     print(f"sha256 {checksum}", flush=True)
 
-    if not args.skip_france_daily:
-        if args.date == GOLDEN_POINT_DATE:
+    if not skip_france_daily:
+        if date == GOLDEN_POINT_DATE:
             print("preuve quotidienne 1983-05-12 conservée (pas réécrite)", flush=True)
         else:
-            france_path = Path(args.france_out) if args.france_out else EXTRACTS_DIR / f"france-{args.date}-2t-daily.json"
-            france_payload = france_daily_2t(day_2t, args.date, hours_2t, grid_lat, grid_lon)
+            france_path = Path(france_out) if france_out else EXTRACTS_DIR / f"france-{date}-2t-daily.json"
+            if france_path.name == GOLDEN_FRANCE_FILE:
+                raise SystemExit("Refus d'écraser la preuve quotidienne 1983-05-12.")
+            france_payload = france_daily_2t(day_2t, date, hours_2t, grid_lat, grid_lon)
             france_payload["dataset_version"] = dataset_version
             france_checksum = write_json(france_path, france_payload)
             print(f"wrote {france_path}", flush=True)
             print(f"france_cells={france_payload['cell_count']} grenoble_tmin_K={france_payload['grenoble_cell']['tmin_K']:.4f}", flush=True)
             print(f"france_sha256 {france_checksum}", flush=True)
 
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--lat", type=float, default=45.1885)
+    parser.add_argument("--lon", type=float, default=5.7245)
+    parser.add_argument("--date", default="1983-05-12")
+    parser.add_argument(
+        "--dates",
+        default="",
+        help="Liste YYYY-MM-DD. France-only : max 7. Point : max 3 + --skip-france-daily. Pas 1940–2026.",
+    )
+    parser.add_argument(
+        "--out",
+        default="",
+        help="JSON point. Défaut : extracts/grenoble-{date}.json.",
+    )
+    parser.add_argument(
+        "--france-out",
+        default="",
+        help="Chemin du JSON quotidien France (un seul --date). Sinon france-{date}-2t-daily.json.",
+    )
+    parser.add_argument("--skip-france-daily", action="store_true", help="N'écrit pas le quotidien bbox France.")
+    parser.add_argument(
+        "--france-only",
+        action="store_true",
+        help="N'extrait que le quotidien 2t bbox France (pas le point, pas les autres variables).",
+    )
+    parser.add_argument("--bbox-only", action="store_true", help="Vérifie la bbox France, n'ouvre pas ARCO.")
+    args = parser.parse_args()
+    assert_in_france(args.lat, args.lon)
+    if args.bbox_only:
+        print(f"bbox France ok {args.lat},{args.lon}")
+        return
+
+    ds = open_era5()
+    if args.france_only:
+        dates = parse_iso_dates(args.dates or args.date)
+        run_france_only(ds, args.lat, args.lon, dates, args.france_out or None)
+        ds.close()
+        os._exit(0)
+
+    point_dates = parse_iso_dates(args.dates, MAX_POINT_DATES) if args.dates else [args.date]
+    if len(point_dates) > 1 and not args.skip_france_daily:
+        raise SystemExit("Plusieurs jours point : --skip-france-daily obligatoire (ne pas réécrire les JSON quotidiens).")
+    if len(point_dates) > 1 and GOLDEN_POINT_DATE in point_dates:
+        raise SystemExit("Preuve point 1983-05-12 non réécrite : l'ôter de --dates.")
+
+    arrays = {
+        "t2m": pick_var(ds, T2M_NAMES, "2m_temperature"),
+        "d2m": pick_var(ds, D2M_NAMES, "2m_dewpoint_temperature"),
+        "tp": pick_var(ds, TP_NAMES, "total_precipitation"),
+        "u10": pick_var(ds, U10_NAMES, "10m_u_component_of_wind"),
+        "v10": pick_var(ds, V10_NAMES, "10m_v_component_of_wind"),
+        "msl": pick_var(ds, MSL_NAMES, "mean_sea_level_pressure"),
+        "sp": pick_var(ds, SP_NAMES, "surface_pressure"),
+        "snow": pick_var(ds, SNOW_NAMES, "snow_depth"),
+        "ssrd": pick_var(ds, SSRD_NAMES, "surface_solar_radiation_downwards"),
+        "gust": pick_var(ds, GUST_NAMES, "instantaneous_10m_wind_gust"),
+    }
+    zs = pick_var(ds, ZS_NAMES, "geopotential_at_surface")
+    phi_zs, grid_lat_z, grid_lon_z = load_orography_point(zs, args.lat, args.lon, point_dates[0])
+
+    for date in point_dates:
+        if args.out and len(point_dates) == 1:
+            out_path = Path(args.out)
+        else:
+            out_path = EXTRACTS_DIR / f"grenoble-{date}.json"
+        if date != GOLDEN_POINT_DATE and out_path.name == GOLDEN_POINT_FILE:
+            raise SystemExit("Refus d'écraser la preuve point 1983-05-12.")
+        extract_one_point(
+            ds,
+            arrays,
+            args.lat,
+            args.lon,
+            date,
+            out_path,
+            phi_zs,
+            (grid_lat_z, grid_lon_z),
+            args.skip_france_daily,
+            args.france_out,
+        )
+
     ds.close()
     os._exit(0)
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except SystemExit as exc:
+        if isinstance(exc.code, str):
+            print(exc.code, flush=True)
+            os._exit(1)
+        os._exit(int(exc.code or 0))
+    except Exception:
+        import traceback
+
+        traceback.print_exc()
+        os._exit(1)

@@ -19,6 +19,8 @@ data/tiles/
 raw/
 tmp/
 pipelines/era5/.venv/
+pipelines/era5/__pycache__/
+__pycache__/
 
 npm-debug.log*
 .DS_Store

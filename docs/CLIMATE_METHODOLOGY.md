@@ -50,12 +50,13 @@ Méthode V1 : `heat-streak-tmax-v1`.
 
 ## Comparaison point ERA5 (sans fusion)
 
-Preuve V1 : Grenoble 45,1885 / 5,7245, **1983-05-12**.
+Preuve V1 : Grenoble 45,1885 / 5,7245, **1983-05-12** (référence). Même maille **11 et 13 mai 1983**.
 
-- Observation : station **CORENC LA REVIREE** (`38126001`), 6,6 / 21,6 °C, **0,1 mm**.
-- Réanalyse : maille la plus proche **45,25°N, 5,75°E**, 24 heures UTC. `2m_temperature` min/max → 3,4 / 14,2 °C. Point de rosée `2m_dewpoint_temperature` min/max → **2,0 / 6,9 °C**. Pluie `total_precipitation` : somme des 24 pas horaires ARCO (**0,00032344 m** → **0,3 mm**). Vent 10 m : moyenne des hypot(u,v) **8,8 km/h**, d’où il vient **169°**. MSL moyenne 24 h **1005 hPa**. SP moyenne 24 h **895 hPa** (orographie modèle **985,5 m**, pas l’altitude commune). Neige : moyenne SWE **27,3 mm d’eau** (pas une hauteur de manteau). SSRD : somme 24 h **20,8 MJ/m²**. Rafale max instantanée **69,4 km/h**. Ce n’est **pas** le Tmin/Tmax/Td d’abri, ni un pluviomètre, ni un anémomètre, ni la pression au sol, ni un pyranomètre, ni une rafale officielle.
-- Écart = estimation − mesure (2t seulement dans le bandeau) : Tmin **−3,2 °C**, Tmax **−7,4 °C**. Pluie : **+0,2 mm** (0,3 − 0,1), seulement dans « En savoir plus ». Pas d’écart SP/neige/SSRD/rafale : le quotidien Météo-France importé n’a pas ces variables. Affiché, **pas fusionné**. Rosée, pluie, vent, MSL, SP, neige, SSRD et rafale ERA5 n’entrent pas dans le JSON-LD.
-- `method_version` point : `era5-point-nearest-hourly-2t-d2m-tp-uv10-msl-sp-sd-ssrd-i10fg-v1`. Quotidien France **3 jours** (11–13 mai 1983) : `era5-france-daily-2t-minmax-v1` (JSON, pas SQL). Version jeu : ERA5 finale (1983).
+- Observation 12 mai : station **CORENC LA REVIREE** (`38126001`), 6,6 / 21,6 °C, **0,1 mm**. 11 mai : 8,1 / 16,3 °C, 0,1 mm. 13 mai : 14,8 / 16,1 °C, **2,8 mm**.
+- Réanalyse 12 mai : maille **45,25°N, 5,75°E**, 24 heures UTC. `2m_temperature` min/max → 3,4 / 14,2 °C. Point de rosée → **2,0 / 6,9 °C**. Pluie **0,3 mm**. Vent 10 m **8,8 km/h**, 169°. MSL **1005 hPa**. SP **895 hPa** (orographie modèle **985,5 m**). SWE **27,3 mm d’eau**. SSRD **20,8 MJ/m²**. Rafale **69,4 km/h**.
+- 11 mai (même maille, 2t = quotidien France) : 4,3 / 10,6 °C, rosée 2,5 / 5,3 °C, pluie **3,6 mm** vs 0,1 mm. 13 mai : 6,5 / 13,4 °C, rosée 4,6 / 8,5 °C, pluie **7,2 mm** vs 2,8 mm. Ce n’est **pas** le Tmin/Tmax/Td d’abri, ni un pluviomètre.
+- Écart 12 mai = estimation − mesure : Tmin **−3,2 °C**, Tmax **−7,4 °C**, pluie **+0,2 mm**. 11 mai : −3,8 / −5,7 °C, +3,5 mm. 13 mai : **−8,3** / −2,7 °C, +4,4 mm. Affiché, **pas fusionné**. Un grand |ΔTmin| n’est pas corrigé. Rosée, pluie, vent, MSL, SP, neige, SSRD et rafale ERA5 n’entrent pas dans le JSON-LD.
+- `method_version` point : `era5-point-nearest-hourly-2t-d2m-tp-uv10-msl-sp-sd-ssrd-i10fg-v1`. Un bruit SSRD nocturne ARCO < 1 J m⁻² peut être ramené à 0 avant la somme (heures brutes conservées). Quotidien France **3 jours** : `era5-france-daily-2t-minmax-v1` (JSON, pas SQL). Version jeu : ERA5 finale (1983).
 - ERA5 assimile des observations : elle **n’augmente pas** le score de confiance comme une source indépendante. Un |ΔTmax| > 2 °C n’ajoute pas de bonus de cohérence.
 - Bbox France à l’extracteur. Trois jours 2t quotidiens bbox France (2709 mailles / jour) sont stockés en JSON ; pas l’archive 1940–2026, pas ERA5-Land, pas de grille mondiale en base. Chunks ARCO = 1 h × globe : le quotidien ne réduit pas le téléchargement horaire mondial, seulement le stockage.
 

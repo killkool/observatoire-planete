@@ -13,7 +13,9 @@
     "test:science": "tsx tests/science.test.ts",
     "era5:extract-point": "pipelines/era5/.venv/Scripts/python.exe pipelines/era5/extract_point.py",
     "era5:extract-france-daily": "pipelines/era5/.venv/Scripts/python.exe pipelines/era5/extract_point.py --france-only",
-    "import:era5": "tsx scripts/import-era5-point.ts --file=pipelines/era5/extracts/grenoble-1983-05-12.json"
+    "era5:extract-points-window": "pipelines/era5/.venv/Scripts/python.exe pipelines/era5/extract_point.py --skip-france-daily --dates=1983-05-11,1983-05-13",
+    "import:era5": "tsx scripts/import-era5-point.ts --file=pipelines/era5/extracts/grenoble-1983-05-12.json",
+    "import:era5:window": "tsx scripts/import-era5-point.ts --file=pipelines/era5/extracts/grenoble-1983-05-11.json && tsx scripts/import-era5-point.ts --file=pipelines/era5/extracts/grenoble-1983-05-13.json"
   },
   "dependencies": {
     "better-sqlite3": "^12.2.0",
