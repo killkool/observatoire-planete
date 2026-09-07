@@ -7,7 +7,7 @@ import CommunePicker, { type CommuneHit } from "./CommunePicker";
 import { formatSignedCelsius, formatSignedMm } from "@/lib/compareClimate";
 import { formatCelsius, formatMm } from "../../packages/weather-core/src/units";
 
-type ComparePayload = {
+export type ComparePayload = {
   computed: boolean;
   communeA: { insee: string; name: string; slug: string; path: string | null };
   communeB: { insee: string; name: string; slug: string; path: string | null };
@@ -50,6 +50,21 @@ type ComparePayload = {
       };
 };
 
+function hitFromCompare(side: ComparePayload["communeA"]): CommuneHit {
+  return {
+    insee: side.insee,
+    name: side.name,
+    slug: side.slug,
+    department: "Isère",
+    region: "Auvergne-Rhône-Alpes",
+    path: side.path || ""
+  };
+}
+
+function compareMatches(payload: ComparePayload | null, inseeA: string, inseeB: string): payload is ComparePayload {
+  return Boolean(payload && payload.communeA.insee === inseeA && payload.communeB.insee === inseeB);
+}
+
 const FEATURED: { a: CommuneHit; b: CommuneHit }[] = [
   {
     a: {
@@ -89,17 +104,25 @@ const FEATURED: { a: CommuneHit; b: CommuneHit }[] = [
   }
 ];
 
-export default function CompareCities() {
+export default function CompareCities({
+  initialCompare = null
+}: {
+  initialCompare?: ComparePayload | null;
+}) {
   const router = useRouter();
   const params = useSearchParams();
-  const [cityA, setCityA] = useState<CommuneHit | null>(null);
-  const [cityB, setCityB] = useState<CommuneHit | null>(null);
-  const [data, setData] = useState<ComparePayload | null>(null);
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-
   const inseeA = params.get("a") || "";
   const inseeB = params.get("b") || "";
+  const ssrMatch = compareMatches(initialCompare, inseeA, inseeB);
+  const [cityA, setCityA] = useState<CommuneHit | null>(() =>
+    ssrMatch ? hitFromCompare(initialCompare.communeA) : null
+  );
+  const [cityB, setCityB] = useState<CommuneHit | null>(() =>
+    ssrMatch ? hitFromCompare(initialCompare.communeB) : null
+  );
+  const [data, setData] = useState<ComparePayload | null>(() => (ssrMatch ? initialCompare : null));
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(() => Boolean(inseeA && inseeB && !ssrMatch));
 
   useEffect(() => {
     function load(insee: string, setCity: (hit: CommuneHit) => void) {
@@ -120,13 +143,19 @@ export default function CompareCities() {
           /* ignore */
         });
     }
-    if (inseeA) load(inseeA, setCityA);
-    if (inseeB) load(inseeB, setCityB);
-  }, [inseeA, inseeB]);
+    if (inseeA && cityA?.insee !== inseeA) load(inseeA, setCityA);
+    if (inseeB && cityB?.insee !== inseeB) load(inseeB, setCityB);
+  }, [inseeA, inseeB, cityA?.insee, cityB?.insee]);
 
   useEffect(() => {
     if (!inseeA || !inseeB) {
       setData(null);
+      setLoading(false);
+      return;
+    }
+    if (compareMatches(initialCompare, inseeA, inseeB)) {
+      setData(initialCompare);
+      setLoading(false);
       return;
     }
     const controller = new AbortController();
@@ -173,7 +202,7 @@ export default function CompareCities() {
       })
       .finally(() => setLoading(false));
     return () => controller.abort();
-  }, [inseeA, inseeB]);
+  }, [inseeA, inseeB, initialCompare]);
 
   function go(nextA: CommuneHit | null, nextB: CommuneHit | null) {
     if (nextA) setCityA(nextA);

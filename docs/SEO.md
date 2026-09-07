@@ -18,6 +18,7 @@ France : slugs stables + INSEE en donnée, pas comme seul URL si le nom change. 
 ## Livré V1 Isère (2026-09-06)
 
 - Titre / description / canonical par commune réelle (`generateMetadata`). URL **sans** `?date=` : titre générique. URL **avec** date ou `histoire=naissance` : titre et description = mesure officielle (Tmin/Tmax/pluie + station), jamais ERA5, jamais un 0 inventé. Canonical reste la commune (pas des millions d’URL date).
+- `/comparer?a=&b=` : titre = stations officielles (Grenoble vs Voiron : Tmax moyenne réelle ; Grenoble vs Crolles : même poste, pas d’écart inventé). Canonical reste `/comparer`. Pas des 512×511 URL dans le sitemap.
 - `sitemap.xml` : accueil, comparer, naissance, sources, méthode + communes **indexables** (`seo_content_score` ≥ 50, `seo-content-v1`). Identité officielle + années climatiques réelles ou au moins une mesure **OBSERVED**. Pas d’ERA5, pas de millions de coquilles, pas de `hasDistinctiveHistory: true` inventé.
 - `robots.txt` : `/dashboard` et `/api/` non indexés.
 - Origine des URL : `NEXT_PUBLIC_SITE_URL` si défini, sinon `http://localhost:3000`.

@@ -1,5 +1,6 @@
 import { formatCelsius, formatMm, roundToPrecision } from "../../packages/weather-core/src/units";
 import { frenchLongDate } from "./birthDay";
+import { formatSignedCelsius, formatSignedMm } from "./compareClimate";
 import {
   listClimateStationCoverage,
   listObservedStationCoverage,
@@ -153,6 +154,80 @@ export function communePageCopy(input: {
   return {
     title: `${prefix}, ${shortWhen} : ${tmin} / ${tmax} | Observatoire Planète`,
     description: `Mesure officielle le ${when} à ${input.placeName} : minimale ${tmin}, maximale ${tmax}, pluie ${rain}. Station ${station}. Ce n’est pas une prévision.`
+  };
+}
+
+const COMPARE_GENERIC_TITLE = "Comparer deux communes — Observatoire Planète";
+const COMPARE_GENERIC_DESCRIPTION =
+  "Comparez le climat observé de deux communes Isère. Chaque ville garde sa station. On ne mélange pas les postes, on n’invente pas d’écart.";
+
+export type CompareCopyOverlap =
+  | { comparable: false; reason: string }
+  | {
+      comparable: true;
+      from: number;
+      to: number;
+      n: number;
+      tmaxMeanA: number | null;
+      tmaxMeanB: number | null;
+      tminMeanA: number | null;
+      tminMeanB: number | null;
+      precipMeanA: number | null;
+      precipMeanB: number | null;
+      tmaxDelta: number | null;
+      precipDelta: number | null;
+      precipYears: number;
+    };
+
+/** Titre / description ville vs ville. Mesure officielle seulement ; même poste = pas d’écart inventé ; canonical `/comparer`. */
+export function comparePageCopy(input: {
+  pairInQuery: boolean;
+  missing?: boolean;
+  communeA?: string;
+  communeB?: string;
+  sameStation?: boolean;
+  stationA?: string | null;
+  stationB?: string | null;
+  overlap?: CompareCopyOverlap;
+}): { title: string; description: string } {
+  if (!input.pairInQuery) {
+    return { title: COMPARE_GENERIC_TITLE, description: COMPARE_GENERIC_DESCRIPTION };
+  }
+  if (input.missing || !input.communeA || !input.communeB) {
+    return {
+      title: "Comparaison introuvable — Observatoire Planète",
+      description: "Une commune n’est pas dans le référentiel Isère. Aucune valeur n’est inventée."
+    };
+  }
+  const a = input.communeA;
+  const b = input.communeB;
+  if (input.sameStation) {
+    const station = input.stationA || input.stationB || "le même poste";
+    return {
+      title: `${a} et ${b} : même station ${station} | Observatoire Planète`,
+      description: `${a} et ${b} s’appuient sur le même poste climatique ${station}. Ce n’est pas deux séries indépendantes : aucun écart n’est inventé. Ce n’est pas une prévision.`
+    };
+  }
+  const overlap = input.overlap;
+  if (!overlap?.comparable) {
+    return {
+      title: `${a} vs ${b} : pas d’écart affiché | Observatoire Planète`,
+      description: `${overlap && "reason" in overlap ? overlap.reason : "Aucun écart n’est affiché."} On ne mélange pas les postes, on n’invente pas de différence. Ce n’est pas une prévision.`
+    };
+  }
+  const tmaxA = formatCelsius(overlap.tmaxMeanA);
+  const tmaxB = formatCelsius(overlap.tmaxMeanB);
+  const rainA = formatMm(overlap.precipMeanA);
+  const rainB = formatMm(overlap.precipMeanB);
+  const stationA = input.stationA || "station inconnue";
+  const stationB = input.stationB || "station inconnue";
+  const rainLine =
+    overlap.precipYears >= 5 && overlap.precipMeanA != null && overlap.precipMeanB != null
+      ? ` Pluie annuelle moyenne ${rainA} → ${rainB} (${formatSignedMm(overlap.precipDelta)}).`
+      : " Pluie annuelle : pas assez d’années complètes, aucun 0 inventé.";
+  return {
+    title: `${a} vs ${b} : ${tmaxA} → ${tmaxB} | Observatoire Planète`,
+    description: `Moyenne des maximales sur ${overlap.n} années climatiques ${overlap.from}–${overlap.to} : ${a} ${tmaxA} (${stationA}), ${b} ${tmaxB} (${stationB}). Écart max. ${formatSignedCelsius(overlap.tmaxDelta)}.${rainLine} Écart = ${b} − ${a}. Ce n’est pas une prévision.`
   };
 }
 

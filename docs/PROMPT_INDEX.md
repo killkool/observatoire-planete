@@ -114,7 +114,7 @@ Source : sections 0 à 187 du prompt maître.
 | 99 | PHASE 1 — ARCHITECTURE | [ ] *partiel* (ADR-0002 accepté ; stack Vercel/Supabase non branché) |
 | 100 | PHASE 2 — SOURCE REGISTRY | [ ] *partiel* |
 | 101 | PHASE 3 — FRANCE MVP | [ ] *partiel* |
-| 102 | PHASE 4 — PREMIÈRE PAGE HISTORIQUE | [ ] *partiel* (recherche Isère + page date + climat annuel + comparateur d’années et de communes Isère) |
+| 102 | PHASE 4 — PREMIÈRE PAGE HISTORIQUE | [ ] *partiel* (recherche Isère + page date + climat annuel + comparateur d’années et de communes Isère, HTML initial) |
 | 103 | PHASE 5 — ERA5 FRANCE | [ ] *partiel* (point Grenoble 2t + d2m + TP + vent 10 m + MSL + SP + neige SWE + SSRD + rafale **5 jours** ; quotidien 2t **3 jours** JSON ; pas 1940–2026) |
 | 104 | PHASE 6 — SOURCE FUSION ENGINE | [ ] |
 | 105 | PHASE 7 — CONFIDENCE ENGINE | [ ] *partiel* |
@@ -138,7 +138,7 @@ Source : sections 0 à 187 du prompt maître.
 | 123 | DESIGN | [ ] *partiel* |
 | 124 | HOME HERO | [ ] *partiel* (hero compact 390 px, JPEG, `decoding=sync`, `quality=70`, sizes ≤ 1480 px) |
 | 125 | PAGE MOBILE | [ ] *partiel* (390 px ; HTML page 56 Ko ; héros = Tmin/Tmax/pluie + station à X km ; Lighthouse lab LCP 2178 ms ; pas CrUX ; pas de bottom sheet GIS) |
-| 126 | SEO | [ ] *partiel* (titres commune + titres `?date=` / naissance = mesure officielle ; sitemap filtré + OG + hreflang fr + JSON-LD + score v1 ; pas de pages en) |
+| 126 | SEO | [ ] *partiel* (titres commune + titres `?date=` / naissance / comparer = mesure officielle ; sitemap filtré + OG + hreflang fr + JSON-LD + score v1 ; pas de pages en) |
 | 127 | INTERNATIONALISATION | [ ] *partiel* (html lang=fr, hreflang fr/x-default ; routage `en` = V2) |
 | 128 | PARTAGE SOCIAL | [ ] *partiel* (carte PNG + copie URL ; OG titre/description = mesure officielle si `?date=` ; pas de SDK) |
 | 129 | BUSINESS MODEL | [ ] |
@@ -150,7 +150,7 @@ Source : sections 0 à 187 du prompt maître.
 | 135 | FINOPS | [ ] |
 | 136 | NE PAS STOCKER L'INUTILE | [ ] |
 | 137 | HOT/WARM/COLD DATA | [ ] |
-| 138 | CACHE | [ ] *partiel* (`unstable_cache` 1 h ; yearly **page** `detailRows: false` ; `/yearly` complet à la demande ; pas CDN) |
+| 138 | CACHE | [ ] *partiel* (`unstable_cache` 1 h ; yearly **page** `detailRows: false` ; comparer ville vs ville ; `/yearly` complet à la demande ; pas CDN) |
 | 139 | PRECOMPUTATION | [ ] |
 | 140 | POSTGRES PARTITIONING | [ ] |
 | 141 | INDEXATION SPATIALE | [ ] |

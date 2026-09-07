@@ -1,16 +1,62 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import CompareCities from "@/components/CompareCities";
-import { frenchLanguageAlternates } from "@/lib/seoContent";
+import { comparePageCopy, frenchLanguageAlternates } from "@/lib/seoContent";
+import { getCommuneCityCompareCached } from "@/lib/sqliteReadCache";
 
-export const metadata: Metadata = {
-  title: "Comparer deux communes — Observatoire Planète",
-  description:
-    "Comparez le climat observé de deux communes Isère. Chaque ville garde sa station. On ne mélange pas les postes, on n’invente pas d’écart.",
-  alternates: frenchLanguageAlternates("/comparer")
-};
+type CompareQuery = { a?: string; b?: string };
 
-export default function ComparerPage() {
+function copyFromQuery(
+  pairInQuery: boolean,
+  compare: Awaited<ReturnType<typeof getCommuneCityCompareCached>>
+) {
+  if (!pairInQuery) return comparePageCopy({ pairInQuery: false });
+  if (!compare) return comparePageCopy({ pairInQuery: true, missing: true });
+  return comparePageCopy({
+    pairInQuery: true,
+    communeA: compare.communeA.name,
+    communeB: compare.communeB.name,
+    sameStation: compare.sameStation,
+    stationA: compare.stationA?.name ?? null,
+    stationB: compare.stationB?.name ?? null,
+    overlap: compare.overlap
+  });
+}
+
+export async function generateMetadata({
+  searchParams
+}: {
+  searchParams: Promise<CompareQuery>;
+}): Promise<Metadata> {
+  const query = await searchParams;
+  const inseeA = query.a?.trim() ?? "";
+  const inseeB = query.b?.trim() ?? "";
+  const pairInQuery = Boolean(inseeA && inseeB);
+  const compare = pairInQuery ? await getCommuneCityCompareCached(inseeA, inseeB) : null;
+  const copy = copyFromQuery(pairInQuery, compare);
+  return {
+    title: copy.title,
+    description: copy.description,
+    alternates: frenchLanguageAlternates("/comparer"),
+    openGraph: {
+      title: copy.title,
+      description: copy.description,
+      locale: "fr_FR",
+      type: "website"
+    }
+  };
+}
+
+export default async function ComparerPage({
+  searchParams
+}: {
+  searchParams: Promise<CompareQuery>;
+}) {
+  const query = await searchParams;
+  const inseeA = query.a?.trim() ?? "";
+  const inseeB = query.b?.trim() ?? "";
+  const initialCompare =
+    inseeA && inseeB ? await getCommuneCityCompareCached(inseeA, inseeB) : null;
   return (
     <main className="compareShell">
       <p className="eyebrow">VILLE VS VILLE</p>
@@ -23,7 +69,7 @@ export default function ComparerPage() {
         pas une différence. La normale 1991-2020 n’apparaît que si chaque poste a 24 années climatiques.
       </p>
       <Suspense fallback={<p className="note">Chargement…</p>}>
-        <CompareCities />
+        <CompareCities initialCompare={initialCompare} />
       </Suspense>
     </main>
   );

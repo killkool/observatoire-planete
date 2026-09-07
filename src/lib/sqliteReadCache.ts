@@ -1,5 +1,5 @@
 import { unstable_cache } from "next/cache";
-import { getCommuneChildhood, getCommuneYearly } from "@/lib/communeYearly";
+import { getCommuneChildhood, getCommuneCityCompare, getCommuneYearly } from "@/lib/communeYearly";
 import { getPlaceHistory, listFeaturedPlaces } from "@/lib/placeHistory";
 import { listIndexablePlaces } from "@/lib/seoContent";
 
@@ -38,5 +38,11 @@ export const getCommuneYearlyPageCached = unstable_cache(
 export const getCommuneChildhoodCached = unstable_cache(
   async (insee: string, birthYear: number) => getCommuneChildhood(insee, birthYear),
   ["commune-childhood-v1"],
+  { revalidate: 3600 }
+);
+
+export const getCommuneCityCompareCached = unstable_cache(
+  async (inseeA: string, inseeB: string) => getCommuneCityCompare(inseeA, inseeB),
+  ["commune-city-compare-v1"],
   { revalidate: 3600 }
 );

@@ -11,7 +11,7 @@ Nom de travail. Les fournisseurs (Météo-France, Copernicus, NOAA, ECMWF, IGN) 
 **Priorité :** utilité → simplicité → fiabilité → rapidité → beauté → complexité technique.  
 Les cases `[x]` = livré **et** vérifié (preuve). Un fichier vide ne compte pas.
 
-Dernière mise à jour : 2026-09-07 (naissance : pluie officielle + titres date). Tableau : [STATUS.md](./STATUS.md).
+Dernière mise à jour : 2026-09-07 (comparer : HTML initial + titres officiels). Tableau : [STATUS.md](./STATUS.md).
 
 ---
 
@@ -53,7 +53,8 @@ Dernière mise à jour : 2026-09-07 (naissance : pluie officielle + titres date)
 34. [x] Phase R12 suite — héros = Tmin/Tmax officiels (pas de photo IGN, pas d’ERA5) ; 1900 sans invention ; Lighthouse lab LCP **2168 ms**
 35. [x] Phase R12 suite — héros = pluie officielle + station à X km (1983 : 0,1 mm, CORENC 4,7 km ; 1986 : 0,0 mm ≠ ERA5 2,1 mm) ; LCP lab **2178 ms**
 36. [x] Phase R6/R11 suite — récit naissance = pluie officielle + station ; titres `?date=` / `histoire=naissance` = mesure officielle (1983 : 0,1 mm CORENC ; 1986 : 0,0 mm ≠ ERA5 2,1 mm ; 1900 sans invention) ; canonical inchangé
-37. Ne **pas** extraire ERA5 mondial. Ne **pas** activer océan / NOAA / API commerciale. Ne **pas** feindre Vercel/Supabase. Ne **pas** extraire massivement les tuiles IGN.
+37. [x] Phase R8/R11/R12 — comparer : HTML initial + titres = stations officielles (Grenoble vs Voiron : 18,5 → 18,2 °C, LVD / COUBLEVIE ; vs Crolles : même station, pas d’écart inventé) ; canonical `/comparer`
+38. Ne **pas** extraire ERA5 mondial. Ne **pas** activer océan / NOAA / API commerciale. Ne **pas** feindre Vercel/Supabase. Ne **pas** extraire massivement les tuiles IGN.
 
 Héritage déjà vérifié (ne pas recommencer) : licences Phase 0, import Isère 1 208 439 obs, Grenoble 1983-05-12 (CORENC, 6,6 / 21,6 °C), matching station v1, carte IGN, provenance. Runtime encore SQLite. Cible prod : [ARCHITECTURE_PRODUCTION.md](./ARCHITECTURE_PRODUCTION.md).
 
@@ -171,7 +172,7 @@ Reste : France entière (autres départements) en R10. Isère : 512 communes imp
 - [x] année vs année (même commune, années complètes, `GET /api/v1/compare`)
 - [x] saison vs saison (même saison météorologique seulement, page commune)
 
-**État :** ville vs ville Isère livrée. Saisons : on ne compare pas un hiver à un été. Pas France entière.
+**État :** ville vs ville Isère livrée (HTML initial + titres = stations officielles ; même poste = pas d’écart). Saisons : on ne compare pas un hiver à un été. Pas France entière.
 
 ---
 
@@ -203,7 +204,7 @@ Reste : France entière (autres départements) en R10. Isère : 512 communes imp
 - [x] métadonnées / sitemap / canonical / carte OG PNG / hreflang `fr` + `x-default` / JSON-LD (City + mesure officielle si OBSERVED)
 - [x] `seo_content_score` — seuil 50 au sitemap et `noindex` si sous le seuil ; pas un scorer éditorial
 
-**État :** titres et descriptions issus du nom officiel ; `?date=` et `histoire=naissance` = mesure officielle (pas ERA5). Sitemap = communes dont le score repose sur l’identité INSEE **et** des années climatiques ou des mesures OBSERVED. Hreflang français seulement. JSON-LD : lieu + WeatherObservation Météo-France si une mesure existe ; pas d’ERA5. Pas de millions de coquilles.
+**État :** titres et descriptions issus du nom officiel ; `?date=` et `histoire=naissance` = mesure officielle (pas ERA5) ; `/comparer?a=&b=` = stations officielles, canonical `/comparer`. Sitemap = communes dont le score repose sur l’identité INSEE **et** des années climatiques ou des mesures OBSERVED. Hreflang français seulement. JSON-LD : lieu + WeatherObservation Météo-France si une mesure existe ; pas d’ERA5. Pas de millions de coquilles.
 
 ---
 
@@ -218,6 +219,7 @@ Reste : France entière (autres départements) en R10. Isère : 512 communes imp
 - [x] HTML initial de la page commune = mesure du jour (SSR `getPlaceHistory`, pas d’attente API pour Tmin/Tmax)
 - [x] HTML initial = climat annuel (SSR `getCommuneYearly`) ; date sans observation ≠ « import manquant »
 - [x] HTML initial = enfance si `histoire=naissance` (SSR `getCommuneChildhood`)
+- [x] HTML initial = ville vs ville si `?a=&b=` (SSR `getCommuneCityCompare` ; même poste = pas d’écart)
 
 **État :** premier HTML Grenoble **56 Ko**. Heatmap « ce jour » : liens `?date=`. Héros : Tmin/Tmax/pluie officiels + station à X km, pas d’ERA5 ni de JPEG IGN ; 1900 = « aucune mesure officielle » ; 1986 pluie héros **0,0 mm** ≠ ERA5 2,1 mm. Lighthouse lab 2026-09-07T00:45Z : perf 99, LCP **2178 ms**, CLS 0 — pas CrUX. Pas de bottom sheet GIS. Pas de CDN.
 

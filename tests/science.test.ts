@@ -33,7 +33,7 @@ import {
   wettestCompleteMonth,
   yearsWithTwelveCompleteMonths
 } from "../src/lib/climateMonths";
-import { seoContentScore, frenchLanguageAlternates, publicAbsoluteUrl, seoFactsForPlace, listIndexablePlaces, SEO_CONTENT_METHOD, communePageCopy, officialCopyFromDay } from "../src/lib/seoContent";
+import { seoContentScore, frenchLanguageAlternates, publicAbsoluteUrl, seoFactsForPlace, listIndexablePlaces, SEO_CONTENT_METHOD, communePageCopy, officialCopyFromDay, comparePageCopy } from "../src/lib/seoContent";
 import { communeJsonLd, websiteJsonLd } from "../src/lib/seoJsonLd";
 import { coldestCompleteSeason, seasonPublicLabel } from "../src/lib/climateSeasons";
 import { buildShareCardModel, shareCardPath } from "../src/lib/shareCard";
@@ -480,6 +480,69 @@ assert.equal(
   "ERA5 must not enter commune titles"
 );
 assert.equal(officialCopyFromDay(null), null);
+
+const compareGeneric = comparePageCopy({ pairInQuery: false });
+assert.equal(compareGeneric.title, "Comparer deux communes — Observatoire Planète");
+assert.ok(compareGeneric.description.includes("n’invente pas d’écart"));
+const compareMissing = comparePageCopy({ pairInQuery: true, missing: true });
+assert.ok(compareMissing.title.includes("introuvable"));
+assert.ok(compareMissing.description.includes("inventée"));
+const compareSame = comparePageCopy({
+  pairInQuery: true,
+  communeA: "Grenoble",
+  communeB: "Crolles",
+  sameStation: true,
+  stationA: "GRENOBLE - LVD",
+  stationB: "GRENOBLE - LVD",
+  overlap: {
+    comparable: false,
+    reason: "Les deux communes s’appuient sur le même poste climatique (GRENOBLE - LVD)."
+  }
+});
+assert.ok(compareSame.title.includes("même station GRENOBLE - LVD"));
+assert.ok(compareSame.description.includes("aucun écart n’est inventé"));
+assert.equal(compareSame.title.includes("18.5"), false);
+assert.equal(compareSame.description.includes("18.5"), false);
+assert.equal(compareSame.description.includes("-0.3"), false);
+const compareVoironCopy = comparePageCopy({
+  pairInQuery: true,
+  communeA: "Grenoble",
+  communeB: "Voiron",
+  sameStation: false,
+  stationA: "GRENOBLE - LVD",
+  stationB: "COUBLEVIE",
+  overlap: {
+    comparable: true,
+    from: 2005,
+    to: 2025,
+    n: 21,
+    tmaxMeanA: 18.5,
+    tmaxMeanB: 18.2,
+    tminMeanA: 7.3,
+    tminMeanB: 8.4,
+    precipMeanA: 980.8,
+    precipMeanB: 1117.6,
+    tmaxDelta: -0.3,
+    precipDelta: 136.8,
+    precipYears: 21
+  }
+});
+assert.ok(compareVoironCopy.title.includes("18.5 °C"));
+assert.ok(compareVoironCopy.title.includes("18.2 °C"));
+assert.ok(compareVoironCopy.description.includes("COUBLEVIE"));
+assert.ok(compareVoironCopy.description.includes("980.8 mm"));
+assert.ok(compareVoironCopy.description.includes("1117.6 mm"));
+assert.equal(compareVoironCopy.description.includes("ERA5"), false);
+const compareSrc = fs.readFileSync(path.join(process.cwd(), "src/components/CompareCities.tsx"), "utf8");
+assert.ok(compareSrc.includes("initialCompare"), "comparer first HTML must carry the official overlap");
+assert.ok(compareSrc.includes("compareMatches(initialCompare"), "SSR pair must not wait on /api/v1/compare");
+const comparerPageSrc = fs.readFileSync(
+  path.join(process.cwd(), "src/app/comparer/page.tsx"),
+  "utf8"
+);
+assert.ok(comparerPageSrc.includes("comparePageCopy"));
+assert.ok(comparerPageSrc.includes("getCommuneCityCompareCached"));
+assert.ok(comparerPageSrc.includes('frenchLanguageAlternates("/comparer")'), "canonical stays /comparer");
 
 assert.equal(warmerThanPercent(null, [1, 2, 3, 4, 5]), null);
 assert.equal(warmerThanPercent(21.6, [10, 12, 15, 18, 20, 21.6, 22]), 71);
@@ -1598,6 +1661,42 @@ if (obsCount === 0) {
     assert.ok(vsVoiron.overlap.n >= 5);
     if (vsVoiron.overlap.precipDelta != null) {
       assert.ok(vsVoiron.overlap.precipYears >= 5);
+    }
+    const voironSeo = comparePageCopy({
+      pairInQuery: true,
+      communeA: vsVoiron.communeA.name,
+      communeB: vsVoiron.communeB.name,
+      sameStation: vsVoiron.sameStation,
+      stationA: vsVoiron.stationA?.name ?? null,
+      stationB: vsVoiron.stationB?.name ?? null,
+      overlap: vsVoiron.overlap
+    });
+    assert.ok(voironSeo.title.includes("Voiron"));
+    assert.ok(voironSeo.description.includes(vsVoiron.stationB.name));
+    assert.equal(voironSeo.description.includes("ERA5"), false);
+    if (vsVoiron.overlap.tmaxMeanA != null && vsVoiron.overlap.tmaxMeanB != null) {
+      assert.ok(voironSeo.title.includes(`${vsVoiron.overlap.tmaxMeanA.toFixed(1)} °C`));
+      assert.ok(voironSeo.title.includes(`${vsVoiron.overlap.tmaxMeanB.toFixed(1)} °C`));
+    }
+  }
+  if (vsCrolles?.sameStation) {
+    const crollesSeo = comparePageCopy({
+      pairInQuery: true,
+      communeA: vsCrolles.communeA.name,
+      communeB: vsCrolles.communeB.name,
+      sameStation: true,
+      stationA: vsCrolles.stationA?.name ?? null,
+      stationB: vsCrolles.stationB?.name ?? null,
+      overlap: vsCrolles.overlap
+    });
+    assert.ok(crollesSeo.title.includes("même station"));
+    assert.ok(crollesSeo.description.includes("aucun écart n’est inventé"));
+    if (vsVoiron?.overlap.comparable && vsVoiron.overlap.tmaxMeanA != null) {
+      assert.equal(
+        crollesSeo.description.includes(`${vsVoiron.overlap.tmaxMeanA.toFixed(1)} °C`),
+        false,
+        "same-station pair must not reuse another city's overlap temperatures"
+      );
     }
   }
   const incompleteSql = db.prepare(
