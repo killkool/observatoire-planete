@@ -11,7 +11,7 @@ Nom de travail. Les fournisseurs (Météo-France, Copernicus, NOAA, ECMWF, IGN) 
 **Priorité :** utilité → simplicité → fiabilité → rapidité → beauté → complexité technique.  
 Les cases `[x]` = livré **et** vérifié (preuve). Un fichier vide ne compte pas.
 
-Dernière mise à jour : 2026-09-07 (comparer : HTML initial + titres officiels). Tableau : [STATUS.md](./STATUS.md).
+Dernière mise à jour : 2026-09-07 (accueil : climat officiel sur les cartes). Tableau : [STATUS.md](./STATUS.md).
 
 ---
 
@@ -54,7 +54,8 @@ Dernière mise à jour : 2026-09-07 (comparer : HTML initial + titres officiels)
 35. [x] Phase R12 suite — héros = pluie officielle + station à X km (1983 : 0,1 mm, CORENC 4,7 km ; 1986 : 0,0 mm ≠ ERA5 2,1 mm) ; LCP lab **2178 ms**
 36. [x] Phase R6/R11 suite — récit naissance = pluie officielle + station ; titres `?date=` / `histoire=naissance` = mesure officielle (1983 : 0,1 mm CORENC ; 1986 : 0,0 mm ≠ ERA5 2,1 mm ; 1900 sans invention) ; canonical inchangé
 37. [x] Phase R8/R11/R12 — comparer : HTML initial + titres = stations officielles (Grenoble vs Voiron : 18,5 → 18,2 °C, LVD / COUBLEVIE ; vs Crolles : même station, pas d’écart inventé) ; canonical `/comparer`
-38. Ne **pas** extraire ERA5 mondial. Ne **pas** activer océan / NOAA / API commerciale. Ne **pas** feindre Vercel/Supabase. Ne **pas** extraire massivement les tuiles IGN.
+38. [x] Phase R1/R4/R12 — accueil : cartes Grenoble / Crolles / La Pierre = dernière année climatique officielle (LVD 2025 · max. 19,6 °C · 901,1 mm, 10,2 km, pas le record 2022) ; même poste = mêmes chiffres, pas d’écart inventé ; cache `featured-climate-v2`
+39. Ne **pas** extraire ERA5 mondial. Ne **pas** activer océan / NOAA / API commerciale. Ne **pas** feindre Vercel/Supabase. Ne **pas** extraire massivement les tuiles IGN.
 
 Héritage déjà vérifié (ne pas recommencer) : licences Phase 0, import Isère 1 208 439 obs, Grenoble 1983-05-12 (CORENC, 6,6 / 21,6 °C), matching station v1, carte IGN, provenance. Runtime encore SQLite. Cible prod : [ARCHITECTURE_PRODUCTION.md](./ARCHITECTURE_PRODUCTION.md).
 
@@ -88,7 +89,7 @@ Héritage déjà vérifié (ne pas recommencer) : licences Phase 0, import Isèr
 - [x] désactiver l’exposition UI des fonctions hors scope (océan, globe, ERA5 comme cœur)
 - [x] recherche sur les communes déjà seedées + accueil grand public
 
-**État :** audit, archive mondiale, README, ARCHITECTURE, flags, accueil recherche (3 communes), labels publics. Référentiel INSEE national = R2.
+**État :** audit, archive mondiale, README, ARCHITECTURE, flags, accueil recherche (3 communes + climat officiel LVD 2025), labels publics. Référentiel INSEE national = R2.
 
 ---
 
@@ -220,8 +221,9 @@ Reste : France entière (autres départements) en R10. Isère : 512 communes imp
 - [x] HTML initial = climat annuel (SSR `getCommuneYearly`) ; date sans observation ≠ « import manquant »
 - [x] HTML initial = enfance si `histoire=naissance` (SSR `getCommuneChildhood`)
 - [x] HTML initial = ville vs ville si `?a=&b=` (SSR `getCommuneCityCompare` ; même poste = pas d’écart)
+- [x] HTML initial accueil = dernière année climatique officielle (cartes Grenoble / Crolles / La Pierre, LVD 2025 · 19,6 °C · 901,1 mm ; même poste = pas d’écart)
 
-**État :** premier HTML Grenoble **56 Ko**. Heatmap « ce jour » : liens `?date=`. Héros : Tmin/Tmax/pluie officiels + station à X km, pas d’ERA5 ni de JPEG IGN ; 1900 = « aucune mesure officielle » ; 1986 pluie héros **0,0 mm** ≠ ERA5 2,1 mm. Lighthouse lab 2026-09-07T00:45Z : perf 99, LCP **2178 ms**, CLS 0 — pas CrUX. Pas de bottom sheet GIS. Pas de CDN.
+**État :** premier HTML Grenoble **56 Ko**. Heatmap « ce jour » : liens `?date=`. Héros : Tmin/Tmax/pluie officiels + station à X km, pas d’ERA5 ni de JPEG IGN ; 1900 = « aucune mesure officielle » ; 1986 pluie héros **0,0 mm** ≠ ERA5 2,1 mm. Accueil : climat officiel LVD 2025 dans le premier HTML. Lighthouse lab 2026-09-07T00:45Z : perf 99, LCP **2178 ms**, CLS 0 — pas CrUX. Pas de bottom sheet GIS. Pas de CDN.
 
 ---
 

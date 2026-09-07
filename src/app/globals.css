@@ -44,6 +44,8 @@
 .placeCard div{padding:14px 16px 18px}
 .placeCard span{font-size:11px;letter-spacing:.12em;color:var(--accent);font-weight:800}
 .placeCard h2{margin:6px 0 4px;font-size:22px}
+.placeCardClimate{margin:8px 0 0;font-size:13.5px;line-height:1.45;color:#d7e6ea}
+.placeCardClimate strong{display:block;margin:0 0 4px;font-size:15px;font-weight:700;color:var(--text)}
 .placeCard small{color:var(--muted)}
 
 .originStory{width:min(1480px,94vw);margin:0 auto 70px;display:grid;grid-template-columns:repeat(2,1fr);gap:16px}

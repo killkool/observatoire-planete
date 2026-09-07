@@ -10,9 +10,9 @@ import { assertCommercialSource } from "../packages/licensing/src/gate";
 import { createHash } from "node:crypto";
 import { isInFranceEra5Bbox, ERA5_FRANCE_DAILY_2T_CELLS, ERA5_FRANCE_DAILY_2T_DATES, ERA5_POINT_DATES } from "../src/lib/era5France";
 import { communePath } from "../src/lib/placeUrl";
-import { searchPlaces, getPlaceHistory, getPlaceByInsee, getPlaceDayObservation, listPlaces } from "../src/lib/placeHistory";
+import { searchPlaces, getPlaceHistory, getPlaceByInsee, getPlaceDayObservation, listFeaturedPlaces, listPlaces } from "../src/lib/placeHistory";
 import { computeStationStatistics, isMonthComplete, isPrecipComplete, isSeasonComplete, isYearComplete } from "../src/lib/computeStatistics";
-import { getCommuneYearCompare, getCommuneChildhood, getCommuneCityCompare, getCommuneYearly } from "../src/lib/communeYearly";
+import { featuredClimateCards, getCommuneYearCompare, getCommuneChildhood, getCommuneCityCompare, getCommuneYearly, lastCompleteClimateYear } from "../src/lib/communeYearly";
 import {
   childhoodVsRecent,
   compareCityClimate,
@@ -543,6 +543,42 @@ const comparerPageSrc = fs.readFileSync(
 assert.ok(comparerPageSrc.includes("comparePageCopy"));
 assert.ok(comparerPageSrc.includes("getCommuneCityCompareCached"));
 assert.ok(comparerPageSrc.includes('frenchLanguageAlternates("/comparer")'), "canonical stays /comparer");
+
+const lastCompleteOnlyTemps: Parameters<typeof lastCompleteClimateYear>[0] = [
+  {
+    year: 2024,
+    tminMean: 7,
+    tmaxMean: 18,
+    precipitationSum: 900,
+    daysGe30: 20,
+    yearComplete: true,
+    precipComplete: true
+  },
+  {
+    year: 2025,
+    tminMean: 8,
+    tmaxMean: 20.2,
+    precipitationSum: null,
+    daysGe30: 40,
+    yearComplete: false,
+    precipComplete: false
+  }
+];
+assert.equal(lastCompleteClimateYear([]), null);
+assert.equal(lastCompleteClimateYear(lastCompleteOnlyTemps)?.year, 2024, "incomplete last calendar year is not a climate year");
+assert.notEqual(lastCompleteClimateYear(lastCompleteOnlyTemps)?.tmaxMean, 20.2, "hottest incomplete year must not replace the last complete year");
+
+const homeSrc = fs.readFileSync(path.join(process.cwd(), "src/components/ObservatoryHome.tsx"), "utf8");
+assert.ok(homeSrc.includes("lastComplete"), "home cards must show the last official climate year");
+assert.ok(homeSrc.includes("formatCelsius"));
+assert.ok(homeSrc.includes("formatMm"));
+assert.ok(homeSrc.includes("roundToPrecision"));
+assert.ok(homeSrc.includes("Année climatique complète"));
+assert.equal(homeSrc.includes("ERA5"), false, "home cards must not show reanalysis");
+const homePageSrc = fs.readFileSync(path.join(process.cwd(), "src/app/page.tsx"), "utf8");
+assert.ok(homePageSrc.includes("getFeaturedClimateCached"), "home first HTML must carry featured official climate");
+const homeCacheSrc = fs.readFileSync(path.join(process.cwd(), "src/lib/sqliteReadCache.ts"), "utf8");
+assert.ok(homeCacheSrc.includes("featured-climate-v2"));
 
 assert.equal(warmerThanPercent(null, [1, 2, 3, 4, 5]), null);
 assert.equal(warmerThanPercent(21.6, [10, 12, 15, 18, 20, 21.6, 22]), 71);
@@ -1699,6 +1735,35 @@ if (obsCount === 0) {
       );
     }
   }
+  const homeCards = featuredClimateCards(listFeaturedPlaces());
+  assert.equal(homeCards.length, 3);
+  const grenobleHome = homeCards.find((card) => card.place.insee_code === "38185");
+  const crollesHome = homeCards.find((card) => card.place.insee_code === "38140");
+  const pierreHome = homeCards.find((card) => card.place.insee_code === "38303");
+  assert.ok(grenobleHome && crollesHome && pierreHome);
+  assert.equal(grenobleHome.station?.id, "38538002");
+  assert.equal(grenobleHome.lastComplete?.year, 2025);
+  const yearly2025 = yearly.years.find((row) => row.year === 2025);
+  assert.ok(yearly2025?.yearComplete && yearly2025.precipComplete);
+  assert.equal(grenobleHome.lastComplete?.tmaxMean, yearly2025.tmaxMean);
+  assert.equal(grenobleHome.lastComplete?.precipitationSum, yearly2025.precipitationSum);
+  assert.equal(grenobleHome.lastComplete?.precipitationSum, 901.1);
+  assert.equal(grenobleHome.lastComplete?.tmaxMean, 19.6);
+  assert.equal(grenobleHome.station?.distanceKm, 10.2, "home distance stays 1 decimal like the day hero");
+  if (yearly.yearRecords.hottest) {
+    assert.notEqual(
+      grenobleHome.lastComplete?.year,
+      yearly.yearRecords.hottest.year,
+      "home cards must not paste the hottest-year record onto the last complete year"
+    );
+  }
+  assert.equal(crollesHome.station?.id, grenobleHome.station?.id, "Crolles shares LVD — do not invent a city gap");
+  assert.equal(pierreHome.station?.id, grenobleHome.station?.id);
+  assert.equal(crollesHome.station?.distanceKm, 8.1);
+  assert.equal(pierreHome.station?.distanceKm, 11.6);
+  assert.equal(crollesHome.lastComplete?.year, grenobleHome.lastComplete?.year);
+  assert.equal(crollesHome.lastComplete?.tmaxMean, grenobleHome.lastComplete?.tmaxMean);
+  assert.equal(crollesHome.lastComplete?.precipitationSum, grenobleHome.lastComplete?.precipitationSum);
   const incompleteSql = db.prepare(
     `SELECT precipitation_sum, precip_complete, year_complete FROM annual_statistics WHERE precip_complete = 0 LIMIT 1`
   ).get() as { precipitation_sum: number | null; precip_complete: number; year_complete: number } | undefined;

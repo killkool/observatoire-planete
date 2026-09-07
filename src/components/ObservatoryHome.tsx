@@ -3,19 +3,27 @@ import Link from "next/link";
 import OriginKinds from "./OriginKinds";
 import PlaceSearch from "./PlaceSearch";
 import { IGN_PHOTO_CREDIT, HERO_IMAGE_SIZES, placePhotoSrc } from "@/lib/placeMedia";
-import { communePath, departmentLabel } from "@/lib/placeUrl";
+import { departmentLabel } from "@/lib/placeUrl";
+import { formatCelsius, formatMm, roundToPrecision } from "../../packages/weather-core/src/units";
 
-type Place = {
-  name: string;
-  slug: string;
-  insee_code: string;
-  latitude: number;
-  longitude: number;
-  region_slug: string;
-  department_slug: string;
+type HomeClimateCard = {
+  place: {
+    name: string;
+    slug: string;
+    insee_code: string;
+    department_slug: string;
+  };
+  path: string;
+  station: { id: string; name: string; distanceKm: number | null } | null;
+  lastComplete: {
+    year: number;
+    tmaxMean: number | null;
+    precipitationSum: number | null;
+    precipComplete: boolean;
+  } | null;
 };
 
-export default function ObservatoryHome({ places }: { places: Place[] }) {
+export default function ObservatoryHome({ cards }: { cards: HomeClimateCard[] }) {
   return (
     <main className="homeVisual">
       <section className="earthHero">
@@ -48,26 +56,51 @@ export default function ObservatoryHome({ places }: { places: Place[] }) {
       </section>
 
       <section className="placeCards">
-        {places.map((place) => (
-          <Link key={place.slug} href={communePath(place)} className="placeCard">
-            <div className="placeCardPhoto">
-              <Image
-                src={placePhotoSrc(place.slug)}
-                alt={`Vue aérienne IGN de ${place.name}`}
-                fill
-                sizes="(max-width:1000px) 100vw, 33vw"
-                quality={70}
-              />
-            </div>
-            <div>
-              <span>
-                {departmentLabel(place.department_slug)} · {place.name}
-              </span>
-              <h2>{place.name}</h2>
-              <small>{IGN_PHOTO_CREDIT}</small>
-            </div>
-          </Link>
-        ))}
+        {cards.map((card) => {
+          const place = card.place;
+          const rain =
+            card.lastComplete?.precipComplete && card.lastComplete.precipitationSum != null
+              ? ` · ${formatMm(card.lastComplete.precipitationSum)}`
+              : "";
+          const stationKm =
+            card.station?.distanceKm != null ? ` · ${roundToPrecision(card.station.distanceKm, 1)} km` : "";
+          return (
+            <Link key={place.slug} href={card.path} className="placeCard">
+              <div className="placeCardPhoto">
+                <Image
+                  src={placePhotoSrc(place.slug)}
+                  alt={`Vue aérienne IGN de ${place.name}`}
+                  fill
+                  sizes="(max-width:1000px) 100vw, 33vw"
+                  quality={70}
+                />
+              </div>
+              <div>
+                <span>
+                  {departmentLabel(place.department_slug)} · {place.name}
+                </span>
+                <h2>{place.name}</h2>
+                {card.lastComplete ? (
+                  <p className="placeCardClimate">
+                    <strong>
+                      {card.lastComplete.year} · max. {formatCelsius(card.lastComplete.tmaxMean)}
+                      {rain}
+                    </strong>
+                    {card.station
+                      ? `Station ${card.station.name}${stationKm}. Année climatique complète, pas une prévision.`
+                      : "Année climatique complète, pas une prévision."}
+                  </p>
+                ) : card.station ? (
+                  <p className="placeCardClimate">
+                    Station {card.station.name}
+                    {stationKm}.
+                  </p>
+                ) : null}
+                <small>{IGN_PHOTO_CREDIT}</small>
+              </div>
+            </Link>
+          );
+        })}
       </section>
 
       <OriginKinds />

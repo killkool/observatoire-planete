@@ -254,6 +254,58 @@ export function getCommuneYearly(
   };
 }
 
+/** Dernière année climatique (seuil 330 j), pas le record le plus chaud. */
+export function lastCompleteClimateYear(years: YearClimatePoint[]): YearClimatePoint | null {
+  let last: YearClimatePoint | null = null;
+  for (const row of years) {
+    if (!row.yearComplete) continue;
+    if (!last || row.year > last.year) last = row;
+  }
+  return last;
+}
+
+export type FeaturedClimateCard = {
+  place: PlaceRow;
+  path: string;
+  station: { id: string; name: string; distanceKm: number | null } | null;
+  lastComplete: {
+    year: number;
+    tminMean: number | null;
+    tmaxMean: number | null;
+    precipitationSum: number | null;
+    precipComplete: boolean;
+  } | null;
+};
+
+/** Cartes d’accueil : climat officiel d’un poste, sans écart inventé entre communes. */
+export function featuredClimateCards(places: PlaceRow[]): FeaturedClimateCard[] {
+  return places.map((place) => {
+    const yearly = getCommuneYearly(place.insee_code, { includeDetailRows: false });
+    const last = yearly ? lastCompleteClimateYear(yearly.years) : null;
+    return {
+      place,
+      path: communePath(place),
+      station: yearly?.station
+        ? {
+            id: yearly.station.id,
+            name: yearly.station.name,
+            distanceKm:
+              yearly.station.distanceKm != null ? roundToPrecision(yearly.station.distanceKm, 1) : null
+          }
+        : null,
+      lastComplete: last
+        ? {
+            year: last.year,
+            tminMean: last.tminMean,
+            tmaxMean: last.tmaxMean,
+            precipitationSum: last.precipitationSum,
+            precipComplete: last.precipComplete
+          }
+        : null
+    };
+  });
+}
+
 export function getCommuneYearCompare(insee: string, yearA: number, yearB: number) {
   const yearly = getCommuneYearly(insee);
   if (!yearly) return null;
