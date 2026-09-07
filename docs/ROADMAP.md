@@ -11,7 +11,7 @@ Nom de travail. Les fournisseurs (Météo-France, Copernicus, NOAA, ECMWF, IGN) 
 **Priorité :** utilité → simplicité → fiabilité → rapidité → beauté → complexité technique.  
 Les cases `[x]` = livré **et** vérifié (preuve). Un fichier vide ne compte pas.
 
-Dernière mise à jour : 2026-09-07 (checksums ERA5 JSON = octets LF, Kelvin inchangés). Tableau : [STATUS.md](./STATUS.md).
+Dernière mise à jour : 2026-09-07 (CI science : golden Grenoble seulement si SQLite importé). Tableau : [STATUS.md](./STATUS.md).
 
 ---
 
@@ -291,6 +291,8 @@ API commerciale : [BACKLOG_V2_GLOBAL.md](./BACKLOG_V2_GLOBAL.md).
 - [x] test golden Grenoble 1983-05-12 (si `import:meteo` a été joué)
 - [x] GitHub Actions `science` (`npm run test:science`)
 - [ ] sécurité / backups / monitoring / costs / DR testés
+
+**État :** GHA n’a pas `data/meteo.sqlite` (gitignoré). Unités + checksums ERA5 JSON tournent toujours. Golden CORENC 6,6 / 21,6 °C et exemples naissance : seulement si observations 1983-05-12. Le seed de 3 communes dans `db.ts` ne doit pas inventer ces chiffres.
 
 ---
 

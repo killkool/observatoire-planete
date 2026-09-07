@@ -170,9 +170,9 @@ Source : sections 0 à 187 du prompt maître.
 | 155 | STRIPE | [ ] |
 | 156 | RGPD | [ ] |
 | 157 | OBSERVABILITY | [ ] |
-| 158 | TESTS | [ ] |
+| 158 | TESTS | [ ] *partiel* (`test:science` local + GHA) |
 | 159 | GOLDEN DATASETS | [ ] |
-| 160 | SCIENTIFIC REGRESSION TESTS | [ ] |
+| 160 | SCIENTIFIC REGRESSION TESTS | [ ] *partiel* (unités + ERA5 JSON en CI ; golden SQLite si `import:meteo`) |
 | 161 | UI DATA DISCLAIMER | [x] |
 | 162 | PUBLIC TRUST | [ ] |
 | 163 | SOURCES PAGE | [x] |

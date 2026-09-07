@@ -142,7 +142,7 @@ Secrets serveur. Jamais de jeton CDS / MF / S3 dans le client. SQL paramétré. 
 
 ## 13. Tests
 
-`npm run test:science` (local + GitHub Actions). Golden Grenoble 1983-05-12 si la base est importée. Feature sans test : non.
+`npm run test:science` (local + GitHub Actions). Golden Grenoble 1983-05-12 **seulement si** `data/meteo.sqlite` est importé (`import:meteo`). Sans base, CI exécute les unités + preuves ERA5 JSON ; le seed Grenoble/Crolles/La Pierre ne doit pas inventer 6,6 °C. Feature sans test : non.
 
 ## 14. IA
 

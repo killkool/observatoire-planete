@@ -14,4 +14,5 @@ jobs:
           node-version: "22"
           cache: npm
       - run: npm ci
+      # Golden Grenoble skipped: data/meteo.sqlite is gitignored.
       - run: npm run test:science
