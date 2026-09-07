@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 type YearPoint = { date: string; tmin: number | null; tmax: number | null };
 
 function colorFor(tmax: number | null) {
@@ -10,26 +12,36 @@ function colorFor(tmax: number | null) {
   return "#9b1d3c";
 }
 
-export default function YearHeatmap({ series, selected, onSelect }: { series: YearPoint[]; selected?: string; onSelect?: (date: string) => void }) {
+export default function YearHeatmap({
+  series,
+  selected,
+  hrefFor
+}: {
+  series: YearPoint[];
+  selected?: string;
+  hrefFor: (date: string) => string;
+}) {
   if (!series.length) return null;
   return (
     <div className="yearHeat">
       <div className="yearHeatGrid">
         {series.map((row) => (
-          <button
+          <Link
             key={row.date}
-            type="button"
+            href={hrefFor(row.date)}
+            prefetch={false}
             className={`yearCell${row.date === selected ? " on" : ""}`}
             style={{ background: colorFor(row.tmax) }}
             title={`${row.date} · Tmin ${row.tmin ?? "—"} · Tmax ${row.tmax ?? "—"}`}
-            onClick={() => onSelect?.(row.date)}
+            aria-label={`${row.date} : minimale ${row.tmin ?? "non disponible"}, maximale ${row.tmax ?? "non disponible"}`}
+            aria-current={row.date === selected ? "date" : undefined}
           >
             <em>{row.date.slice(0, 4)}</em>
-          </button>
+          </Link>
         ))}
       </div>
       <p className="yearHeatLegend">
-        Chaque case est une année réelle observée — couleur selon Tmax. Cliquer ouvre cette année.
+        Chaque case est une année réelle observée — couleur selon Tmax. Ouvrir une année affiche ce jour-là.
       </p>
     </div>
   );

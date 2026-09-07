@@ -11,7 +11,7 @@ import YearHeatmap from "./YearHeatmap";
 import OriginBadge from "./OriginBadge";
 import { IGN_PHOTO_CREDIT, HERO_IMAGE_SIZES, placePhotoSrc } from "@/lib/placeMedia";
 import { departmentLabel } from "@/lib/placeUrl";
-import { buildShareText, frenchLongDate, yearsElapsed } from "@/lib/birthDay";
+import { buildShareText, communeHistoryHref, frenchLongDate, yearsElapsed } from "@/lib/birthDay";
 import {
   compareCompleteSeasons,
   compareCompleteYears,
@@ -377,11 +377,9 @@ export default function PlaceExplorer({
   }, [initialDate]);
 
   function goToDate(next: string) {
+    if (!next) return;
     setDate(next);
-    const params = new URLSearchParams();
-    params.set("date", next);
-    if (histoire) params.set("histoire", "naissance");
-    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    router.push(communeHistoryHref(pathname, next, histoire ? "naissance" : undefined));
   }
 
   async function copyShare() {
@@ -923,7 +921,11 @@ export default function PlaceExplorer({
                 Record de chaleur {data.recordsObserved.recordTmax ?? "—"} °C ({data.recordsObserved.recordTmaxDate || "—"})
               </p>
             )}
-            <YearHeatmap series={data.seriesSameDay} selected={date} onSelect={goToDate} />
+            <YearHeatmap
+              series={data.seriesSameDay}
+              selected={date}
+              hrefFor={(iso) => communeHistoryHref(pathname, iso, histoire ? "naissance" : undefined)}
+            />
             {chart.length ? (
               <ClimateLineChart
                 data={chart}

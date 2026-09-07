@@ -309,6 +309,17 @@ assert.equal(
   communeHistoryHref("/meteo/auvergne-rhone-alpes/isere/grenoble", "1983-05-12", "naissance"),
   "/meteo/auvergne-rhone-alpes/isere/grenoble?date=1983-05-12&histoire=naissance"
 );
+assert.equal(
+  communeHistoryHref("/meteo/auvergne-rhone-alpes/isere/grenoble", "1982-05-12"),
+  "/meteo/auvergne-rhone-alpes/isere/grenoble?date=1982-05-12"
+);
+assert.equal(
+  communeHistoryHref("/meteo/auvergne-rhone-alpes/isere/grenoble", "1986-05-12"),
+  "/meteo/auvergne-rhone-alpes/isere/grenoble?date=1986-05-12"
+);
+const heatmapSrc = fs.readFileSync(path.join(process.cwd(), "src/components/YearHeatmap.tsx"), "utf8");
+assert.ok(heatmapSrc.includes("prefetch={false}"), "heatmap years must not prefetch 8 commune RSC payloads");
+assert.ok(heatmapSrc.includes("hrefFor"), "heatmap years must be real date links");
 assert.equal(yearsElapsed("1983-05-12", "2026-09-06"), 43);
 assert.equal(yearsElapsed("1983-10-01", "2026-09-06"), 42);
 assert.equal(yearsElapsed("2027-01-01", "2026-09-06"), null);
@@ -1209,6 +1220,14 @@ if (obsCount === 0) {
     `SELECT value FROM point_extractions WHERE variable_id = 'precipitation' AND date = '1982-05-12'`
   ).get() as { value: number };
   assert.ok(precip82.value > 0 && precip82.value < 0.0001, "1982 ERA5 0.0 mm display is rounded 0.0375 mm, not a copied station zero");
+
+  const grenoblePath = "/meteo/auvergne-rhone-alpes/isere/grenoble";
+  assert.ok(grenoble82.seriesSameDay?.some((row) => row.date === "1982-05-12"));
+  assert.ok(grenoble82.seriesSameDay?.some((row) => row.date === "1986-05-12"));
+  assert.equal(
+    communeHistoryHref(grenoblePath, "1982-05-12"),
+    `${grenoblePath}?date=1982-05-12`
+  );
 
   const grenoble86 = getPlaceHistory("grenoble", "1986-05-12");
   assert.ok(grenoble86?.era5, "ERA5 point for Grenoble 1986-05-12 must be ingested");

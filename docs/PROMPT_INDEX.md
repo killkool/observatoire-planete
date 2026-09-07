@@ -137,7 +137,7 @@ Source : sections 0 à 187 du prompt maître.
 | 122 | UX ACCUEIL | [ ] *partiel* (recherche commune + CTAs 390 px ; pas France entière) |
 | 123 | DESIGN | [ ] *partiel* |
 | 124 | HOME HERO | [ ] *partiel* (hero compact 390 px, JPEG, `decoding=sync`, `quality=70`, sizes ≤ 1480 px) |
-| 125 | PAGE MOBILE | [ ] *partiel* (390 px ; HTML page 56 Ko sans mois/saisons/chaleur ; Lighthouse lab LCP 2535 ms ; pas de bottom sheet GIS) |
+| 125 | PAGE MOBILE | [ ] *partiel* (390 px ; HTML page 56 Ko sans mois/saisons/chaleur ; heatmap « ce jour » = liens `?date=` ; Lighthouse lab LCP 2535 ms ; héros WebP hors optimizer 2779 ms revert ; pas de bottom sheet GIS) |
 | 126 | SEO | [ ] *partiel* (titres + sitemap filtré + OG + hreflang fr + JSON-LD + score v1 ; pas de pages en) |
 | 127 | INTERNATIONALISATION | [ ] *partiel* (html lang=fr, hreflang fr/x-default ; routage `en` = V2) |
 | 128 | PARTAGE SOCIAL | [ ] |

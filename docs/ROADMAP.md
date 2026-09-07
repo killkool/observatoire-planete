@@ -11,7 +11,7 @@ Nom de travail. Les fournisseurs (Météo-France, Copernicus, NOAA, ECMWF, IGN) 
 **Priorité :** utilité → simplicité → fiabilité → rapidité → beauté → complexité technique.  
 Les cases `[x]` = livré **et** vérifié (preuve). Un fichier vide ne compte pas.
 
-Dernière mise à jour : 2026-09-07 (ERA5 point Grenoble, records 12 mai). Tableau : [STATUS.md](./STATUS.md).
+Dernière mise à jour : 2026-09-07 (heatmap « ce jour » en liens date). Tableau : [STATUS.md](./STATUS.md).
 
 ---
 
@@ -49,7 +49,8 @@ Dernière mise à jour : 2026-09-07 (ERA5 point Grenoble, records 12 mai). Table
 30. [x] Phase R9 suite — quotidien 2t bbox France **3 jours** (11–13 mai 1983, 2709 mailles JSON) ; preuve du 12 mai non réécrite ; pas SQL, pas 1940–2026
 31. [x] Phase R9 suite — point Grenoble **11 et 13 mai 1983** (mêmes 14 variables, maille 45,25 / 5,75) ; 2t = quotidien France ; 12 mai non réécrit ; pas fusionné, pas JSON-LD
 32. [x] Phase R9 suite — point Grenoble **12 mai 1982 et 1986** (records CORENC du 12 mai, 5,1 / 32,1 °C) ; même maille ; 1983 non réécrit ; pas fusionné, pas JSON-LD
-33. Ne **pas** extraire ERA5 mondial. Ne **pas** activer océan / NOAA / API commerciale. Ne **pas** feindre Vercel/Supabase. Ne **pas** extraire massivement les tuiles IGN.
+33. [x] Phase R12 suite — heatmap « ce jour » en liens `?date=` (1986 → 1982 : CORENC 5,1 / 26,1 °C) ; pas de prefetch des 8 années ; LCP lab inchangé **2535 ms**
+34. Ne **pas** extraire ERA5 mondial. Ne **pas** activer océan / NOAA / API commerciale. Ne **pas** feindre Vercel/Supabase. Ne **pas** extraire massivement les tuiles IGN.
 
 Héritage déjà vérifié (ne pas recommencer) : licences Phase 0, import Isère 1 208 439 obs, Grenoble 1983-05-12 (CORENC, 6,6 / 21,6 °C), matching station v1, carte IGN, provenance. Runtime encore SQLite. Cible prod : [ARCHITECTURE_PRODUCTION.md](./ARCHITECTURE_PRODUCTION.md).
 
@@ -118,7 +119,7 @@ Reste : France entière (autres départements) en R10. Isère : 512 communes imp
 
 - [x] recherche (nom, code postal, INSEE ; 512 communes Isère)
 - [x] page Grenoble (adaptée grand public : mesure officielle, station à X km)
-- [x] historique date + heatmap « ce jour »
+- [x] historique date + heatmap « ce jour » (liens `?date=`, pas `router.replace`)
 - [x] graphique annuel précalculé (années complètes seulement, une station climatique, pas de concaténation)
 - [x] comparateur année vs année (années complètes, même station climatique)
 - [x] records du jour (station préférée)
@@ -141,7 +142,7 @@ Reste : France entière (autres départements) en R10. Isère : 512 communes imp
 ## PHASE R6 — Fonctions grand public
 
 - [x] jour de ma naissance + partage (copie du texte + URL + carte PNG serveur ; pas de SDK social)
-- [x] ce jour dans l’histoire (heatmap + moyenne du jour-mois + percentile + records + courbe ; pas une normale)
+- [x] ce jour dans l’histoire (heatmap en liens `?date=` + moyenne du jour-mois + percentile + records + courbe ; pas une normale)
 - [x] quand j’étais enfant (moyenne des années climatiques complètes, un seul poste, fenêtre récente = 10 dernières années civiles ; pas une T quotidienne)
 - [x] ma ville se réchauffe-t-elle ? (OLS `ols-complete-years-v1`, un poste, ≥ 15 années climatiques, série brute pas LSH)
 - [x] partage social (carte PNG `/og/{slug}/{date}`, mesures réelles seulement)
@@ -215,7 +216,7 @@ Reste : France entière (autres départements) en R10. Isère : 512 communes imp
 - [x] HTML initial = climat annuel (SSR `getCommuneYearly`) ; date sans observation ≠ « import manquant »
 - [x] HTML initial = enfance si `histoire=naissance` (SSR `getCommuneChildhood`)
 
-**État :** premier HTML Grenoble **56 Ko** (sans mois, saisons ni épisodes de chaleur). Années / normales / records restent dans le HTML. Détails via `/yearly` à l’approche de `#mois`. Un payload chaleur vide n’est pas « aucun épisode ». Lighthouse lab 2026-09-06T22:26Z : perf 97, LCP **2535 ms**, CLS 0 — pas CrUX, seuil 2500 ms non tenu. Pas de bottom sheet GIS. Pas de CDN.
+**État :** premier HTML Grenoble **56 Ko** (sans mois, saisons ni épisodes de chaleur). Années / normales / records restent dans le HTML. Détails via `/yearly` à l’approche de `#mois`. Un payload chaleur vide n’est pas « aucun épisode ». Heatmap « ce jour » : liens réels `?date=` (`prefetch` off) ; 1986 → 1982 vérifié. Lighthouse lab 2026-09-06T22:26Z : perf 97, LCP **2535 ms**, CLS 0 — pas CrUX, seuil 2500 ms non tenu. Tentative héros WebP hors optimizer : LCP **2779 ms**, revert. Pas de bottom sheet GIS. Pas de CDN.
 
 ---
 
