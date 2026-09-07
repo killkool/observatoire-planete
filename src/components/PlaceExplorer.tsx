@@ -272,6 +272,7 @@ type YearlyPayload = {
     mostDaysGe25: { year: number; value: number } | null;
     mostDaysRain: { year: number; value: number } | null;
     largestAmplitude: { year: number; value: number } | null;
+    smallestAmplitude: { year: number; value: number } | null;
     driest: { year: number; value: number } | null;
   };
   warming: {
@@ -1458,6 +1459,15 @@ export default function PlaceExplorer({
                   <strong>
                     {yearly.yearRecords.largestAmplitude
                       ? `${yearly.yearRecords.largestAmplitude.year} · ${formatCelsius(yearly.yearRecords.largestAmplitude.value)}`
+                      : "non disponible"}
+                  </strong>
+                  <small>maximale moyenne − minimale moyenne, années climatiques seulement</small>
+                </div>
+                <div>
+                  <span>Plus petit écart min-max</span>
+                  <strong>
+                    {yearly.yearRecords.smallestAmplitude
+                      ? `${yearly.yearRecords.smallestAmplitude.year} · ${formatCelsius(yearly.yearRecords.smallestAmplitude.value)}`
                       : "non disponible"}
                   </strong>
                   <small>maximale moyenne − minimale moyenne, années climatiques seulement</small>

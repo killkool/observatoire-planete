@@ -42,6 +42,8 @@ export type ObservedYearRecords = {
   mostDaysRain: ObservedYearRecord | null;
   /** Max de l’écart min-max annuel dérivé Tmin/Tmax, années climatiques seulement. 0.0 est un vrai zéro. */
   largestAmplitude: ObservedYearRecord | null;
+  /** Min de l’écart min-max annuel dérivé Tmin/Tmax, années climatiques seulement. 0.0 est un vrai zéro. */
+  smallestAmplitude: ObservedYearRecord | null;
   /** Min de la pluie annuelle, années climatiques à pluie complète seulement. 0.0 est un vrai zéro. */
   driest: ObservedYearRecord | null;
 };
@@ -110,6 +112,16 @@ export function observedYearRecords(years: YearClimatePoint[]): ObservedYearReco
   );
   const largestAmplitudeValue =
     largestAmplitude != null ? annualMeanAmplitudeC(largestAmplitude.tminMean, largestAmplitude.tmaxMean) : null;
+  const smallestAmplitude = withAmplitude.reduce<YearClimatePoint | null>(
+    (best, row) => {
+      const amp = annualMeanAmplitudeC(row.tminMean, row.tmaxMean) as number;
+      const bestAmp = best == null ? null : (annualMeanAmplitudeC(best.tminMean, best.tmaxMean) as number);
+      return best == null || amp < (bestAmp as number) ? row : best;
+    },
+    null
+  );
+  const smallestAmplitudeValue =
+    smallestAmplitude != null ? annualMeanAmplitudeC(smallestAmplitude.tminMean, smallestAmplitude.tmaxMean) : null;
   return {
     periodFrom: complete[0]?.year ?? null,
     periodTo: complete[complete.length - 1]?.year ?? null,
@@ -129,6 +141,10 @@ export function observedYearRecords(years: YearClimatePoint[]): ObservedYearReco
     largestAmplitude:
       largestAmplitudeValue != null && largestAmplitude != null
         ? { year: largestAmplitude.year, value: largestAmplitudeValue }
+        : null,
+    smallestAmplitude:
+      smallestAmplitudeValue != null && smallestAmplitude != null
+        ? { year: smallestAmplitude.year, value: smallestAmplitudeValue }
         : null,
     driest: driest?.precipitationSum != null ? { year: driest.year, value: driest.precipitationSum } : null
   };

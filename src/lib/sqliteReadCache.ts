@@ -44,14 +44,14 @@ export const getPlaceHistoryCached = unstable_cache(
 
 export const getCommuneYearlyCached = unstable_cache(
   async (insee: string) => getCommuneYearly(insee),
-  ["commune-yearly-v9"],
+  ["commune-yearly-v10"],
   { revalidate: 3600 }
 );
 
 /** Sans mois / saisons / chaleur : premier HTML plus léger. L’API /yearly reste complète. */
 export const getCommuneYearlyPageCached = unstable_cache(
   async (insee: string) => getCommuneYearly(insee, { includeDetailRows: false }),
-  ["commune-yearly-page-v17"],
+  ["commune-yearly-page-v18"],
   { revalidate: 3600 }
 );
 

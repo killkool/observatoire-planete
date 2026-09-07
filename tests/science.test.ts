@@ -741,7 +741,7 @@ assert.ok(homePageSrc.includes("shareHomeCardPath"), "home OG card is an officia
 assert.ok(homePageSrc.includes("buildHomeOgModel"));
 const homeCacheSrc = fs.readFileSync(path.join(process.cwd(), "src/lib/sqliteReadCache.ts"), "utf8");
 assert.ok(homeCacheSrc.includes("featured-climate-v12"));
-assert.ok(homeCacheSrc.includes("commune-yearly-page-v17"));
+assert.ok(homeCacheSrc.includes("commune-yearly-page-v18"));
 const birthExSrc = fs.readFileSync(path.join(process.cwd(), "src/components/BirthExamples.tsx"), "utf8");
 assert.ok(birthExSrc.includes("Aucune mesure officielle"));
 assert.ok(birthExSrc.includes("formatCelsius"));
@@ -790,6 +790,8 @@ assert.ok(explorerSrc.includes("Plus de jours de pluie"), "year records show the
 assert.ok(explorerSrc.includes("yearRecords.mostDaysRain"));
 assert.ok(explorerSrc.includes("Plus grand écart min-max"), "year records show the observed min-max gap maximum of the series");
 assert.ok(explorerSrc.includes("yearRecords.largestAmplitude"));
+assert.ok(explorerSrc.includes("Plus petit écart min-max"), "year records show the observed min-max gap minimum of the series");
+assert.ok(explorerSrc.includes("yearRecords.smallestAmplitude"));
 assert.ok(explorerSrc.includes("Année la plus sèche"), "year records show the observed driest complete year of the series");
 assert.ok(explorerSrc.includes("yearRecords.driest"));
 assert.ok(explorerSrc.includes("Jours ≥ 35 °C"), "climate hero shows official days at or above 35 °C");
@@ -1316,6 +1318,9 @@ assert.notEqual(yearRecords.mostDaysGe30?.value, 80, "incomplete years must not 
 assert.equal(yearRecords.largestAmplitude?.year, 2003);
 assert.equal(yearRecords.largestAmplitude?.value, 16);
 assert.notEqual(yearRecords.largestAmplitude?.value, 40, "incomplete years must not set the amplitude year record");
+assert.equal(yearRecords.smallestAmplitude?.year, 2000);
+assert.equal(yearRecords.smallestAmplitude?.value, 10);
+assert.notEqual(yearRecords.smallestAmplitude?.value, 40, "incomplete years must not set the smallest amplitude year record");
 assert.equal(yearRecords.driest?.year, 2003);
 assert.equal(yearRecords.driest?.value, 400);
 assert.equal(yearRecords.mostFrost, null, "missing frost counts must not invent a frost year record");
@@ -1423,6 +1428,32 @@ const missingAmplitude = observedYearRecords([
   { year: 2001, tminMean: 8, tmaxMean: null, precipitationSum: 700, daysGe30: 6, yearComplete: true, precipComplete: true }
 ]);
 assert.equal(missingAmplitude.largestAmplitude, null, "missing Tmin or Tmax must not invent an amplitude year record");
+assert.equal(missingAmplitude.smallestAmplitude, null, "missing Tmin or Tmax must not invent a smallest amplitude year record");
+const smallestAmplitudeRecords = observedYearRecords([
+  { year: 2026, tminMean: 9.1, tmaxMean: 10.0, precipitationSum: null, daysGe30: 1, yearComplete: false, precipComplete: false },
+  { year: 2010, tminMean: 6.4, tmaxMean: 16.5, precipitationSum: 900, daysGe30: 8, yearComplete: true, precipComplete: true },
+  { year: 2013, tminMean: 6.8, tmaxMean: 16.9, precipitationSum: 950, daysGe30: 9, yearComplete: true, precipComplete: true },
+  { year: 2025, tminMean: 8.2, tmaxMean: 19.6, precipitationSum: 901.1, daysGe30: 15, yearComplete: true, precipComplete: true },
+  { year: 2003, tminMean: 6.8, tmaxMean: 19.0, precipitationSum: 400, daysGe30: 20, yearComplete: true, precipComplete: true }
+]);
+assert.equal(smallestAmplitudeRecords.smallestAmplitude?.year, 2010);
+assert.equal(smallestAmplitudeRecords.smallestAmplitude?.value, 10.1);
+assert.notEqual(smallestAmplitudeRecords.smallestAmplitude?.value, 0.9, "incomplete 2026 amplitude must not set the smallest amplitude year record");
+assert.notEqual(smallestAmplitudeRecords.smallestAmplitude?.value, 11.4, "2025 amplitude must not become the series minimum");
+assert.notEqual(smallestAmplitudeRecords.smallestAmplitude?.value, 12.2, "2003 amplitude is the series maximum, not the minimum");
+assert.notEqual(smallestAmplitudeRecords.smallestAmplitude?.year, 2013, "a 10.1 °C amplitude tie keeps the earlier complete year");
+const tiedSmallestAmplitude = observedYearRecords([
+  { year: 2010, tminMean: 6.4, tmaxMean: 16.5, precipitationSum: 900, daysGe30: 8, yearComplete: true, precipComplete: true },
+  { year: 2013, tminMean: 6.4, tmaxMean: 16.5, precipitationSum: 950, daysGe30: 9, yearComplete: true, precipComplete: true }
+]);
+assert.equal(tiedSmallestAmplitude.smallestAmplitude?.year, 2010, "a smallest-amplitude record tie keeps the earlier complete year");
+assert.equal(tiedSmallestAmplitude.smallestAmplitude?.value, 10.1);
+const zeroSmallestAmplitude = observedYearRecords([
+  { year: 2010, tminMean: 10, tmaxMean: 10, precipitationSum: 900, daysGe30: 8, yearComplete: true, precipComplete: true },
+  { year: 2013, tminMean: 6.4, tmaxMean: 16.5, precipitationSum: 950, daysGe30: 9, yearComplete: true, precipComplete: true }
+]);
+assert.equal(zeroSmallestAmplitude.smallestAmplitude?.year, 2010);
+assert.equal(zeroSmallestAmplitude.smallestAmplitude?.value, 0, "0.0 °C is a true zero, not a missing year");
 const driestRecords = observedYearRecords([
   { year: 2026, tminMean: 9, tmaxMean: 22, precipitationSum: 10, daysGe30: 1, yearComplete: false, precipComplete: false },
   { year: 1999, tminMean: 8, tmaxMean: 18, precipitationSum: 50, daysGe30: 8, yearComplete: true, precipComplete: false },
@@ -2246,6 +2277,15 @@ if (obsCount === 0) {
   const largestAmpYear = yearly.years.find((row) => row.year === yearly.yearRecords.largestAmplitude?.year);
   assert.equal(largestAmpYear?.yearComplete, true);
   assert.equal(annualMeanAmplitudeC(largestAmpYear?.tminMean, largestAmpYear?.tmaxMean), 12.2);
+  assert.equal(yearly.yearRecords.smallestAmplitude?.year, 2010, "LVD smallest amplitude year record is 2010, not 2013");
+  assert.equal(yearly.yearRecords.smallestAmplitude?.value, 10.1);
+  assert.notEqual(yearly.yearRecords.smallestAmplitude?.value, 11.4, "year records must not paste 2025 onto the amplitude minimum");
+  assert.notEqual(yearly.yearRecords.smallestAmplitude?.value, 12.2, "2003/2022 amplitude is the series maximum, not the minimum");
+  assert.notEqual(yearly.yearRecords.smallestAmplitude?.value, 13.8, "incomplete 2026 amplitude must not set the smallest amplitude year record");
+  assert.notEqual(yearly.yearRecords.smallestAmplitude?.year, 2013, "2013 also has 10.1 °C, but the tie keeps 2010");
+  const smallestAmpYear = yearly.years.find((row) => row.year === yearly.yearRecords.smallestAmplitude?.year);
+  assert.equal(smallestAmpYear?.yearComplete, true);
+  assert.equal(annualMeanAmplitudeC(smallestAmpYear?.tminMean, smallestAmpYear?.tmaxMean), 10.1);
   assert.equal(yearly.yearRecords.driest?.year, 2009, "LVD driest year record is 2009, not 2003");
   assert.equal(yearly.yearRecords.driest?.value, 700.6);
   assert.notEqual(yearly.yearRecords.driest?.value, 901.1, "year records must not paste 2025 onto the driest year");
