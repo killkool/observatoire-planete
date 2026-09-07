@@ -2,14 +2,32 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import BirthExamples from "@/components/BirthExamples";
 import PlaceSearch from "@/components/PlaceSearch";
+import { shareBirthLandingCardPath } from "@/lib/landingOg";
 import { frenchLanguageAlternates } from "@/lib/seoContent";
 import { getBirthExamplesCached } from "@/lib/sqliteReadCache";
 
+const birthTitle = "Jour de naissance — Observatoire Planète";
+const birthDescription =
+  "Quel temps faisait-il le jour de votre naissance ? Mesure officielle s’il y en a une, jamais une valeur inventée.";
+const birthImage = shareBirthLandingCardPath();
+
 export const metadata: Metadata = {
-  title: "Jour de naissance — Observatoire Planète",
-  description:
-    "Quel temps faisait-il le jour de votre naissance ? Mesure officielle s’il y en a une, jamais une valeur inventée.",
-  alternates: frenchLanguageAlternates("/naissance")
+  title: birthTitle,
+  description: birthDescription,
+  alternates: frenchLanguageAlternates("/naissance"),
+  openGraph: {
+    title: birthTitle,
+    description: birthDescription,
+    locale: "fr_FR",
+    type: "website",
+    images: [{ url: birthImage, width: 1200, height: 630, alt: "Exemple : Grenoble, jour de naissance" }]
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: birthTitle,
+    description: birthDescription,
+    images: [birthImage]
+  }
 };
 
 export default async function NaissancePage() {

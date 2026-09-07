@@ -89,7 +89,7 @@ Source : sections 0 à 187 du prompt maître.
 | 74 | PAGE LIEU | [x] |
 | 75 | PAGE DATE | [x] |
 | 76 | PAGE OCÉAN | [ ] |
-| 77 | FEATURE "LE JOUR DE MA NAISSANCE" | [ ] *partiel* (page /naissance + récit pluie/station + titres date officiels + exemples SSR 1983/1986/1900 + carte PNG ; pas de SDK social) |
+| 77 | FEATURE "LE JOUR DE MA NAISSANCE" | [ ] *partiel* (page /naissance + récit pluie/station + titres date officiels + exemples SSR 1983/1986/1900 + OG `/og/naissance` 1983 CORENC ; pas de SDK social) |
 | 78 | FEATURE "CE JOUR DANS L'HISTOIRE" | [x] (moyenne + percentile + records + courbe, un poste ; pas une normale) |
 | 79 | FEATURE "QUAND J'ÉTAIS ENFANT" | [ ] *partiel* (moyennes d’années complètes, un poste, fenêtre 2016–2025 pour un né en 1983) |
 | 80 | FEATURE "MA VILLE SE RÉCHAUFFE-T-ELLE ?" | [ ] *partiel* (OLS Isère, un poste, ≥ 15 ans ; pas LSH, pas France) |
@@ -134,13 +134,13 @@ Source : sections 0 à 187 du prompt maître.
 | 119 | PHASE 20 — SCALE | [ ] |
 | 120 | MVP EXACT | [ ] *partiel* |
 | 121 | POURQUOI LA FRANCE EN PREMIER | [ ] |
-| 122 | UX ACCUEIL | [ ] *partiel* (recherche commune + CTAs 390 px + cartes climat officiel LVD 2025 min. 8,2 / max. 19,6 °C ; pas France entière) |
+| 122 | UX ACCUEIL | [ ] *partiel* (recherche commune + CTAs 390 px + cartes climat officiel LVD 2025 min. 8,2 / max. 19,6 °C + OG `/og/accueil` exemple Grenoble ; pas France entière) |
 | 123 | DESIGN | [ ] *partiel* |
 | 124 | HOME HERO | [ ] *partiel* (hero compact 390 px, JPEG, `decoding=sync`, `quality=70`, sizes ≤ 1480 px) |
 | 125 | PAGE MOBILE | [ ] *partiel* (390 px ; HTML page 56 Ko si `?date=` ; héros sans query = climat LVD 2025 min. 8,2 / max. 19,6 °C, date vide, partage année ; héros `?date=` = Tmin/Tmax/pluie + station à X km ; accueil = climat officiel LVD ; naissance / comparer = exemples officiels ; Lighthouse lab LCP 2178 ms ; pas CrUX ; pas de bottom sheet GIS) |
-| 126 | SEO | [ ] *partiel* (titres, héros et OG commune sans query = dernière année climatique officielle min. 8,2 / max. 19,6 °C ; pas le jour par défaut ; JSON-LD jour seulement si `?date=` ; titres `?date=` / naissance / comparer = mesure officielle ; comparer landing = exemples officiels ; sitemap filtré + hreflang fr + JSON-LD + score v1 ; pas de pages en) |
+| 126 | SEO | [ ] *partiel* (titres, héros et OG commune sans query = dernière année climatique officielle min. 8,2 / max. 19,6 °C ; landings OG accueil/naissance/comparer = exemples officiels ; pas le jour par défaut ; JSON-LD jour seulement si `?date=` ; titres `?date=` / naissance / comparer = mesure officielle ; comparer landing = exemples officiels ; sitemap filtré + hreflang fr + JSON-LD + score v1 ; pas de pages en) |
 | 127 | INTERNATIONALISATION | [ ] *partiel* (html lang=fr, hreflang fr/x-default ; routage `en` = V2) |
-| 128 | PARTAGE SOCIAL | [ ] *partiel* (carte PNG + copie URL ; OG titre/description/image = climat annuel `/og/climat/{slug}` si URL canonique, min. 8,2 / max. 19,6 °C ; « Partager cette année » sans `?date=` ; mesure officielle si `?date=` ; pas de SDK) |
+| 128 | PARTAGE SOCIAL | [ ] *partiel* (carte PNG + copie URL ; OG commune `/og/climat/{slug}` ; landings `/og/accueil` `/og/naissance` `/og/comparer` = exemples officiels étiquetés ; « Partager cette année » sans `?date=` ; mesure officielle si `?date=` ; pas de SDK) |
 | 129 | BUSINESS MODEL | [ ] |
 | 130 | OCEAN BUSINESS | [ ] |
 | 131 | WEATHER BUSINESS | [ ] |

@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import CompareCities from "@/components/CompareCities";
 import CompareExamples from "@/components/CompareExamples";
 import { comparePageCopy, frenchLanguageAlternates } from "@/lib/seoContent";
+import { shareCompareLandingCardPath } from "@/lib/landingOg";
 import { getCommuneCityCompareCached, getCompareExamplesCached } from "@/lib/sqliteReadCache";
 
 type CompareQuery = { a?: string; b?: string };
@@ -35,6 +36,7 @@ export async function generateMetadata({
   const pairInQuery = Boolean(inseeA && inseeB);
   const compare = pairInQuery ? await getCommuneCityCompareCached(inseeA, inseeB) : null;
   const copy = copyFromQuery(pairInQuery, compare);
+  const landingImage = pairInQuery ? null : shareCompareLandingCardPath();
   return {
     title: copy.title,
     description: copy.description,
@@ -43,7 +45,16 @@ export async function generateMetadata({
       title: copy.title,
       description: copy.description,
       locale: "fr_FR",
-      type: "website"
+      type: "website",
+      images: landingImage
+        ? [{ url: landingImage, width: 1200, height: 630, alt: "Exemple : Grenoble vs Voiron" }]
+        : undefined
+    },
+    twitter: {
+      card: landingImage ? "summary_large_image" : "summary",
+      title: copy.title,
+      description: copy.description,
+      images: landingImage ? [landingImage] : undefined
     }
   };
 }

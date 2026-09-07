@@ -37,6 +37,15 @@ import { seoContentScore, frenchLanguageAlternates, publicAbsoluteUrl, seoFactsF
 import { communeJsonLd, websiteJsonLd } from "../src/lib/seoJsonLd";
 import { coldestCompleteSeason, seasonPublicLabel } from "../src/lib/climateSeasons";
 import { buildClimateShareCardModel, buildClimateShareText, buildShareCardModel, shareCardPath, shareClimateCardPath } from "../src/lib/shareCard";
+import {
+  HOME_OG_PLACE_SLUG,
+  buildBirthLandingOgModel,
+  buildCompareLandingOgModel,
+  buildHomeOgModel,
+  shareBirthLandingCardPath,
+  shareCompareLandingCardPath,
+  shareHomeCardPath
+} from "../src/lib/landingOg";
 import { heatEpisodesAt, stationHeatStreaks } from "../src/lib/climateHeatStreaks";
 import {
   formatSignedPerDecade,
@@ -632,6 +641,11 @@ assert.ok(comparerPageSrc.includes("comparePageCopy"));
 assert.ok(comparerPageSrc.includes("getCommuneCityCompareCached"));
 assert.ok(comparerPageSrc.includes("getCompareExamplesCached"), "comparer landing must carry official example pairs");
 assert.ok(comparerPageSrc.includes('frenchLanguageAlternates("/comparer")'), "canonical stays /comparer");
+assert.ok(comparerPageSrc.includes("shareCompareLandingCardPath"));
+assert.ok(
+  comparerPageSrc.includes("pairInQuery ? null : shareCompareLandingCardPath"),
+  "pair pages must not paste the Voiron OG card onto Crolles"
+);
 const compareExSrc = fs.readFileSync(path.join(process.cwd(), "src/components/CompareExamples.tsx"), "utf8");
 assert.equal(compareExSrc.includes("ERA5"), false, "comparer examples must not show reanalysis");
 const compareCacheSrc = fs.readFileSync(path.join(process.cwd(), "src/lib/sqliteReadCache.ts"), "utf8");
@@ -672,6 +686,8 @@ assert.ok(homeSrc.includes("Année climatique complète"));
 assert.equal(homeSrc.includes("ERA5"), false, "home cards must not show reanalysis");
 const homePageSrc = fs.readFileSync(path.join(process.cwd(), "src/app/page.tsx"), "utf8");
 assert.ok(homePageSrc.includes("getFeaturedClimateCached"), "home first HTML must carry featured official climate");
+assert.ok(homePageSrc.includes("shareHomeCardPath"), "home OG card is an official Grenoble climate example");
+assert.ok(homePageSrc.includes("buildHomeOgModel"));
 const homeCacheSrc = fs.readFileSync(path.join(process.cwd(), "src/lib/sqliteReadCache.ts"), "utf8");
 assert.ok(homeCacheSrc.includes("featured-climate-v2"));
 const birthExSrc = fs.readFileSync(path.join(process.cwd(), "src/components/BirthExamples.tsx"), "utf8");
@@ -680,6 +696,7 @@ assert.ok(birthExSrc.includes("formatCelsius"));
 assert.equal(birthExSrc.includes("ERA5"), false, "naissance examples must not show reanalysis");
 const naissancePageSrc = fs.readFileSync(path.join(process.cwd(), "src/app/naissance/page.tsx"), "utf8");
 assert.ok(naissancePageSrc.includes("getBirthExamplesCached"), "naissance first HTML must carry official example days");
+assert.ok(naissancePageSrc.includes("shareBirthLandingCardPath"), "naissance OG is the official 1983 example, not an invented temperature");
 assert.ok(homeCacheSrc.includes("birth-examples-v1"));
 const communePageSrc = fs.readFileSync(
   path.join(process.cwd(), "src/app/meteo/[region]/[department]/[commune]/page.tsx"),
@@ -711,6 +728,20 @@ assert.ok(climateOgSrc.includes("buildClimateShareCardModel"));
 assert.ok(climateOgSrc.includes("tminMean"), "climate OG card includes the official mean minimum");
 assert.ok(climateOgSrc.includes("Minimale moyenne"));
 assert.equal(climateOgSrc.includes("ERA5"), false, "climate OG card must not show reanalysis");
+const homeOgSrc = fs.readFileSync(path.join(process.cwd(), "src/app/og/accueil/route.tsx"), "utf8");
+assert.ok(homeOgSrc.includes("buildHomeOgModel"));
+assert.ok(homeOgSrc.includes("exampleLine"), "home OG must label Grenoble as an example, not France-wide climate");
+assert.equal(homeOgSrc.includes("ERA5"), false, "home OG card must not show reanalysis");
+const landingOgSrc = fs.readFileSync(path.join(process.cwd(), "src/lib/landingOg.ts"), "utf8");
+assert.ok(landingOgSrc.includes("Exemple :"));
+assert.ok(landingOgSrc.includes('HOME_OG_PLACE_SLUG = "grenoble"'));
+const birthOgSrc = fs.readFileSync(path.join(process.cwd(), "src/app/og/naissance/route.tsx"), "utf8");
+assert.ok(birthOgSrc.includes("buildBirthLandingOgModel"));
+assert.equal(birthOgSrc.includes("ERA5"), false, "naissance OG card must not show reanalysis");
+const compareOgSrc = fs.readFileSync(path.join(process.cwd(), "src/app/og/comparer/route.tsx"), "utf8");
+assert.ok(compareOgSrc.includes("buildCompareLandingOgModel"));
+assert.ok(compareOgSrc.includes("Exemple"));
+assert.equal(compareOgSrc.includes("ERA5"), false, "comparer OG card must not show reanalysis");
 
 assert.equal(warmerThanPercent(null, [1, 2, 3, 4, 5]), null);
 assert.equal(warmerThanPercent(21.6, [10, 12, 15, 18, 20, 21.6, 22]), 71);
@@ -1315,6 +1346,10 @@ assert.equal(shareCardPath("grenoble", "1983-05-12"), "/og/grenoble/1983-05-12")
 assert.equal(shareCardPath("grenoble", "1983-13-40"), null);
 assert.equal(shareClimateCardPath("grenoble"), "/og/climat/grenoble");
 assert.equal(shareClimateCardPath("  "), null);
+assert.equal(shareHomeCardPath(), "/og/accueil");
+assert.equal(shareBirthLandingCardPath(), "/og/naissance");
+assert.equal(shareCompareLandingCardPath(), "/og/comparer");
+assert.equal(HOME_OG_PLACE_SLUG, "grenoble");
 const climateCard = buildClimateShareCardModel({
   placeName: "Grenoble",
   year: 2025,
@@ -2001,6 +2036,34 @@ if (obsCount === 0) {
   assert.equal(grenobleClimate?.precipComplete, true);
   assert.ok(grenobleClimate?.stationName.includes("LVD"));
   assert.equal(grenobleClimate?.distanceKm, 10.2);
+  const homeOg = buildHomeOgModel();
+  assert.ok(homeOg, "home OG must use Grenoble, not the first featured card Crolles");
+  assert.equal(homeOg.placeName, "Grenoble");
+  assert.equal(homeOg.year, 2025);
+  assert.ok(homeOg.exampleLine.includes("Exemple"));
+  assert.ok(homeOg.tminDisplay?.includes("8.2"));
+  assert.ok(homeOg.tmaxDisplay.includes("19.6"));
+  assert.equal(homeOg.precipDisplay, "901.1 mm");
+  assert.equal(homeOg.exampleLine.includes("Crolles"), false);
+  assert.equal(homeOg.tmaxDisplay.includes("20.2"), false);
+  const birthOg = buildBirthLandingOgModel();
+  assert.ok(birthOg);
+  assert.equal(birthOg.placeName, "Grenoble");
+  assert.ok(birthOg.tminDisplay.includes("6.6"));
+  assert.ok(birthOg.tmaxDisplay.includes("21.6"));
+  assert.equal(birthOg.precipDisplay, "0.1 mm");
+  assert.ok(birthOg.stationLine?.includes("CORENC LA REVIREE"));
+  assert.equal(birthOg.precipDisplay.includes("2.1"), false, "naissance OG rain is CORENC, not ERA5");
+  assert.equal(birthOg.dateLabel.includes("1900"), false);
+  const compareOg = buildCompareLandingOgModel();
+  assert.ok(compareOg);
+  assert.equal(compareOg.communeA, "Grenoble");
+  assert.equal(compareOg.communeB, "Voiron");
+  assert.ok(compareOg.tmaxA.includes("18.5"));
+  assert.ok(compareOg.tmaxB.includes("18.2"));
+  assert.ok(compareOg.stationLine.includes("COUBLEVIE"));
+  assert.equal(compareOg.communeB, "Voiron", "comparer OG is the two-station example, not Crolles");
+  assert.ok(compareOg.note.includes("Exemple"));
   const grenobleClimateCopy = communePageCopy({
     placeName: "Grenoble",
     department: "Isère",

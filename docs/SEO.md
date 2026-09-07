@@ -26,7 +26,7 @@ France : slugs stables + INSEE en donnée, pas comme seul URL si le nom change. 
 - JSON-LD : `WebSite` (accueil), `WebPage` + `City` (INSEE, geo) + `BreadcrumbList` sur la commune. `WeatherObservation` seulement si l’URL demande une date (`?date=` ou naissance) **et** qu’une mesure **OBSERVED** existe ; Tmin/Tmax/pluie omises si NULL, jamais inventées. Pas d’ERA5 dans le graphe. URL canonique sans query : pas la mesure du jour par défaut collée sur 2025.
 - `seo_content_score` (`seo-content-v1`) : 40 identité officielle + 20/40 années climatiques (1 / ≥ 10) + 20 historique distinctif (série annuelle ou jours observés). Seuil 50. Page sous le seuil : visitable, `noindex`. Ce n’est **pas** un scorer de volume de texte.
 - Pas encore : pages `en`, SearchAction (la recherche est un GET `/api/` non indexé).
-- Cartes de partage : `/og/{slug}/{date}` (PNG serveur). Températures seulement si une observation existe. URL canonique sans `?date=` : `/og/climat/{slug}` = dernière année climatique officielle (minimale et maximale moyennes, pluie si complète), pas le jour par défaut. « Partager cette année » copie l’URL sans query. Pas d’ERA5 sur la carte.
+- Cartes de partage : `/og/{slug}/{date}` (PNG serveur). Températures seulement si une observation existe. URL canonique sans `?date=` : `/og/climat/{slug}` = dernière année climatique officielle (minimale et maximale moyennes, pluie si complète), pas le jour par défaut. « Partager cette année » copie l’URL sans query. Landings : `/og/accueil` = **exemple** Grenoble (pas une moyenne France, pas Crolles) ; `/og/naissance` = exemple 12 mai 1983 observé ; `/og/comparer` = exemple Grenoble vs Voiron, seulement sans `?a=&b=`. Pas d’ERA5 sur la carte.
 
 ## Langues
 
