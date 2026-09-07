@@ -11,7 +11,7 @@ Nom de travail. Les fournisseurs (Météo-France, Copernicus, NOAA, ECMWF, IGN) 
 **Priorité :** utilité → simplicité → fiabilité → rapidité → beauté → complexité technique.  
 Les cases `[x]` = livré **et** vérifié (preuve). Un fichier vide ne compte pas.
 
-Dernière mise à jour : 2026-09-07 (héros = mesure officielle, LCP lab 2168 ms). Tableau : [STATUS.md](./STATUS.md).
+Dernière mise à jour : 2026-09-07 (héros : pluie officielle + station). Tableau : [STATUS.md](./STATUS.md).
 
 ---
 
@@ -51,7 +51,8 @@ Dernière mise à jour : 2026-09-07 (héros = mesure officielle, LCP lab 2168 ms
 32. [x] Phase R9 suite — point Grenoble **12 mai 1982 et 1986** (records CORENC du 12 mai, 5,1 / 32,1 °C) ; même maille ; 1983 non réécrit ; pas fusionné, pas JSON-LD
 33. [x] Phase R12 suite — heatmap « ce jour » en liens `?date=` (1986 → 1982 : CORENC 5,1 / 26,1 °C) ; pas de prefetch des 8 années ; LCP lab alors **2535 ms**
 34. [x] Phase R12 suite — héros = Tmin/Tmax officiels (pas de photo IGN, pas d’ERA5) ; 1900 sans invention ; Lighthouse lab LCP **2168 ms**
-35. Ne **pas** extraire ERA5 mondial. Ne **pas** activer océan / NOAA / API commerciale. Ne **pas** feindre Vercel/Supabase. Ne **pas** extraire massivement les tuiles IGN.
+35. [x] Phase R12 suite — héros = pluie officielle + station à X km (1983 : 0,1 mm, CORENC 4,7 km ; 1986 : 0,0 mm ≠ ERA5 2,1 mm) ; LCP lab **2178 ms**
+36. Ne **pas** extraire ERA5 mondial. Ne **pas** activer océan / NOAA / API commerciale. Ne **pas** feindre Vercel/Supabase. Ne **pas** extraire massivement les tuiles IGN.
 
 Héritage déjà vérifié (ne pas recommencer) : licences Phase 0, import Isère 1 208 439 obs, Grenoble 1983-05-12 (CORENC, 6,6 / 21,6 °C), matching station v1, carte IGN, provenance. Runtime encore SQLite. Cible prod : [ARCHITECTURE_PRODUCTION.md](./ARCHITECTURE_PRODUCTION.md).
 
@@ -212,12 +213,12 @@ Reste : France entière (autres départements) en R10. Isère : 512 communes imp
 - [ ] Core Web Vitals
 - [ ] cache Next.js / CDN / vues matérialisées
 - [x] cache local tuiles IGN affichées (`data/tiles/ign/`, pas d’extract massif)
-- [x] optimisation charts / images (Recharts/MapLibre hors écran ; JPEG des visuels déjà présents ; HTML page sans mois/saisons/chaleur ; héros sans photo IGN ; LCP lab **2168 ms**, pas CrUX)
+- [x] optimisation charts / images (Recharts/MapLibre hors écran ; JPEG des visuels déjà présents ; HTML page sans mois/saisons/chaleur ; héros sans photo IGN ; LCP lab **2178 ms**, pas CrUX)
 - [x] HTML initial de la page commune = mesure du jour (SSR `getPlaceHistory`, pas d’attente API pour Tmin/Tmax)
 - [x] HTML initial = climat annuel (SSR `getCommuneYearly`) ; date sans observation ≠ « import manquant »
 - [x] HTML initial = enfance si `histoire=naissance` (SSR `getCommuneChildhood`)
 
-**État :** premier HTML Grenoble **56 Ko** (sans mois, saisons ni épisodes de chaleur). Années / normales / records restent dans le HTML. Détails via `/yearly` à l’approche de `#mois`. Un payload chaleur vide n’est pas « aucun épisode ». Heatmap « ce jour » : liens réels `?date=` (`prefetch` off). Héros : Tmin/Tmax officiels dans le HTML, pas de JPEG IGN ni d’ERA5 ; 1900 = « aucune mesure officielle ». Lighthouse lab 2026-09-07T00:39Z : perf 99, LCP **2168 ms**, CLS 0 — pas CrUX. Pas de bottom sheet GIS. Pas de CDN.
+**État :** premier HTML Grenoble **56 Ko**. Heatmap « ce jour » : liens `?date=`. Héros : Tmin/Tmax/pluie officiels + station à X km, pas d’ERA5 ni de JPEG IGN ; 1900 = « aucune mesure officielle » ; 1986 pluie héros **0,0 mm** ≠ ERA5 2,1 mm. Lighthouse lab 2026-09-07T00:45Z : perf 99, LCP **2178 ms**, CLS 0 — pas CrUX. Pas de bottom sheet GIS. Pas de CDN.
 
 ---
 

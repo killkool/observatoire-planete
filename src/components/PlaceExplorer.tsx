@@ -644,16 +644,23 @@ export default function PlaceExplorer({
           <h1>{place?.name || slug}</h1>
           <p>{date.split("-").reverse().join("/")}</p>
           {data && data.date === date && data.observation ? (
-            <p className="heroTemps">
-              <span>
-                <em>Minimale</em>
-                {data.observation.tminDisplay}
-              </span>
-              <span>
-                <em>Maximale</em>
-                {data.observation.tmaxDisplay}
-              </span>
-            </p>
+            <>
+              <p className="heroTemps">
+                <span>
+                  <em>Minimale</em>
+                  {data.observation.tminDisplay}
+                </span>
+                <span>
+                  <em>Maximale</em>
+                  {data.observation.tmaxDisplay}
+                </span>
+                <span>
+                  <em>Pluie</em>
+                  {data.observation.precipDisplay}
+                </span>
+              </p>
+              {data.stationDisclaimer ? <p className="heroStation">{data.stationDisclaimer}</p> : null}
+            </>
           ) : data && data.date === date && !data.observation ? (
             <p className="heroTempsEmpty">
               Aucune mesure officielle n’est disponible pour cette date. Aucune valeur n’est inventée.

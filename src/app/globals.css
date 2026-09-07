@@ -82,6 +82,7 @@
 .heroTemps{display:flex;flex-wrap:wrap;gap:28px 40px;margin:12px 0 0;font-size:clamp(28px,5vw,48px);font-weight:800;letter-spacing:-.04em;line-height:1.05}
 .heroTemps em{display:block;font-style:normal;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:800;margin-bottom:6px}
 .heroTempsEmpty{margin:12px 0 0;max-width:36rem;font-size:16px;font-weight:600;line-height:1.45;color:#d7e6ea}
+.heroStation{margin:10px 0 0;max-width:40rem;font-size:14px;line-height:1.45;color:#c9d8dc}
 .photoCredit{color:#c9d8dc;font-size:12px;margin:8px 0 0}
 
 .mapBlock,.storyGrid,.placeVisual .chartPanel,.placeVisual .empty,.placeVisual .error,.placeVisual .loadingNote,.sourceCompare,.placeDayFlow,.placeClimateFlow{width:min(1480px,94vw);margin:16px auto}

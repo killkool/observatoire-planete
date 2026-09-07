@@ -325,6 +325,8 @@ const heroChunk = explorerSrc.slice(explorerSrc.indexOf("placeHero"), explorerSr
 assert.ok(heroChunk.includes("heroTemps"), "hero must show official Tmin/Tmax on the first screen");
 assert.ok(heroChunk.includes("data.observation.tminDisplay"));
 assert.ok(heroChunk.includes("data.observation.tmaxDisplay"));
+assert.ok(heroChunk.includes("data.observation.precipDisplay"), "hero rain must be the official millimetres, not ERA5");
+assert.ok(heroChunk.includes("stationDisclaimer"), "hero must name the station and distance, not imply the thermometer is in town");
 assert.ok(!heroChunk.includes("era5"), "hero must not show ERA5 as the first answer");
 assert.ok(!heroChunk.includes("placePhotoSrc"), "hero must not load the IGN photo on the LCP path");
 assert.ok(!explorerSrc.includes("origin-observed.jpg"), "observation card must not duplicate origin-observed as a large LCP image");
@@ -1112,6 +1114,10 @@ if (obsCount === 0) {
   assert.equal(grenoble.observation?.tmin, 6.6);
   assert.equal(grenoble.observation?.tmax, 21.6);
   assert.equal(grenoble.observation?.precipitationMm, 0.1);
+  assert.equal(grenoble.observation?.precipDisplay, "0.1 mm");
+  assert.ok(grenoble.stationDisclaimer?.includes("CORENC LA REVIREE"));
+  assert.ok(grenoble.stationDisclaimer?.includes("4.7 km"));
+  assert.ok(!grenoble.stationDisclaimer?.includes("ERA5"));
   assert.equal(grenoble.observation?.originType, "OBSERVED");
   assert.equal(grenoble.observation?.originLabel, "Mesure officielle");
   const daySeo = getPlaceDayObservation("grenoble", "1983-05-12");
@@ -1215,6 +1221,7 @@ if (obsCount === 0) {
   assert.equal(grenoble82.observation?.tmin, 5.1);
   assert.equal(grenoble82.observation?.tmax, 26.1);
   assert.equal(grenoble82.observation?.precipitationMm, 0);
+  assert.equal(grenoble82.observation?.precipDisplay, "0.0 mm", "measured zero rain is 0.0 mm, not missing");
   assert.equal(grenoble82.era5.tmin, 2.8);
   assert.equal(grenoble82.era5.tmax, 18.6);
   assert.equal(grenoble82.era5.dewpointMin, -1.2);
@@ -1242,6 +1249,7 @@ if (obsCount === 0) {
   assert.equal(grenoble86.observation?.tmin, 11.6);
   assert.equal(grenoble86.observation?.tmax, 32.1);
   assert.equal(grenoble86.observation?.precipitationMm, 0);
+  assert.equal(grenoble86.observation?.precipDisplay, "0.0 mm", "1986 hero rain must be CORENC 0, not ERA5 2.1 mm");
   assert.equal(grenoble86.era5.tmin, 8.6);
   assert.equal(grenoble86.era5.tmax, 22.2);
   assert.equal(grenoble86.era5.dewpointMin, 6.0);
@@ -1260,6 +1268,7 @@ if (obsCount === 0) {
   assert.ok(missingDay, "Grenoble must still resolve for a date without observations");
   assert.equal(missingDay.observation, null);
   assert.equal(missingDay.preferredStation, null);
+  assert.equal(missingDay.stationDisclaimer, null);
 
   const annualCount = (db.prepare(`SELECT COUNT(*) AS c FROM annual_statistics`).get() as { c: number }).c;
   const seasonalCount = (db.prepare(`SELECT COUNT(*) AS c FROM seasonal_statistics`).get() as { c: number }).c;
