@@ -1,0 +1,2 @@
+# Preuves ERA5 : checksum = octets LF (objet git). Pas une réextraction.
+pipelines/era5/extracts/*.json text eol=lf

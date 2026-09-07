@@ -63,6 +63,12 @@ import { filterDailyResources } from "../src/lib/meteoFrance";
 import { isAllowedIgnLayer, parseIgnTile } from "../src/lib/ignTiles";
 import db from "../src/lib/db";
 
+/** SHA-256 of extract JSON with LF newlines (git object). CRLF working copies must not fail CI. */
+function sha256Utf8Lf(filePath: string): string {
+  const text = fs.readFileSync(filePath, "utf8").replace(/\r\n/g, "\n");
+  return createHash("sha256").update(text, "utf8").digest("hex");
+}
+
 assert.equal(formatCelsius(24.437), "24.4 °C");
 assert.equal(formatCelsius(null), "non disponible");
 assert.equal(formatDaysGe25(0), "0 jour ≥ 25 °C");
@@ -132,8 +138,8 @@ const grenoblePointExtract = JSON.parse(
 };
 assert.equal(grenoblePointExtract.method_version, "era5-point-nearest-hourly-2t-d2m-tp-uv10-msl-sp-sd-ssrd-i10fg-v1");
 assert.equal(
-  createHash("sha256").update(fs.readFileSync(path.join(process.cwd(), "pipelines/era5/extracts/grenoble-1983-05-12.json"))).digest("hex"),
-  "eece40036986b49aaab3e70d9e53ec8ae7fcfc1af8110ab5fa39b96d44062e82",
+  sha256Utf8Lf(path.join(process.cwd(), "pipelines/era5/extracts/grenoble-1983-05-12.json")),
+  "254e531175c08650e03b247583431e6955caecc9b90fe957d2eaccc619915888",
   "1983-05-12 point proof must not be rewritten"
 );
 assert.equal(grenoblePointExtract.hourly_tp_m.length, 24);
@@ -231,8 +237,8 @@ assert.equal(franceDaily.tmin_K.length, franceDaily.latitude.length);
 assert.equal(franceDaily.tmin_K[0].length, franceDaily.longitude.length);
 assert.ok(!("hourly_2t_K" in franceDaily), "France daily must not store hourly grids");
 assert.equal(
-  createHash("sha256").update(fs.readFileSync(path.join(process.cwd(), "pipelines/era5/extracts/france-1983-05-12-2t-daily.json"))).digest("hex"),
-  "9c7b9a9836b23b1252d09b3c410f96cbe5ccd61558b59c92f19b8f3fbfb1cbe2",
+  sha256Utf8Lf(path.join(process.cwd(), "pipelines/era5/extracts/france-1983-05-12-2t-daily.json")),
+  "11436840163dd9525d7a7a51ebfb4bd0ec85faa485fa4e046e6874b2d00debe3",
   "1983-05-12 France daily proof must not be rewritten"
 );
 const franceDailyIndex = JSON.parse(
@@ -250,7 +256,7 @@ assert.deepEqual(franceDailyIndex.days.map((d) => d.date), [...ERA5_FRANCE_DAILY
 assert.equal(franceDailyIndex.days.length, 3);
 for (const row of franceDailyIndex.days) {
   const abs = path.join(process.cwd(), "pipelines/era5/extracts", row.file);
-  assert.equal(createHash("sha256").update(fs.readFileSync(abs)).digest("hex"), row.sha256);
+  assert.equal(sha256Utf8Lf(abs), row.sha256);
   assert.equal(row.cell_count, 2709);
 }
 const france11 = JSON.parse(
@@ -304,12 +310,12 @@ assert.equal(Math.round(tmax11.value * 10000) / 10000, Math.round(france11.greno
 assert.equal(Math.round(tmin13.value * 10000) / 10000, Math.round(france13.grenoble_cell.tmin_K * 10000) / 10000);
 assert.equal(Math.round(tmax13.value * 10000) / 10000, Math.round(france13.grenoble_cell.tmax_K * 10000) / 10000);
 assert.equal(
-  createHash("sha256").update(fs.readFileSync(path.join(process.cwd(), "pipelines/era5/extracts/grenoble-1983-05-11.json"))).digest("hex"),
-  "4cd8ca90234fe597aae3eaa3584a39431972151d894b40b57c0367bbb602e14d"
+  sha256Utf8Lf(path.join(process.cwd(), "pipelines/era5/extracts/grenoble-1983-05-11.json")),
+  "d31dac4363e53739525c23f2fc69535e00c1123b73472ce51fcddc5c35596b2a"
 );
 assert.equal(
-  createHash("sha256").update(fs.readFileSync(path.join(process.cwd(), "pipelines/era5/extracts/grenoble-1983-05-13.json"))).digest("hex"),
-  "c8173bd130bb9b7ebc0a2fa874e0ccb1045d3b8c335a0c9b38baf37a219255f7"
+  sha256Utf8Lf(path.join(process.cwd(), "pipelines/era5/extracts/grenoble-1983-05-13.json")),
+  "bca80929a384f94022303b0641e6fd135eb9a1120f1ad3792399402498bb65ca"
 );
 const ssrd11 = grenoble11Point.points.find((p) => p.variable_id === "solar_radiation");
 assert.ok(ssrd11);
@@ -333,12 +339,12 @@ assert.equal(grenoble82Point.model_surface_altitude_m, grenoblePointExtract.mode
 assert.equal(grenoble82Point.points.length, 14);
 assert.equal(grenoble86Point.points.length, 14);
 assert.equal(
-  createHash("sha256").update(fs.readFileSync(path.join(process.cwd(), "pipelines/era5/extracts/grenoble-1982-05-12.json"))).digest("hex"),
-  "cdca84c352a45e87b5832a70240dd8a0edd88be4c30ef1a33afe519ada59e31e"
+  sha256Utf8Lf(path.join(process.cwd(), "pipelines/era5/extracts/grenoble-1982-05-12.json")),
+  "8dfc9d82fc9888ef1a6d54fb8333795a0306a67baab95a69c358d2043d79eced"
 );
 assert.equal(
-  createHash("sha256").update(fs.readFileSync(path.join(process.cwd(), "pipelines/era5/extracts/grenoble-1986-05-12.json"))).digest("hex"),
-  "ce1f615b413ec682db9fb5313b14a0b3a4d7cfece0df2bd486b2a973958cd951"
+  sha256Utf8Lf(path.join(process.cwd(), "pipelines/era5/extracts/grenoble-1986-05-12.json")),
+  "7584fb0dd41d352481b1ab1ad5d21c450e7fe5e68fa6ad7a9b79d9fcefd6e3d6"
 );
 const tmin82 = grenoble82Point.points.find((p) => p.variable_id === "air_temperature_min");
 const tmax82 = grenoble82Point.points.find((p) => p.variable_id === "air_temperature_max");

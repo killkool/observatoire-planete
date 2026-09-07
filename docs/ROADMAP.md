@@ -11,7 +11,7 @@ Nom de travail. Les fournisseurs (Météo-France, Copernicus, NOAA, ECMWF, IGN) 
 **Priorité :** utilité → simplicité → fiabilité → rapidité → beauté → complexité technique.  
 Les cases `[x]` = livré **et** vérifié (preuve). Un fichier vide ne compte pas.
 
-Dernière mise à jour : 2026-09-07 (records d’année LVD = 2010 · 10,1 °C plus petit écart min-max). Tableau : [STATUS.md](./STATUS.md).
+Dernière mise à jour : 2026-09-07 (checksums ERA5 JSON = octets LF, Kelvin inchangés). Tableau : [STATUS.md](./STATUS.md).
 
 ---
 

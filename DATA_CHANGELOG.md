@@ -2,6 +2,12 @@
 
 Journal des sources, versions et recalculs. Pas de remplacement silencieux d’un dataset.
 
+## 2026-09-07 (checksums ERA5 = octets LF)
+
+- Aucune réextraction ARCO. Kelvin, millimètres et `method_version` inchangés.
+- GitHub Actions (Ubuntu) hashait le JSON LF (objet git) ; les tests pinnaient le SHA d’une copie de travail Windows CRLF. Échec : `254e5311…` ≠ `eece4003…` pour `grenoble-1983-05-12.json`.
+- Checksums canoniques = UTF-8 LF : point 12 mai 1983 `254e531175c08650e03b247583431e6955caecc9b90fe957d2eaccc619915888` ; 11 mai `d31dac4363e53739525c23f2fc69535e00c1123b73472ce51fcddc5c35596b2a` ; 13 mai `bca80929a384f94022303b0641e6fd135eb9a1120f1ad3792399402498bb65ca` ; 12 mai 1982 `8dfc9d82fc9888ef1a6d54fb8333795a0306a67baab95a69c358d2043d79eced` ; 12 mai 1986 `7584fb0dd41d352481b1ab1ad5d21c450e7fe5e68fa6ad7a9b79d9fcefd6e3d6` ; quotidien France 2t 11/12/13 mai `b49863fc8c6eb48b16d11e6a0f4c5060be5177eb9bda3d96c9919c23c1e7f3f5` / `11436840163dd9525d7a7a51ebfb4bd0ec85faa485fa4e046e6874b2d00debe3` / `c7d381aeb15b5a4c5802724c9bb301420a0b80e33c8962177e315ecd0a0eecd5`.
+
 ## 2026-09-07 (ERA5 point Grenoble, records 12 mai 1982 et 1986)
 
 - Même maille ARCO 45,25°N, 5,75°E, 24 h UTC, mêmes 14 variables. Preuves **1983-05-11/12/13** non réécrites. Pas de quotidien France 1982/1986.
