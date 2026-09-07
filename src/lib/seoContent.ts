@@ -1,4 +1,4 @@
-import { formatCelsius, formatDaysFrost, formatDaysGe30, formatDaysGe35, formatMm, formatTropicalNights, roundToPrecision } from "../../packages/weather-core/src/units";
+import { formatCelsius, formatDaysFrost, formatDaysGe25, formatDaysGe30, formatDaysGe35, formatMm, formatTropicalNights, roundToPrecision } from "../../packages/weather-core/src/units";
 import { frenchLongDate } from "./birthDay";
 import { formatSignedCelsius, formatSignedMm } from "./compareClimate";
 import {
@@ -120,6 +120,7 @@ export type CommuneCopyClimate = {
   tmaxMean: number | null;
   precipitationSum: number | null;
   precipComplete: boolean;
+  daysGe25?: number | null;
   daysGe30?: number | null;
   daysGe35?: number | null;
   daysFrost?: number | null;
@@ -159,6 +160,8 @@ export function communePageCopy(input: {
       const rainBit = rain ? `, pluie ${rain}` : "";
       const tminBit =
         input.climate.tminMean != null ? `minimale moyenne ${formatCelsius(input.climate.tminMean)}, ` : "";
+      const warmDaysBit =
+        input.climate.daysGe25 != null ? `, ${formatDaysGe25(input.climate.daysGe25)}` : "";
       const hotDaysBit =
         input.climate.daysGe30 != null ? `, ${formatDaysGe30(input.climate.daysGe30)}` : "";
       const veryHotDaysBit =
@@ -171,7 +174,7 @@ export function communePageCopy(input: {
           : "";
       return {
         title: `${input.placeName} — ${input.climate.year} · max. ${tmax} | Observatoire Planète`,
-        description: `Dernière année climatique complète observée pour ${input.placeName} (${input.department}) : ${input.climate.year}, ${tminBit}maximale moyenne ${tmax}${rainBit}${hotDaysBit}${veryHotDaysBit}${frostBit}${tropicalBit}. Station ${station}. Ce n’est pas une prévision.`
+        description: `Dernière année climatique complète observée pour ${input.placeName} (${input.department}) : ${input.climate.year}, ${tminBit}maximale moyenne ${tmax}${rainBit}${warmDaysBit}${hotDaysBit}${veryHotDaysBit}${frostBit}${tropicalBit}. Station ${station}. Ce n’est pas une prévision.`
       };
     }
     return { title: genericTitle, description: genericDescription };

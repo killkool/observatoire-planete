@@ -32,7 +32,7 @@ export async function GET() {
           </div>
           <div style={{ fontSize: 28, color: "#88a0a8", marginTop: 8 }}>{card.exampleLine}</div>
         </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <div style={{ display: "flex", gap: 28 }}>
             <div style={{ display: "flex", flexDirection: "column" }}>
               <div style={{ fontSize: 16, color: "#88a0a8" }}>Minimale moyenne</div>
@@ -47,7 +47,11 @@ export async function GET() {
               <div style={{ fontSize: 36, fontWeight: 700 }}>{card.precipDisplay ?? "non disponible"}</div>
             </div>
           </div>
-          <div style={{ display: "flex", gap: 22 }}>
+          <div style={{ display: "flex", gap: 28 }}>
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <div style={{ fontSize: 16, color: "#88a0a8" }}>Jours à 25 °C ou plus</div>
+              <div style={{ fontSize: 36, fontWeight: 700 }}>{card.daysGe25Display ?? "non disponible"}</div>
+            </div>
             <div style={{ display: "flex", flexDirection: "column" }}>
               <div style={{ fontSize: 16, color: "#88a0a8" }}>Jours à 30 °C ou plus</div>
               <div style={{ fontSize: 36, fontWeight: 700 }}>{card.daysGe30Display ?? "non disponible"}</div>
@@ -56,6 +60,8 @@ export async function GET() {
               <div style={{ fontSize: 16, color: "#88a0a8" }}>Jours à 35 °C ou plus</div>
               <div style={{ fontSize: 36, fontWeight: 700 }}>{card.daysGe35Display ?? "non disponible"}</div>
             </div>
+          </div>
+          <div style={{ display: "flex", gap: 28 }}>
             <div style={{ display: "flex", flexDirection: "column" }}>
               <div style={{ fontSize: 16, color: "#88a0a8" }}>Jours de gel</div>
               <div style={{ fontSize: 36, fontWeight: 700 }}>{card.daysFrostDisplay ?? "non disponible"}</div>

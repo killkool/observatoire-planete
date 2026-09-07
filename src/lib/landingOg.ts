@@ -42,6 +42,7 @@ export function buildHomeOgModel(): HomeOgModel | null {
     tmaxMean: climate.tmaxMean,
     precipitationSum: climate.precipitationSum,
     precipComplete: climate.precipComplete,
+    daysGe25: climate.daysGe25,
     daysGe30: climate.daysGe30,
     daysGe35: climate.daysGe35,
     daysFrost: climate.daysFrost,

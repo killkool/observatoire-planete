@@ -237,6 +237,7 @@ export type AnnualStatRow = {
   tmax_mean: number | null;
   tmean_mean: number | null;
   precipitation_sum: number | null;
+  days_ge_25: number;
   days_ge_30: number;
   days_ge_35: number;
   days_frost: number;
@@ -262,7 +263,7 @@ export function listAnnualStats(stationId: string): AnnualStatRow[] {
   return db.prepare(
     `
     SELECT station_id, year, tmin_mean, tmax_mean, tmean_mean, precipitation_sum,
-           days_ge_30, days_ge_35, days_frost, tropical_nights, year_complete, precip_complete
+           days_ge_25, days_ge_30, days_ge_35, days_frost, tropical_nights, year_complete, precip_complete
     FROM annual_statistics
     WHERE station_id = ?
     ORDER BY year
