@@ -17,7 +17,7 @@ import {
   formatSignedCelsius,
   formatSignedMm
 } from "@/lib/compareClimate";
-import { formatCelsius, formatDaysGe30, formatMeanAmplitudeC, formatMm } from "../../packages/weather-core/src/units";
+import { formatCelsius, formatDaysFrost, formatDaysGe30, formatMeanAmplitudeC, formatMm } from "../../packages/weather-core/src/units";
 import { ERA5_FRANCE_DAILY_2T_CELLS, ERA5_FRANCE_DAILY_2T_DATES, ERA5_POINT_DATES } from "@/lib/era5France";
 import { formatSignedPerDecade } from "@/lib/climateTrend";
 import {
@@ -266,6 +266,7 @@ type YearlyPayload = {
     coldest: { year: number; value: number } | null;
     wettest: { year: number; value: number } | null;
     mostDaysGe30: { year: number; value: number } | null;
+    mostFrost: { year: number; value: number } | null;
   };
   warming: {
     method: string;
@@ -1391,6 +1392,15 @@ export default function PlaceExplorer({
                       : "non disponible"}
                   </strong>
                   <small>Tmax ≥ 30 °C, années climatiques seulement</small>
+                </div>
+                <div>
+                  <span>Plus de jours de gel</span>
+                  <strong>
+                    {yearly.yearRecords.mostFrost
+                      ? `${yearly.yearRecords.mostFrost.year} · ${formatDaysFrost(yearly.yearRecords.mostFrost.value)}`
+                      : "non disponible"}
+                  </strong>
+                  <small>Tmin &lt; 0 °C, années climatiques seulement</small>
                 </div>
               </div>
               {data?.place?.insee_code || yearly?.commune?.insee ? (
