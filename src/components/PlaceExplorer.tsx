@@ -17,7 +17,7 @@ import {
   formatSignedCelsius,
   formatSignedMm
 } from "@/lib/compareClimate";
-import { formatCelsius, formatDaysFrost, formatDaysGe30, formatDaysGe35, formatMeanAmplitudeC, formatMm, formatTropicalNights } from "../../packages/weather-core/src/units";
+import { formatCelsius, formatDaysFrost, formatDaysGe25, formatDaysGe30, formatDaysGe35, formatMeanAmplitudeC, formatMm, formatTropicalNights } from "../../packages/weather-core/src/units";
 import { ERA5_FRANCE_DAILY_2T_CELLS, ERA5_FRANCE_DAILY_2T_DATES, ERA5_POINT_DATES } from "@/lib/era5France";
 import { formatSignedPerDecade } from "@/lib/climateTrend";
 import {
@@ -269,6 +269,7 @@ type YearlyPayload = {
     mostFrost: { year: number; value: number } | null;
     mostTropicalNights: { year: number; value: number } | null;
     mostDaysGe35: { year: number; value: number } | null;
+    mostDaysGe25: { year: number; value: number } | null;
   };
   warming: {
     method: string;
@@ -1421,6 +1422,15 @@ export default function PlaceExplorer({
                       : "non disponible"}
                   </strong>
                   <small>Tmax ≥ 35 °C, années climatiques seulement</small>
+                </div>
+                <div>
+                  <span>Plus de jours ≥ 25 °C</span>
+                  <strong>
+                    {yearly.yearRecords.mostDaysGe25
+                      ? `${yearly.yearRecords.mostDaysGe25.year} · ${formatDaysGe25(yearly.yearRecords.mostDaysGe25.value)}`
+                      : "non disponible"}
+                  </strong>
+                  <small>Tmax ≥ 25 °C, années climatiques seulement</small>
                 </div>
               </div>
               {data?.place?.insee_code || yearly?.commune?.insee ? (
