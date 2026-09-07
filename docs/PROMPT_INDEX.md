@@ -20,7 +20,7 @@ Source : sections 0 à 187 du prompt maître.
 | 5 | HIÉRARCHIE GÉNÉRALE DES SOURCES | [ ] *partiel* |
 | 6 | SOURCE NATIONALE PRIORITAIRE | [ ] |
 | 7 | SOURCE FRANCE : MÉTÉO-FRANCE | [x] |
-| 8 | ERA5 | [ ] *partiel* (point Grenoble 2t + d2m + TP + 10u/v + MSL + SP + neige SWE + SSRD + rafale **3 jours** 11–13 mai 1983 ; quotidien 2t **3 jours** ; pas 1940–2026, pas mondial) |
+| 8 | ERA5 | [ ] *partiel* (point Grenoble 2t + d2m + TP + 10u/v + MSL + SP + neige SWE + SSRD + rafale **5 jours** dont records 12 mai 1982/1986 ; quotidien 2t **3 jours** ; pas 1940–2026, pas mondial) |
 | 9 | ERA5-LAND | [ ] |
 | 10 | NOAA GHCN DAILY | [ ] |
 | 11 | NOAA ISD | [ ] |
@@ -115,7 +115,7 @@ Source : sections 0 à 187 du prompt maître.
 | 100 | PHASE 2 — SOURCE REGISTRY | [ ] *partiel* |
 | 101 | PHASE 3 — FRANCE MVP | [ ] *partiel* |
 | 102 | PHASE 4 — PREMIÈRE PAGE HISTORIQUE | [ ] *partiel* (recherche Isère + page date + climat annuel + comparateur d’années et de communes Isère) |
-| 103 | PHASE 5 — ERA5 FRANCE | [ ] *partiel* (point Grenoble 2t + d2m + TP + vent 10 m + MSL + SP + neige SWE + SSRD + rafale **3 jours** ; quotidien 2t **3 jours** JSON ; pas 1940–2026) |
+| 103 | PHASE 5 — ERA5 FRANCE | [ ] *partiel* (point Grenoble 2t + d2m + TP + vent 10 m + MSL + SP + neige SWE + SSRD + rafale **5 jours** ; quotidien 2t **3 jours** JSON ; pas 1940–2026) |
 | 104 | PHASE 6 — SOURCE FUSION ENGINE | [ ] |
 | 105 | PHASE 7 — CONFIDENCE ENGINE | [ ] *partiel* |
 | 106 | PHASE 8 — NOAA | [ ] |

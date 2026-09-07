@@ -24,5 +24,11 @@ export function assertFranceEra5Point(lat: number, lon: number): void {
 /** Jours 2t quotidiens bbox France extraits en JSON. Pas l’archive 1940–2026, pas un import SQL. */
 export const ERA5_FRANCE_DAILY_2T_DATES = ["1983-05-11", "1983-05-12", "1983-05-13"] as const;
 export const ERA5_FRANCE_DAILY_2T_CELLS = 2709;
-/** Jours avec extraction **point** Grenoble importée. Le 12 mai est la preuve ; 11 et 13 partagent la même maille. */
-export const ERA5_POINT_DATES = ["1983-05-11", "1983-05-12", "1983-05-13"] as const;
+/** Jours avec extraction **point** Grenoble importée. Preuve = 1983-05-12 ; 1982/1986 = records du 12 mai CORENC. */
+export const ERA5_POINT_DATES = [
+  "1982-05-12",
+  "1983-05-11",
+  "1983-05-12",
+  "1983-05-13",
+  "1986-05-12"
+] as const;

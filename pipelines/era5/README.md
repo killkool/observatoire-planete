@@ -34,7 +34,7 @@ Accès : miroir public **ARCO ERA5**
 `gs://gcp-public-data-arco-era5/ar/full_37-1h-0p25deg-chunk-1.zarr-v3`  
 (anonyme GCS). Même produit ERA5, même DOI — pas une autre réanalyse. Compte CDS non requis pour ce miroir.
 
-Pas d’ERA5-Land. Le point Grenoble est importé pour **3 jours** (11–13 mai 1983) : 2t, rosée, TP, vent 10 m, MSL, SP, neige SWE, SSRD et rafale. La preuve `grenoble-1983-05-12.json` n’est pas réécrite. Pas l’archive 1940–2026.
+Pas d’ERA5-Land. Le point Grenoble est importé pour **5 jours** (12 mai 1982 et 1986, 11–13 mai 1983) : 2t, rosée, TP, vent 10 m, MSL, SP, neige SWE, SSRD et rafale. Les preuves `grenoble-1983-05-1{1,2,3}.json` ne sont pas réécrites. Pas l’archive 1940–2026.
 
 ## Comment extraire puis ingérer
 
@@ -47,10 +47,12 @@ npm run era5:extract-point
 npm run import:era5
 npm run era5:extract-points-window
 npm run import:era5:window
+npm run era5:extract-points-records
+npm run import:era5:records
 pipelines/era5/.venv/Scripts/python.exe pipelines/era5/extract_point.py --france-only --dates=1983-05-11,1983-05-13
 ```
 
-`era5:extract-point` n’écrase plus le quotidien 1983-05-12. `era5:extract-points-window` écrit `grenoble-1983-05-11.json` et `grenoble-1983-05-13.json` sans toucher au 12 mai. Seuls les JSON **point** sont importés (`import:era5` / `import:era5:window`).
+`era5:extract-point` n’écrase plus le quotidien 1983-05-12. `era5:extract-points-window` écrit les 11 et 13 mai 1983. `era5:extract-points-records` écrit les 12 mai 1982 et 1986. Seuls les JSON **point** sont importés.
 
 Schéma JSON point (valeurs illustratives sauf consigne) :
 

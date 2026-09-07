@@ -11,7 +11,7 @@ Nom de travail. Les fournisseurs (Météo-France, Copernicus, NOAA, ECMWF, IGN) 
 **Priorité :** utilité → simplicité → fiabilité → rapidité → beauté → complexité technique.  
 Les cases `[x]` = livré **et** vérifié (preuve). Un fichier vide ne compte pas.
 
-Dernière mise à jour : 2026-09-07 (ERA5 point Grenoble, 3 jours). Tableau : [STATUS.md](./STATUS.md).
+Dernière mise à jour : 2026-09-07 (ERA5 point Grenoble, records 12 mai). Tableau : [STATUS.md](./STATUS.md).
 
 ---
 
@@ -48,7 +48,8 @@ Dernière mise à jour : 2026-09-07 (ERA5 point Grenoble, 3 jours). Tableau : [S
 29. [x] Phase R9 suite — SP 895 hPa (maille 985,5 m), neige 27,3 mm d’eau, SSRD 20,8 MJ/m², rafale 69,4 km/h ; pas fusionné, pas JSON-LD
 30. [x] Phase R9 suite — quotidien 2t bbox France **3 jours** (11–13 mai 1983, 2709 mailles JSON) ; preuve du 12 mai non réécrite ; pas SQL, pas 1940–2026
 31. [x] Phase R9 suite — point Grenoble **11 et 13 mai 1983** (mêmes 14 variables, maille 45,25 / 5,75) ; 2t = quotidien France ; 12 mai non réécrit ; pas fusionné, pas JSON-LD
-32. Ne **pas** extraire ERA5 mondial. Ne **pas** activer océan / NOAA / API commerciale. Ne **pas** feindre Vercel/Supabase. Ne **pas** extraire massivement les tuiles IGN.
+32. [x] Phase R9 suite — point Grenoble **12 mai 1982 et 1986** (records CORENC du 12 mai, 5,1 / 32,1 °C) ; même maille ; 1983 non réécrit ; pas fusionné, pas JSON-LD
+33. Ne **pas** extraire ERA5 mondial. Ne **pas** activer océan / NOAA / API commerciale. Ne **pas** feindre Vercel/Supabase. Ne **pas** extraire massivement les tuiles IGN.
 
 Héritage déjà vérifié (ne pas recommencer) : licences Phase 0, import Isère 1 208 439 obs, Grenoble 1983-05-12 (CORENC, 6,6 / 21,6 °C), matching station v1, carte IGN, provenance. Runtime encore SQLite. Cible prod : [ARCHITECTURE_PRODUCTION.md](./ARCHITECTURE_PRODUCTION.md).
 
@@ -179,7 +180,7 @@ Reste : France entière (autres départements) en R10. Isère : 512 communes imp
 - [ ] subset France (pas mondial)
 - [x] variables essentielles au-delà de 2t min/max/mean sur un jour
 
-**État :** point Grenoble **3 jours** (11–13 mai 1983), maille 45,25 / 5,75. Preuve 12 mai inchangée (3,4 / 14,2 °C, 0,3 mm, 8,8 km/h, 169°, 1005 / 895 hPa, 27,3 mm d’eau, 20,8 MJ/m², 69,4 km/h). 11 mai : 4,3 / 10,6 °C, 3,6 mm vs CORENC 0,1 mm. 13 mai : 6,5 / 13,4 °C, 7,2 mm vs CORENC 2,8 mm (ΔTmin −8,3 °C, affiché pas fusionné). Quotidien 2t bbox France **3 jours** (2709 mailles JSON). `point_extractions` = 42. Pas 1940–2026, pas d’import SQL de la grille, pas ERA5-Land. **Ne pas inventer.**
+**État :** point Grenoble **5 jours** (12 mai 1982 et 1986, 11–13 mai 1983), maille 45,25 / 5,75. Preuve 12 mai 1983 inchangée. Records CORENC du 12 mai : 1982 **5,1 / 26,1 °C** vs ERA5 **2,8 / 18,6 °C** ; 1986 **11,6 / 32,1 °C** vs ERA5 **8,6 / 22,2 °C** (ΔTmax **−9,9 °C**, affiché pas fusionné). Quotidien 2t bbox France **3 jours** (2709 mailles JSON). `point_extractions` = 70. Pas 1940–2026, pas d’import SQL de la grille, pas ERA5-Land. **Ne pas inventer.**
 
 ---
 

@@ -863,7 +863,7 @@ export default function PlaceExplorer({
                     {" "}
                     Maille d’environ 0,25°. Aucune correction d’altitude ni moyenne avec la station.
                     {(ERA5_POINT_DATES as readonly string[]).includes(date)
-                      ? ` Le point Grenoble est importé pour ${ERA5_POINT_DATES.length} jours (11–13 mai 1983), même maille. Pas une série 1940–2026.`
+                      ? ` Le point Grenoble est importé pour ${ERA5_POINT_DATES.length} jours (12 mai 1982 et 1986, 11–13 mai 1983), même maille. Pas une série 1940–2026.`
                       : ""}
                     {(ERA5_FRANCE_DAILY_2T_DATES as readonly string[]).includes(date)
                       ? ` Un quotidien 2t bbox France existe pour ${ERA5_FRANCE_DAILY_2T_DATES.length} jours (11–13 mai 1983), ${ERA5_FRANCE_DAILY_2T_CELLS} mailles, JSON hors base. Pas l’archive 1940–2026.`

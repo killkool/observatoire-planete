@@ -2,6 +2,13 @@
 
 Journal des sources, versions et recalculs. Pas de remplacement silencieux d’un dataset.
 
+## 2026-09-07 (ERA5 point Grenoble, records 12 mai 1982 et 1986)
+
+- Même maille ARCO 45,25°N, 5,75°E, 24 h UTC, mêmes 14 variables. Preuves **1983-05-11/12/13** non réécrites. Pas de quotidien France 1982/1986.
+- **1982-05-12** (record de froid CORENC du 12 mai : **5,1 / 26,1 °C**, 0 mm) : 2t **275,9109 / 291,7585 K** (2,8 / 18,6 °C). Rosée **271,9271 / 278,3527 K**. TP **0,0000375211 m** → **0,0 mm** à l’affichage (0,0375 mm avant arrondi, pas un 0 copié). Vent **0,9237 m/s** → **3,3 km/h**, 85°. MSL **102465,31 Pa** → **1025 hPa**. SP **91295,69 Pa** → **913 hPa**, orographie **985,5 m**. SWE **0,067911 m** → **67,9 mm d’eau**. SSRD **28140210,4 J m⁻²** → **28,1 MJ/m²**. Rafale **5,2623 m/s** → **18,9 km/h**. SHA-256 `cdca84c352a45e87b5832a70240dd8a0edd88be4c30ef1a33afe519ada59e31e`. Écart 2t : −2,3 / −7,5 °C.
+- **1986-05-12** (record de chaleur CORENC du 12 mai : **11,6 / 32,1 °C**, 0 mm) : 2t **281,7421 / 295,3950 K** (8,6 / 22,2 °C). Rosée **279,1830 / 284,7648 K**. TP **0,0020874720 m** → **2,1 mm** vs 0 mm (écart +2,1 mm). Vent **1,4558 m/s** → **5,2 km/h**, 186°. MSL **101745,54 Pa** → **1017 hPa**. SP **90712,25 Pa** → **907 hPa**. SWE **0,056034 m** → **56,0 mm d’eau** (maille 985,5 m, pas la ville à 32 °C). SSRD **23862956,5 J m⁻²** → **23,9 MJ/m²**. Rafale **9,7335 m/s** → **35,0 km/h**. SHA-256 `ce1f615b413ec682db9fb5313b14a0b3a4d7cfece0df2bd486b2a973958cd951`. Écart 2t : −3,0 / **−9,9 °C**.
+- Import : **70** lignes `point_extractions` (14 × 5). Pas fusionné, pas JSON-LD, pas 1940–2026.
+
 ## 2026-09-07 (ERA5 point Grenoble 11 et 13 mai 1983)
 
 - Même maille ARCO 45,25°N, 5,75°E, 24 h UTC, mêmes 14 variables. Preuve **1983-05-12** non réécrite (SHA-256 `eece40036986b49aaab3e70d9e53ec8ae7fcfc1af8110ab5fa39b96d44062e82`). Quotidiens France 2t 11/12/13 non réécrits.

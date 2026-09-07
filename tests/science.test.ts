@@ -225,7 +225,15 @@ assert.equal(Math.round(france13.grenoble_cell.tmin_K * 10000) / 10000, 279.6589
 assert.equal(Math.round(france13.grenoble_cell.tmax_K * 10000) / 10000, 286.5999);
 assert.notEqual(Math.round(france11.grenoble_cell.tmin_K * 10000) / 10000, 276.564);
 assert.notEqual(Math.round(france13.grenoble_cell.tmax_K * 10000) / 10000, 287.3429);
-assert.deepEqual([...ERA5_POINT_DATES], [...ERA5_FRANCE_DAILY_2T_DATES]);
+assert.deepEqual([...ERA5_FRANCE_DAILY_2T_DATES], ["1983-05-11", "1983-05-12", "1983-05-13"]);
+assert.deepEqual([...ERA5_POINT_DATES], [
+  "1982-05-12",
+  "1983-05-11",
+  "1983-05-12",
+  "1983-05-13",
+  "1986-05-12"
+]);
+assert.equal((ERA5_FRANCE_DAILY_2T_DATES as readonly string[]).includes("1986-05-12"), false);
 const grenoble11Point = JSON.parse(
   fs.readFileSync(path.join(process.cwd(), "pipelines/era5/extracts/grenoble-1983-05-11.json"), "utf8")
 ) as typeof grenoblePointExtract & { date: string; grid_latitude: number; grid_longitude: number };
@@ -264,6 +272,38 @@ const ssrd11Clipped = grenoble11Point.hourly_ssrd_Jm2.reduce((a, b) => a + Math.
 assert.ok(Math.abs(ssrd11.value - ssrd11Clipped) < 1e-6, "daily SSRD clips noise < 1 J m-2, keeps raw hours");
 assert.equal(grenoble11Point.points.length, 14);
 assert.equal(grenoble13Point.points.length, 14);
+const grenoble82Point = JSON.parse(
+  fs.readFileSync(path.join(process.cwd(), "pipelines/era5/extracts/grenoble-1982-05-12.json"), "utf8")
+) as typeof grenoblePointExtract & { date: string; grid_latitude: number; grid_longitude: number };
+const grenoble86Point = JSON.parse(
+  fs.readFileSync(path.join(process.cwd(), "pipelines/era5/extracts/grenoble-1986-05-12.json"), "utf8")
+) as typeof grenoblePointExtract & { date: string; grid_latitude: number; grid_longitude: number };
+assert.equal(grenoble82Point.date, "1982-05-12");
+assert.equal(grenoble86Point.date, "1986-05-12");
+assert.equal(grenoble82Point.method_version, grenoblePointExtract.method_version);
+assert.equal(grenoble86Point.grid_latitude, 45.25);
+assert.equal(grenoble86Point.grid_longitude, 5.75);
+assert.equal(grenoble82Point.model_surface_altitude_m, grenoblePointExtract.model_surface_altitude_m);
+assert.equal(grenoble82Point.points.length, 14);
+assert.equal(grenoble86Point.points.length, 14);
+assert.equal(
+  createHash("sha256").update(fs.readFileSync(path.join(process.cwd(), "pipelines/era5/extracts/grenoble-1982-05-12.json"))).digest("hex"),
+  "cdca84c352a45e87b5832a70240dd8a0edd88be4c30ef1a33afe519ada59e31e"
+);
+assert.equal(
+  createHash("sha256").update(fs.readFileSync(path.join(process.cwd(), "pipelines/era5/extracts/grenoble-1986-05-12.json"))).digest("hex"),
+  "ce1f615b413ec682db9fb5313b14a0b3a4d7cfece0df2bd486b2a973958cd951"
+);
+const tmin82 = grenoble82Point.points.find((p) => p.variable_id === "air_temperature_min");
+const tmax82 = grenoble82Point.points.find((p) => p.variable_id === "air_temperature_max");
+const tmin86 = grenoble86Point.points.find((p) => p.variable_id === "air_temperature_min");
+const tmax86 = grenoble86Point.points.find((p) => p.variable_id === "air_temperature_max");
+assert.ok(tmin82 && tmax82 && tmin86 && tmax86);
+assert.equal(Math.round(tmin82.value * 10000) / 10000, 275.9109);
+assert.equal(Math.round(tmax82.value * 10000) / 10000, 291.7585);
+assert.equal(Math.round(tmin86.value * 10000) / 10000, 281.7421);
+assert.equal(Math.round(tmax86.value * 10000) / 10000, 295.395);
+assert.ok(tmax86.value < 32.1 + 273.15, "ERA5 cell is not CORENC 32.1 C copied into Kelvin");
 assert.equal(communePath({ region_slug: "auvergne-rhone-alpes", department_slug: "isere", slug: "grenoble" }), "/meteo/auvergne-rhone-alpes/isere/grenoble");
 assert.equal(
   communeHistoryHref("/meteo/auvergne-rhone-alpes/isere/grenoble", "1983-05-12", "naissance"),
@@ -630,6 +670,66 @@ assert.ok(grenoble13LdText.includes("2.8"));
 assert.equal(grenoble13LdText.includes("6.5"), false, "ERA5 13 mai tmin must not enter JSON-LD");
 assert.equal(grenoble13LdText.includes("13.4"), false, "ERA5 13 mai tmax must not enter JSON-LD");
 assert.equal(grenoble13LdText.includes("7.2"), false, "ERA5 13 mai precip must not enter JSON-LD");
+const grenoble82LdText = JSON.stringify(
+  communeJsonLd({
+    place: {
+      name: "Grenoble",
+      slug: "grenoble",
+      insee_code: "38185",
+      latitude: 45.1885,
+      longitude: 5.7245,
+      region_slug: "auvergne-rhone-alpes",
+      department_slug: "isere"
+    },
+    path: "/meteo/auvergne-rhone-alpes/isere/grenoble",
+    title: "Grenoble — histoire météo | Observatoire Planète",
+    description: "Températures observées à Grenoble.",
+    observation: {
+      originType: "OBSERVED",
+      date: "1982-05-12",
+      tmin: 5.1,
+      tmax: 26.1,
+      precipitationMm: 0,
+      station: { id: "38126001", name: "CORENC LA REVIREE" }
+    }
+  })
+);
+assert.ok(grenoble82LdText.includes("5.1"));
+assert.ok(grenoble82LdText.includes("26.1"));
+assert.equal(grenoble82LdText.includes("2.8"), false, "ERA5 1982 tmin must not enter JSON-LD");
+assert.equal(grenoble82LdText.includes("18.6"), false, "ERA5 1982 tmax must not enter JSON-LD");
+const grenoble86LdText = JSON.stringify(
+  communeJsonLd({
+    place: {
+      name: "Grenoble",
+      slug: "grenoble",
+      insee_code: "38185",
+      latitude: 45.1885,
+      longitude: 5.7245,
+      region_slug: "auvergne-rhone-alpes",
+      department_slug: "isere"
+    },
+    path: "/meteo/auvergne-rhone-alpes/isere/grenoble",
+    title: "Grenoble — histoire météo | Observatoire Planète",
+    description: "Températures observées à Grenoble.",
+    observation: {
+      originType: "OBSERVED",
+      date: "1986-05-12",
+      tmin: 11.6,
+      tmax: 32.1,
+      precipitationMm: 0,
+      station: { id: "38126001", name: "CORENC LA REVIREE" }
+    }
+  })
+);
+assert.ok(grenoble86LdText.includes("32.1"));
+assert.ok(grenoble86LdText.includes("11.6"));
+assert.equal(grenoble86LdText.includes("8.6"), false, "ERA5 1986 tmin must not enter JSON-LD");
+assert.equal(grenoble86LdText.includes("22.2"), false, "ERA5 1986 tmax must not enter JSON-LD");
+const grenoble86LdPrecip = (JSON.parse(grenoble86LdText) as { "@graph": { additionalProperty?: { name: string; value: number }[] }[] })[
+  "@graph"
+].flatMap((n) => n.additionalProperty || []).find((p) => p.name === "precipitation");
+assert.equal(grenoble86LdPrecip?.value, 0, "JSON-LD precip is CORENC 0 mm, not ERA5 2.1 mm");
 const era5Rejected = JSON.stringify(
   communeJsonLd({
     place: {
@@ -1036,7 +1136,7 @@ if (obsCount === 0) {
   assert.equal(grenoble.era5.gustDisplay, formatKmhFromMs(gustPoint.value));
   assert.ok(grenoble.era5.modelSurfaceAltitudeM != null && grenoble.era5.modelSurfaceAltitudeM > 200);
   const era5Rows = (db.prepare(`SELECT COUNT(*) AS c FROM point_extractions`).get() as { c: number }).c;
-  assert.equal(era5Rows, 42, "14 variables × 3 jours Grenoble, no invented rows");
+  assert.equal(era5Rows, 70, "14 variables × 5 jours Grenoble, no invented rows");
   const precipRow = db.prepare(
     `SELECT unit, value FROM point_extractions WHERE variable_id = 'precipitation' AND date = '1983-05-12'`
   ).get() as { unit: string; value: number };
@@ -1090,6 +1190,44 @@ if (obsCount === 0) {
   const daySeo13 = getPlaceDayObservation("grenoble", "1983-05-13");
   assert.equal(daySeo13?.tmin, 14.8);
   assert.equal(daySeo13?.precipitationMm, 2.8);
+
+  const grenoble82 = getPlaceHistory("grenoble", "1982-05-12");
+  assert.ok(grenoble82?.era5, "ERA5 point for Grenoble 1982-05-12 must be ingested");
+  assert.equal(grenoble82.observation?.tmin, 5.1);
+  assert.equal(grenoble82.observation?.tmax, 26.1);
+  assert.equal(grenoble82.observation?.precipitationMm, 0);
+  assert.equal(grenoble82.era5.tmin, 2.8);
+  assert.equal(grenoble82.era5.tmax, 18.6);
+  assert.equal(grenoble82.era5.dewpointMin, -1.2);
+  assert.equal(grenoble82.era5.dewpointMax, 5.2);
+  assert.equal(grenoble82.era5.precipMm, 0.0);
+  assert.equal(grenoble82.era5.precipDelta, 0);
+  assert.equal(grenoble82.comparison?.tminDelta, -2.3);
+  assert.equal(grenoble82.comparison?.tmaxDelta, -7.5);
+  assert.equal(grenoble82.era5.modelSurfaceAltitudeM, 985.5);
+  const precip82 = db.prepare(
+    `SELECT value FROM point_extractions WHERE variable_id = 'precipitation' AND date = '1982-05-12'`
+  ).get() as { value: number };
+  assert.ok(precip82.value > 0 && precip82.value < 0.0001, "1982 ERA5 0.0 mm display is rounded 0.0375 mm, not a copied station zero");
+
+  const grenoble86 = getPlaceHistory("grenoble", "1986-05-12");
+  assert.ok(grenoble86?.era5, "ERA5 point for Grenoble 1986-05-12 must be ingested");
+  assert.equal(grenoble86.observation?.tmin, 11.6);
+  assert.equal(grenoble86.observation?.tmax, 32.1);
+  assert.equal(grenoble86.observation?.precipitationMm, 0);
+  assert.equal(grenoble86.era5.tmin, 8.6);
+  assert.equal(grenoble86.era5.tmax, 22.2);
+  assert.equal(grenoble86.era5.dewpointMin, 6.0);
+  assert.equal(grenoble86.era5.dewpointMax, 11.6);
+  assert.notEqual(grenoble86.era5.tmax, grenoble86.observation?.tmax, "1986: ERA5 22.2 C is not CORENC 32.1 C");
+  assert.equal(grenoble86.era5.precipMm, 2.1);
+  assert.equal(grenoble86.era5.precipDelta, 2.1);
+  assert.equal(grenoble86.comparison?.tminDelta, -3.0);
+  assert.equal(grenoble86.comparison?.tmaxDelta, -9.9);
+  assert.ok(Math.abs(grenoble86.comparison?.tmaxDelta ?? 0) > 2, "1986 heat-record gap is displayed, not fused");
+  const daySeo86 = getPlaceDayObservation("grenoble", "1986-05-12");
+  assert.equal(daySeo86?.tmax, 32.1);
+  assert.notEqual(daySeo86?.tmax, grenoble86.era5.tmax);
 
   const missingDay = getPlaceHistory("grenoble", "1900-01-01");
   assert.ok(missingDay, "Grenoble must still resolve for a date without observations");
