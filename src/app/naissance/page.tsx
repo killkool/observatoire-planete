@@ -1,15 +1,19 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import BirthExamples from "@/components/BirthExamples";
 import PlaceSearch from "@/components/PlaceSearch";
 import { frenchLanguageAlternates } from "@/lib/seoContent";
+import { getBirthExamplesCached } from "@/lib/sqliteReadCache";
 
 export const metadata: Metadata = {
   title: "Jour de naissance — Observatoire Planète",
-  description: "Quel temps faisait-il le jour de votre naissance ? Mesure officielle s’il y en a une, jamais une valeur inventée.",
+  description:
+    "Quel temps faisait-il le jour de votre naissance ? Mesure officielle s’il y en a une, jamais une valeur inventée.",
   alternates: frenchLanguageAlternates("/naissance")
 };
 
-export default function NaissancePage() {
+export default async function NaissancePage() {
+  const examples = await getBirthExamplesCached();
   return (
     <main className="homeVisual">
       <section className="earthHero">
@@ -43,6 +47,7 @@ export default function NaissancePage() {
           />
         </div>
       </section>
+      <BirthExamples cards={examples} />
     </main>
   );
 }

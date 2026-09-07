@@ -48,6 +48,7 @@ import {
 } from "../src/lib/climateTrend";
 import { communeSnapshotChecksum } from "../src/lib/ingestCommunes";
 import { buildBirthLead, buildShareText, communeHistoryHref, frenchLongDate, yearsElapsed } from "../src/lib/birthDay";
+import { birthExampleCards } from "../src/lib/birthExamples";
 import { filterDailyResources } from "../src/lib/meteoFrance";
 import { isAllowedIgnLayer, parseIgnTile } from "../src/lib/ignTiles";
 import db from "../src/lib/db";
@@ -386,6 +387,27 @@ const birthMissing = buildBirthLead({ hasObservation: false, precipDisplay: "0.0
 assert.ok(birthMissing.includes("Aucune mesure officielle"));
 assert.equal(birthMissing.includes("0.0 mm"), false, "missing day must not invent 0 mm");
 
+const birthExamples = birthExampleCards();
+assert.equal(birthExamples.length, 3);
+const birth1983 = birthExamples.find((card) => card.date === "1983-05-12");
+const birth1986 = birthExamples.find((card) => card.date === "1986-05-12");
+const birth1900 = birthExamples.find((card) => card.date === "1900-01-01");
+assert.ok(birth1983 && birth1986 && birth1900);
+assert.equal(birth1983.observation?.tmin, 6.6);
+assert.equal(birth1983.observation?.tmax, 21.6);
+assert.equal(birth1983.observation?.precipitationMm, 0.1);
+assert.ok(birth1983.observation?.stationName.includes("CORENC"));
+assert.equal(birth1983.observation?.distanceKm, 4.7);
+assert.ok(birth1983.path.includes("histoire=naissance"));
+assert.ok(birth1983.path.includes("date=1983-05-12"));
+assert.equal(birth1983.lead.includes("ERA5"), false);
+assert.equal(birth1986.observation?.precipitationMm, 0);
+assert.ok(birth1986.lead.includes("0.0 mm"));
+assert.equal(birth1986.lead.includes("2.1 mm"), false, "1986 example rain is CORENC 0.0 mm, not ERA5 2.1 mm");
+assert.equal(birth1900.observation, null);
+assert.ok(birth1900.lead.includes("Aucune mesure officielle"));
+assert.equal(birth1900.lead.includes("0.0 mm"), false, "1900 example must not invent 0 mm");
+
 const genericCopy = communePageCopy({
   placeName: "Grenoble",
   department: "Isère",
@@ -579,6 +601,13 @@ const homePageSrc = fs.readFileSync(path.join(process.cwd(), "src/app/page.tsx")
 assert.ok(homePageSrc.includes("getFeaturedClimateCached"), "home first HTML must carry featured official climate");
 const homeCacheSrc = fs.readFileSync(path.join(process.cwd(), "src/lib/sqliteReadCache.ts"), "utf8");
 assert.ok(homeCacheSrc.includes("featured-climate-v2"));
+const birthExSrc = fs.readFileSync(path.join(process.cwd(), "src/components/BirthExamples.tsx"), "utf8");
+assert.ok(birthExSrc.includes("Aucune mesure officielle"));
+assert.ok(birthExSrc.includes("formatCelsius"));
+assert.equal(birthExSrc.includes("ERA5"), false, "naissance examples must not show reanalysis");
+const naissancePageSrc = fs.readFileSync(path.join(process.cwd(), "src/app/naissance/page.tsx"), "utf8");
+assert.ok(naissancePageSrc.includes("getBirthExamplesCached"), "naissance first HTML must carry official example days");
+assert.ok(homeCacheSrc.includes("birth-examples-v1"));
 
 assert.equal(warmerThanPercent(null, [1, 2, 3, 4, 5]), null);
 assert.equal(warmerThanPercent(21.6, [10, 12, 15, 18, 20, 21.6, 22]), 71);

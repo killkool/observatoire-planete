@@ -89,7 +89,7 @@ Source : sections 0 à 187 du prompt maître.
 | 74 | PAGE LIEU | [x] |
 | 75 | PAGE DATE | [x] |
 | 76 | PAGE OCÉAN | [ ] |
-| 77 | FEATURE "LE JOUR DE MA NAISSANCE" | [ ] *partiel* (page /naissance + récit pluie/station + titres date officiels + carte PNG ; pas de SDK social) |
+| 77 | FEATURE "LE JOUR DE MA NAISSANCE" | [ ] *partiel* (page /naissance + récit pluie/station + titres date officiels + exemples SSR 1983/1986/1900 + carte PNG ; pas de SDK social) |
 | 78 | FEATURE "CE JOUR DANS L'HISTOIRE" | [x] (moyenne + percentile + records + courbe, un poste ; pas une normale) |
 | 79 | FEATURE "QUAND J'ÉTAIS ENFANT" | [ ] *partiel* (moyennes d’années complètes, un poste, fenêtre 2016–2025 pour un né en 1983) |
 | 80 | FEATURE "MA VILLE SE RÉCHAUFFE-T-ELLE ?" | [ ] *partiel* (OLS Isère, un poste, ≥ 15 ans ; pas LSH, pas France) |
@@ -137,7 +137,7 @@ Source : sections 0 à 187 du prompt maître.
 | 122 | UX ACCUEIL | [ ] *partiel* (recherche commune + CTAs 390 px + cartes climat officiel LVD 2025 ; pas France entière) |
 | 123 | DESIGN | [ ] *partiel* |
 | 124 | HOME HERO | [ ] *partiel* (hero compact 390 px, JPEG, `decoding=sync`, `quality=70`, sizes ≤ 1480 px) |
-| 125 | PAGE MOBILE | [ ] *partiel* (390 px ; HTML page 56 Ko ; héros = Tmin/Tmax/pluie + station à X km ; accueil = climat officiel LVD ; Lighthouse lab LCP 2178 ms ; pas CrUX ; pas de bottom sheet GIS) |
+| 125 | PAGE MOBILE | [ ] *partiel* (390 px ; HTML page 56 Ko ; héros = Tmin/Tmax/pluie + station à X km ; accueil = climat officiel LVD ; naissance = exemples officiels ; Lighthouse lab LCP 2178 ms ; pas CrUX ; pas de bottom sheet GIS) |
 | 126 | SEO | [ ] *partiel* (titres commune + titres `?date=` / naissance / comparer = mesure officielle ; sitemap filtré + OG + hreflang fr + JSON-LD + score v1 ; pas de pages en) |
 | 127 | INTERNATIONALISATION | [ ] *partiel* (html lang=fr, hreflang fr/x-default ; routage `en` = V2) |
 | 128 | PARTAGE SOCIAL | [ ] *partiel* (carte PNG + copie URL ; OG titre/description = mesure officielle si `?date=` ; pas de SDK) |
@@ -150,7 +150,7 @@ Source : sections 0 à 187 du prompt maître.
 | 135 | FINOPS | [ ] |
 | 136 | NE PAS STOCKER L'INUTILE | [ ] |
 | 137 | HOT/WARM/COLD DATA | [ ] |
-| 138 | CACHE | [ ] *partiel* (`unstable_cache` 1 h ; yearly **page** `detailRows: false` ; comparer ville vs ville ; accueil `featured-climate-v2` ; `/yearly` complet à la demande ; pas CDN) |
+| 138 | CACHE | [ ] *partiel* (`unstable_cache` 1 h ; yearly **page** `detailRows: false` ; comparer ville vs ville ; accueil `featured-climate-v2` ; naissance `birth-examples-v1` ; `/yearly` complet à la demande ; pas CDN) |
 | 139 | PRECOMPUTATION | [ ] |
 | 140 | POSTGRES PARTITIONING | [ ] |
 | 141 | INDEXATION SPATIALE | [ ] |

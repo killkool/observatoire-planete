@@ -1,4 +1,5 @@
 import { unstable_cache } from "next/cache";
+import { birthExampleCards } from "@/lib/birthExamples";
 import { featuredClimateCards, getCommuneChildhood, getCommuneCityCompare, getCommuneYearly } from "@/lib/communeYearly";
 import { getPlaceHistory, listFeaturedPlaces } from "@/lib/placeHistory";
 import { listIndexablePlaces } from "@/lib/seoContent";
@@ -13,6 +14,12 @@ export const getFeaturedPlacesCached = unstable_cache(
 export const getFeaturedClimateCached = unstable_cache(
   async () => featuredClimateCards(listFeaturedPlaces()),
   ["featured-climate-v2"],
+  { revalidate: 3600 }
+);
+
+export const getBirthExamplesCached = unstable_cache(
+  async () => birthExampleCards(),
+  ["birth-examples-v1"],
   { revalidate: 3600 }
 );
 
