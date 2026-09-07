@@ -1,5 +1,5 @@
 import { frenchLongDate } from "./birthDay";
-import { formatCelsius, formatDaysFrost, formatDaysGe25, formatDaysGe30, formatDaysGe35, formatDaysGe40, formatMm, formatTropicalNights } from "../../packages/weather-core/src/units";
+import { formatCelsius, formatDaysFrost, formatDaysGe25, formatDaysGe30, formatDaysGe35, formatDaysGe40, formatDaysRain, formatMm, formatTropicalNights } from "../../packages/weather-core/src/units";
 
 export type ShareCardModel = {
   placeName: string;
@@ -30,6 +30,7 @@ export type ClimateShareCardModel = {
   tminDisplay: string | null;
   tmaxDisplay: string;
   precipDisplay: string | null;
+  daysRainDisplay: string | null;
   daysGe25Display: string | null;
   daysGe30Display: string | null;
   daysGe35Display: string | null;
@@ -48,6 +49,7 @@ export function buildClimateShareCardModel(input: {
   tmaxMean: number | null;
   precipitationSum: number | null;
   precipComplete: boolean;
+  daysRain?: number | null;
   daysGe25?: number | null;
   daysGe30?: number | null;
   daysGe35?: number | null;
@@ -66,6 +68,8 @@ export function buildClimateShareCardModel(input: {
     tmaxDisplay: formatCelsius(input.tmaxMean),
     precipDisplay:
       input.precipComplete && input.precipitationSum != null ? formatMm(input.precipitationSum) : null,
+    daysRainDisplay:
+      input.precipComplete && input.daysRain != null ? `${input.daysRain} j` : null,
     daysGe25Display: input.daysGe25 != null ? `${input.daysGe25} j` : null,
     daysGe30Display: input.daysGe30 != null ? `${input.daysGe30} j` : null,
     daysGe35Display: input.daysGe35 != null ? `${input.daysGe35} j` : null,
@@ -87,6 +91,7 @@ export function buildClimateShareText(input: {
   tmaxMean: number | null;
   precipitationSum: number | null;
   precipComplete: boolean;
+  daysRain?: number | null;
   daysGe25?: number | null;
   daysGe30?: number | null;
   daysGe35?: number | null;
@@ -103,6 +108,8 @@ export function buildClimateShareText(input: {
     input.precipComplete && input.precipitationSum != null
       ? `, pluie ${formatMm(input.precipitationSum)}`
       : "";
+  const rainDays =
+    input.precipComplete && input.daysRain != null ? `, ${formatDaysRain(input.daysRain)}` : "";
   const warmDays = input.daysGe25 != null ? `, ${formatDaysGe25(input.daysGe25)}` : "";
   const hotDays = input.daysGe30 != null ? `, ${formatDaysGe30(input.daysGe30)}` : "";
   const veryHotDays = input.daysGe35 != null ? `, ${formatDaysGe35(input.daysGe35)}` : "";
@@ -111,7 +118,7 @@ export function buildClimateShareText(input: {
   const tropical =
     input.tropicalNights != null ? `, ${formatTropicalNights(input.tropicalNights)}` : "";
   const km = input.distanceKm != null ? `, ${input.distanceKm} km` : "";
-  return `${input.placeName}, année climatique ${input.year} : ${tminBit}maximale moyenne ${tmax}${rain}${warmDays}${hotDays}${veryHotDays}${extremeHotDays}${frost}${tropical}. Station ${input.stationName}${km}. Ce n’est pas une prévision. ${input.url}`;
+  return `${input.placeName}, année climatique ${input.year} : ${tminBit}maximale moyenne ${tmax}${rain}${rainDays}${warmDays}${hotDays}${veryHotDays}${extremeHotDays}${frost}${tropical}. Station ${input.stationName}${km}. Ce n’est pas une prévision. ${input.url}`;
 }
 
 export function buildShareCardModel(input: {

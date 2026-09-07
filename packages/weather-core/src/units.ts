@@ -38,6 +38,12 @@ export function formatMm(valueMm: number | null | undefined): string {
   return n == null ? "non disponible" : `${n.toFixed(1)} mm`;
 }
 
+/** Compte de jours à précipitation mesurée > 0 mm. 0 est un vrai zéro si la série pluie est complète. Ce n’est pas le jour de pluie officiel ≥ 1 mm. */
+export function formatDaysRain(count: number | null | undefined): string {
+  if (count == null || !Number.isInteger(count) || count < 0) return "non disponible";
+  return `${count} jour${count > 1 ? "s" : ""} de pluie`;
+}
+
 /** Compte de jours à Tmax ≥ 25 °C. 0 est un vrai zéro, pas une valeur manquante. */
 export function formatDaysGe25(count: number | null | undefined): string {
   if (count == null || !Number.isInteger(count) || count < 0) return "non disponible";

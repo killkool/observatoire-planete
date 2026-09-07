@@ -169,6 +169,7 @@ type YearRow = {
   tminMean: number | null;
   tmaxMean: number | null;
   precipitationSum: number | null;
+  daysRain?: number;
   daysGe25?: number;
   daysGe30: number;
   daysGe35?: number;
@@ -356,6 +357,7 @@ export default function PlaceExplorer({
     tmaxMean: number | null;
     precipitationSum: number | null;
     precipComplete: boolean;
+    daysRain?: number;
     daysGe25?: number;
     daysGe30: number;
     daysGe35?: number;
@@ -423,6 +425,7 @@ export default function PlaceExplorer({
             tmaxMean: climateLead.tmaxMean,
             precipitationSum: climateLead.precipitationSum,
             precipComplete: climateLead.precipComplete,
+            daysRain: climateLead.daysRain,
             daysGe25: climateLead.daysGe25,
             daysGe30: climateLead.daysGe30,
             daysGe35: climateLead.daysGe35,
@@ -729,6 +732,12 @@ export default function PlaceExplorer({
                   <span>
                     <em>Pluie</em>
                     {formatMm(climateLead.precipitationSum)}
+                  </span>
+                ) : null}
+                {climateLead.precipComplete && climateLead.daysRain != null ? (
+                  <span>
+                    <em>Jours de pluie</em>
+                    {climateLead.daysRain}
                   </span>
                 ) : null}
                 {climateLead.daysGe25 != null ? (
@@ -1141,7 +1150,7 @@ export default function PlaceExplorer({
                 {(() => {
                   const last = [...yearly.years].reverse().find((row) => row.yearComplete && row.precipComplete);
                   return last
-                    ? `${last.year} · ${last.precipitationSum ?? "non disponible"} mm · ${last.daysGe25 != null ? `${last.daysGe25} jour${last.daysGe25 > 1 ? "s" : ""} ≥ 25 °C · ` : ""}${last.daysGe30} jour${last.daysGe30 > 1 ? "s" : ""} ≥ 30 °C${last.daysGe35 != null ? ` · ${last.daysGe35} jour${last.daysGe35 > 1 ? "s" : ""} ≥ 35 °C` : ""}${last.daysGe40 != null ? ` · ${last.daysGe40} jour${last.daysGe40 > 1 ? "s" : ""} ≥ 40 °C` : ""}${last.daysFrost != null ? ` · ${last.daysFrost} jour${last.daysFrost > 1 ? "s" : ""} de gel` : ""}${last.tropicalNights != null ? ` · ${last.tropicalNights} nuit${last.tropicalNights > 1 ? "s" : ""} tropicale${last.tropicalNights > 1 ? "s" : ""}` : ""}`
+                    ? `${last.year} · ${last.precipitationSum ?? "non disponible"} mm${last.daysRain != null ? ` · ${last.daysRain} jour${last.daysRain > 1 ? "s" : ""} de pluie` : ""} · ${last.daysGe25 != null ? `${last.daysGe25} jour${last.daysGe25 > 1 ? "s" : ""} ≥ 25 °C · ` : ""}${last.daysGe30} jour${last.daysGe30 > 1 ? "s" : ""} ≥ 30 °C${last.daysGe35 != null ? ` · ${last.daysGe35} jour${last.daysGe35 > 1 ? "s" : ""} ≥ 35 °C` : ""}${last.daysGe40 != null ? ` · ${last.daysGe40} jour${last.daysGe40 > 1 ? "s" : ""} ≥ 40 °C` : ""}${last.daysFrost != null ? ` · ${last.daysFrost} jour${last.daysFrost > 1 ? "s" : ""} de gel` : ""}${last.tropicalNights != null ? ` · ${last.tropicalNights} nuit${last.tropicalNights > 1 ? "s" : ""} tropicale${last.tropicalNights > 1 ? "s" : ""}` : ""}`
                     : "non disponible";
                 })()}
               </p>

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
-import { currentTowardsUv, formatCelsius, formatDaysFrost, formatDaysGe25, formatDaysGe30, formatDaysGe35, formatDaysGe40, formatHpaFromPa, formatKmhFromMs, formatMjFromJm2, formatMmWaterFromM, formatTropicalNights, formatWindFromDeg, roundToPrecision, windFromUv } from "../packages/weather-core/src/units";
+import { currentTowardsUv, formatCelsius, formatDaysFrost, formatDaysGe25, formatDaysGe30, formatDaysGe35, formatDaysGe40, formatDaysRain, formatHpaFromPa, formatKmhFromMs, formatMjFromJm2, formatMmWaterFromM, formatTropicalNights, formatWindFromDeg, roundToPrecision, windFromUv } from "../packages/weather-core/src/units";
 import { ORIGIN_LABEL_PUBLIC_FR } from "../packages/weather-core/src/origin";
 import { warmerThanPercent, meanOfKnown, describeSameDayLead } from "../packages/weather-core/src/sameDayStats";
 import { scoreConfidence } from "../packages/confidence-engine/src/score";
@@ -81,6 +81,10 @@ assert.equal(formatDaysGe40(0), "0 jour ≥ 40 °C");
 assert.equal(formatDaysGe40(1), "1 jour ≥ 40 °C");
 assert.equal(formatDaysGe40(8), "8 jours ≥ 40 °C");
 assert.equal(formatDaysGe40(null), "non disponible");
+assert.equal(formatDaysRain(0), "0 jour de pluie");
+assert.equal(formatDaysRain(1), "1 jour de pluie");
+assert.equal(formatDaysRain(144), "144 jours de pluie");
+assert.equal(formatDaysRain(null), "non disponible");
 assert.equal(formatDaysFrost(0), "0 jour de gel");
 assert.equal(formatDaysFrost(1), "1 jour de gel");
 assert.equal(formatDaysFrost(46), "46 jours de gel");
@@ -497,6 +501,7 @@ assert.equal(climateCopy.description.includes("57"), false, "fixture without day
 assert.equal(climateCopy.description.includes("25 °C"), false, "fixture without daysGe25 must not invent warm days");
 assert.equal(climateCopy.description.includes("35 °C"), false, "fixture without daysGe35 must not invent very hot days");
 assert.equal(climateCopy.description.includes("40 °C"), false, "fixture without daysGe40 must not invent extreme hot days");
+assert.equal(climateCopy.description.includes("jours de pluie"), false, "fixture without daysRain must not invent rain days");
 assert.equal(climateCopy.description.includes("gel"), false, "fixture without daysFrost must not invent frost days");
 assert.equal(climateCopy.description.includes("tropicale"), false, "fixture without tropicalNights must not invent tropical nights");
 assert.equal(climateCopy.description.includes("6.6"), false);
@@ -520,6 +525,7 @@ const climateNoPrecip = communePageCopy({
 });
 assert.ok(climateNoPrecip.title.includes("19.6 °C"));
 assert.equal(climateNoPrecip.description.includes("mm"), false, "incomplete precip must not invent millimetres");
+assert.equal(climateNoPrecip.description.includes("jours de pluie"), false, "incomplete precip must not invent rain days");
 const datedCopy = communePageCopy({
   placeName: "Grenoble",
   department: "Isère",
@@ -714,6 +720,7 @@ assert.ok(homeSrc.includes("formatDaysGe25"), "home cards show official days at 
 assert.ok(homeSrc.includes("formatDaysGe30"), "home cards show official days at or above 30 °C");
 assert.ok(homeSrc.includes("formatDaysGe35"), "home cards show official days at or above 35 °C");
 assert.ok(homeSrc.includes("formatDaysGe40"), "home cards show official days at or above 40 °C, including a true zero");
+assert.ok(homeSrc.includes("formatDaysRain"), "home cards show official rain days when precip is complete");
 assert.ok(homeSrc.includes("formatDaysFrost"), "home cards show official frost days when they exist");
 assert.ok(homeSrc.includes("formatTropicalNights"), "home cards show official tropical nights when they exist");
 assert.ok(homeSrc.includes("roundToPrecision"));
@@ -724,8 +731,8 @@ assert.ok(homePageSrc.includes("getFeaturedClimateCached"), "home first HTML mus
 assert.ok(homePageSrc.includes("shareHomeCardPath"), "home OG card is an official Grenoble climate example");
 assert.ok(homePageSrc.includes("buildHomeOgModel"));
 const homeCacheSrc = fs.readFileSync(path.join(process.cwd(), "src/lib/sqliteReadCache.ts"), "utf8");
-assert.ok(homeCacheSrc.includes("featured-climate-v10"));
-assert.ok(homeCacheSrc.includes("commune-yearly-page-v7"));
+assert.ok(homeCacheSrc.includes("featured-climate-v11"));
+assert.ok(homeCacheSrc.includes("commune-yearly-page-v8"));
 const birthExSrc = fs.readFileSync(path.join(process.cwd(), "src/components/BirthExamples.tsx"), "utf8");
 assert.ok(birthExSrc.includes("Aucune mesure officielle"));
 assert.ok(birthExSrc.includes("formatCelsius"));
@@ -762,6 +769,8 @@ assert.ok(explorerSrc.includes("Jours ≥ 35 °C"), "climate hero shows official
 assert.ok(explorerSrc.includes("climateLead.daysGe35"));
 assert.ok(explorerSrc.includes("Jours ≥ 40 °C"), "climate hero shows official days at or above 40 °C, including a true zero");
 assert.ok(explorerSrc.includes("climateLead.daysGe40"));
+assert.ok(explorerSrc.includes("Jours de pluie"), "climate hero shows official rain days when precip is complete");
+assert.ok(explorerSrc.includes("climateLead.daysRain"));
 assert.ok(explorerSrc.includes("Jours de gel"), "climate hero shows official frost days");
 assert.ok(explorerSrc.includes("daysFrost"));
 assert.ok(explorerSrc.includes("Nuits tropicales"), "climate hero shows official tropical nights");
@@ -782,6 +791,8 @@ assert.ok(climateOgSrc.includes("Jours à 35 °C ou plus"));
 assert.ok(climateOgSrc.includes("daysGe35"));
 assert.ok(climateOgSrc.includes("Jours à 40 °C ou plus"));
 assert.ok(climateOgSrc.includes("daysGe40"));
+assert.ok(climateOgSrc.includes("Jours de pluie"));
+assert.ok(climateOgSrc.includes("daysRain"));
 assert.ok(climateOgSrc.includes("Jours de gel"));
 assert.ok(climateOgSrc.includes("daysFrost"));
 assert.ok(climateOgSrc.includes("Nuits tropicales"));
@@ -794,6 +805,7 @@ assert.ok(homeOgSrc.includes("Jours de gel"));
 assert.ok(homeOgSrc.includes("Jours à 25 °C ou plus"));
 assert.ok(homeOgSrc.includes("Jours à 35 °C ou plus"));
 assert.ok(homeOgSrc.includes("Jours à 40 °C ou plus"));
+assert.ok(homeOgSrc.includes("Jours de pluie"));
 assert.ok(homeOgSrc.includes("Nuits tropicales"));
 assert.equal(homeOgSrc.includes("ERA5"), false, "home OG card must not show reanalysis");
 const landingOgSrc = fs.readFileSync(path.join(process.cwd(), "src/lib/landingOg.ts"), "utf8");
@@ -1421,6 +1433,7 @@ const climateCard = buildClimateShareCardModel({
   tmaxMean: 19.6,
   precipitationSum: 901.1,
   precipComplete: true,
+  daysRain: 144,
   daysGe25: 110,
   daysGe30: 57,
   daysGe35: 15,
@@ -1435,6 +1448,9 @@ assert.equal(climateCard.year, 2025);
 assert.ok(climateCard.tminDisplay?.includes("8.2"));
 assert.ok(climateCard.tmaxDisplay.includes("19.6"));
 assert.equal(climateCard.precipDisplay, "901.1 mm");
+assert.equal(climateCard.daysRainDisplay, "144 j");
+assert.equal(climateCard.daysRainDisplay?.includes("210"), false, "climate OG rain days are 2025, not the 2001 record");
+assert.equal(climateCard.daysRainDisplay?.includes("205"), false, "climate OG rain days are 2025, not the 2014 count");
 assert.equal(climateCard.daysGe25Display, "110 j");
 assert.equal(climateCard.daysGe25Display?.includes("135"), false, "climate OG 25 °C days are 2025, not the 2018 record");
 assert.equal(climateCard.daysGe25Display?.includes("126"), false, "climate OG 25 °C days are 2025, not the 2022 count");
@@ -1462,6 +1478,7 @@ const climateShare = buildClimateShareText({
   tmaxMean: 19.6,
   precipitationSum: 901.1,
   precipComplete: true,
+  daysRain: 144,
   daysGe25: 110,
   daysGe30: 57,
   daysGe35: 15,
@@ -1476,6 +1493,7 @@ assert.ok(climateShare.includes("année climatique 2025"));
 assert.ok(climateShare.includes("8.2 °C"));
 assert.ok(climateShare.includes("19.6 °C"));
 assert.ok(climateShare.includes("901.1 mm"));
+assert.ok(climateShare.includes("144 jours de pluie"));
 assert.ok(climateShare.includes("110 jours ≥ 25 °C"));
 assert.ok(climateShare.includes("57 jours ≥ 30 °C"));
 assert.ok(climateShare.includes("15 jours ≥ 35 °C"));
@@ -1487,6 +1505,8 @@ assert.equal(climateShare.includes("126 jours ≥ 25"), false, "share text must 
 assert.equal(climateShare.includes("18 jours ≥ 35"), false, "share text must not paste the 2022 35 °C count");
 assert.equal(climateShare.includes("22 jours ≥ 35"), false, "share text must not paste the 2003 35 °C record");
 assert.equal(climateShare.includes("8 jours ≥ 40"), false, "share text must not paste another station's 40 °C count");
+assert.equal(climateShare.includes("210 jours de pluie"), false, "share text must not paste the 2001 rain-day record");
+assert.equal(climateShare.includes("205 jours de pluie"), false, "share text must not paste the 2014 rain-day count");
 assert.equal(climateShare.includes("7 nuits"), false, "share text must not paste the 2024 tropical-night record");
 assert.equal(climateShare.includes("94"), false, "share text must not paste the 2005 frost record");
 assert.equal(climateShare.includes("71"), false, "share text must not paste the 2022 hot-day record");
@@ -1502,12 +1522,14 @@ const climateShareNoMin = buildClimateShareText({
   tmaxMean: 19.6,
   precipitationSum: null,
   precipComplete: false,
+  daysRain: 89,
   stationName: "GRENOBLE - LVD",
   distanceKm: 10.2,
   url: "http://localhost:3001/meteo/auvergne-rhone-alpes/isere/grenoble"
 });
 assert.equal(climateShareNoMin.includes("minimale moyenne"), false, "missing tmin must not be invented in the share text");
 assert.equal(climateShareNoMin.includes("mm"), false, "incomplete precip must not invent millimetres in the share text");
+assert.equal(climateShareNoMin.includes("jours de pluie"), false, "incomplete rain-day count must not be invented in the share text");
 assert.equal(climateShareNoMin.includes("25 °C"), false, "omitted 25 °C count must not be invented in the share text");
 assert.equal(climateShareNoMin.includes("30 °C"), false, "omitted hot-day count must not be invented in the share text");
 assert.equal(climateShareNoMin.includes("35 °C"), false, "omitted 35 °C count must not be invented in the share text");
@@ -1520,10 +1542,12 @@ const climateCardNoRain = buildClimateShareCardModel({
   tmaxMean: 19.6,
   precipitationSum: null,
   precipComplete: false,
+  daysRain: 89,
   stationName: "GRENOBLE - LVD",
   distanceKm: 10.2
 });
 assert.equal(climateCardNoRain?.precipDisplay, null, "incomplete precip must not invent millimetres on the OG card");
+assert.equal(climateCardNoRain?.daysRainDisplay, null, "incomplete rain-day count must not be invented on the OG card");
 assert.equal(climateCardNoRain?.daysGe25Display, null, "omitted 25 °C count must not be invented on the OG card");
 assert.equal(climateCardNoRain?.daysGe30Display, null, "omitted hot-day count must not be invented on the OG card");
 assert.equal(climateCardNoRain?.daysGe35Display, null, "omitted 35 °C count must not be invented on the OG card");
@@ -2130,6 +2154,11 @@ if (obsCount === 0) {
   assert.equal(grenobleHome.lastComplete?.precipitationSum, 901.1);
   assert.equal(grenobleHome.lastComplete?.tminMean, 8.2);
   assert.equal(grenobleHome.lastComplete?.tmaxMean, 19.6);
+  assert.equal(grenobleHome.lastComplete?.daysRain, 144);
+  assert.equal(grenobleHome.lastComplete?.daysRain, yearly2025.daysRain);
+  assert.notEqual(grenobleHome.lastComplete?.daysRain, 210, "home cards must not paste the 2001 rain-day record onto 2025");
+  assert.notEqual(grenobleHome.lastComplete?.daysRain, 205, "home cards must not paste the 2014 rain-day count onto 2025");
+  assert.notEqual(grenobleHome.lastComplete?.daysRain, 89, "home cards must not paste incomplete 2026 rain days onto 2025");
   assert.equal(grenobleHome.lastComplete?.daysGe25, 110);
   assert.equal(grenobleHome.lastComplete?.daysGe25, yearly2025.daysGe25);
   assert.notEqual(grenobleHome.lastComplete?.daysGe25, 135, "home cards must not paste the 2018 25 °C record onto 2025");
@@ -2166,6 +2195,7 @@ if (obsCount === 0) {
   assert.equal(crollesHome.lastComplete?.year, grenobleHome.lastComplete?.year);
   assert.equal(crollesHome.lastComplete?.tmaxMean, grenobleHome.lastComplete?.tmaxMean);
   assert.equal(crollesHome.lastComplete?.precipitationSum, grenobleHome.lastComplete?.precipitationSum);
+  assert.equal(crollesHome.lastComplete?.daysRain, grenobleHome.lastComplete?.daysRain);
   assert.equal(crollesHome.lastComplete?.daysGe25, grenobleHome.lastComplete?.daysGe25);
   assert.equal(crollesHome.lastComplete?.daysGe30, grenobleHome.lastComplete?.daysGe30);
   assert.equal(crollesHome.lastComplete?.daysGe35, grenobleHome.lastComplete?.daysGe35);
@@ -2177,6 +2207,10 @@ if (obsCount === 0) {
   assert.equal(grenobleClimate?.tminMean, 8.2);
   assert.equal(grenobleClimate?.tmaxMean, 19.6);
   assert.equal(grenobleClimate?.precipitationSum, 901.1);
+  assert.equal(grenobleClimate?.daysRain, 144);
+  assert.notEqual(grenobleClimate?.daysRain, 210, "canonical climate is 2025 rain days, not the 2001 record");
+  assert.notEqual(grenobleClimate?.daysRain, 205, "canonical climate is 2025 rain days, not the 2014 count");
+  assert.notEqual(grenobleClimate?.daysRain, 89, "canonical climate is 2025 rain days, not incomplete 2026");
   assert.equal(grenobleClimate?.daysGe25, 110);
   assert.notEqual(grenobleClimate?.daysGe25, 135, "canonical climate is 2025 25 °C days, not the 2018 record");
   assert.notEqual(grenobleClimate?.daysGe25, 126, "canonical climate is 2025 25 °C days, not the 2022 count");
@@ -2193,6 +2227,16 @@ if (obsCount === 0) {
   assert.equal(grenobleClimate?.tropicalNights, 5);
   assert.notEqual(grenobleClimate?.tropicalNights, 7, "canonical climate is 2025 tropical nights, not the 2024 record");
   assert.equal(grenobleClimate?.precipComplete, true);
+  const incomplete2026 = yearly.years.find((row) => row.year === 2026);
+  assert.ok(incomplete2026);
+  assert.equal(incomplete2026.precipComplete, false);
+  assert.equal(incomplete2026.daysRain, undefined, "incomplete 2026 rain-day count must not be shown");
+  assert.notEqual(incomplete2026.daysRain, 89);
+  const incomplete1999 = yearly.years.find((row) => row.year === 1999);
+  if (incomplete1999 && !incomplete1999.precipComplete) {
+    assert.equal(incomplete1999.daysRain, undefined, "incomplete 1999 rain-day count must not be shown");
+    assert.notEqual(incomplete1999.daysRain, 131);
+  }
   assert.ok(grenobleClimate?.stationName.includes("LVD"));
   assert.equal(grenobleClimate?.distanceKm, 10.2);
   const homeOg = buildHomeOgModel();
@@ -2203,6 +2247,9 @@ if (obsCount === 0) {
   assert.ok(homeOg.tminDisplay?.includes("8.2"));
   assert.ok(homeOg.tmaxDisplay.includes("19.6"));
   assert.equal(homeOg.precipDisplay, "901.1 mm");
+  assert.equal(homeOg.daysRainDisplay, "144 j");
+  assert.equal(homeOg.daysRainDisplay?.includes("210"), false);
+  assert.equal(homeOg.daysRainDisplay?.includes("205"), false);
   assert.equal(homeOg.daysGe25Display, "110 j");
   assert.equal(homeOg.daysGe25Display?.includes("135"), false);
   assert.equal(homeOg.daysGe25Display?.includes("126"), false);
@@ -2252,6 +2299,7 @@ if (obsCount === 0) {
   assert.equal(grenobleClimateCopy.title.includes("20.2"), false);
   assert.ok(grenobleClimateCopy.description.includes("8.2 °C"));
   assert.ok(grenobleClimateCopy.description.includes("901.1 mm"));
+  assert.ok(grenobleClimateCopy.description.includes("144 jours de pluie"));
   assert.ok(grenobleClimateCopy.description.includes("110 jours ≥ 25 °C"));
   assert.ok(grenobleClimateCopy.description.includes("57 jours ≥ 30 °C"));
   assert.ok(grenobleClimateCopy.description.includes("15 jours ≥ 35 °C"));
@@ -2267,6 +2315,8 @@ if (obsCount === 0) {
   assert.equal(grenobleClimateCopy.description.includes("18 jours ≥ 35"), false, "canonical description is not the 2022 35 °C count");
   assert.equal(grenobleClimateCopy.description.includes("22 jours ≥ 35"), false, "canonical description is not the 2003 35 °C record");
   assert.equal(grenobleClimateCopy.description.includes("8 jours ≥ 40"), false, "canonical description is not another station's 40 °C count");
+  assert.equal(grenobleClimateCopy.description.includes("210 jours de pluie"), false, "canonical description is not the 2001 rain-day record");
+  assert.equal(grenobleClimateCopy.description.includes("205 jours de pluie"), false, "canonical description is not the 2014 rain-day count");
   assert.ok(grenobleClimateCopy.description.includes("10.2 km"));
   assert.equal(grenobleClimateCopy.description.includes("6.6"), false);
   assert.equal(grenobleClimateCopy.description.includes("6.2"), false, "canonical description is not the coldest-year record");
@@ -2276,6 +2326,7 @@ if (obsCount === 0) {
   assert.equal(crollesClimate?.tminMean, grenobleClimate?.tminMean);
   assert.equal(crollesClimate?.tmaxMean, grenobleClimate?.tmaxMean);
   assert.equal(crollesClimate?.precipitationSum, grenobleClimate?.precipitationSum);
+  assert.equal(crollesClimate?.daysRain, grenobleClimate?.daysRain);
   assert.equal(crollesClimate?.daysGe25, grenobleClimate?.daysGe25);
   assert.equal(crollesClimate?.daysGe30, grenobleClimate?.daysGe30);
   assert.equal(crollesClimate?.daysGe35, grenobleClimate?.daysGe35);

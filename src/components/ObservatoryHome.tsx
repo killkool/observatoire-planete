@@ -4,7 +4,7 @@ import OriginKinds from "./OriginKinds";
 import PlaceSearch from "./PlaceSearch";
 import { IGN_PHOTO_CREDIT, HERO_IMAGE_SIZES, placePhotoSrc } from "@/lib/placeMedia";
 import { departmentLabel } from "@/lib/placeUrl";
-import { formatCelsius, formatDaysFrost, formatDaysGe25, formatDaysGe30, formatDaysGe35, formatDaysGe40, formatMm, formatTropicalNights, roundToPrecision } from "../../packages/weather-core/src/units";
+import { formatCelsius, formatDaysFrost, formatDaysGe25, formatDaysGe30, formatDaysGe35, formatDaysGe40, formatDaysRain, formatMm, formatTropicalNights, roundToPrecision } from "../../packages/weather-core/src/units";
 
 type HomeClimateCard = {
   place: {
@@ -21,6 +21,7 @@ type HomeClimateCard = {
     tmaxMean: number | null;
     precipitationSum: number | null;
     precipComplete: boolean;
+    daysRain?: number;
     daysGe25?: number;
     daysGe30: number;
     daysGe35?: number;
@@ -69,6 +70,10 @@ export default function ObservatoryHome({ cards }: { cards: HomeClimateCard[] })
             card.lastComplete?.precipComplete && card.lastComplete.precipitationSum != null
               ? ` · ${formatMm(card.lastComplete.precipitationSum)}`
               : "";
+          const rainDays =
+            card.lastComplete?.precipComplete && card.lastComplete.daysRain != null
+              ? ` · ${formatDaysRain(card.lastComplete.daysRain)}`
+              : "";
           const warmDays =
             card.lastComplete?.daysGe25 != null ? ` · ${formatDaysGe25(card.lastComplete.daysGe25)}` : "";
           const hotDays =
@@ -110,6 +115,7 @@ export default function ObservatoryHome({ cards }: { cards: HomeClimateCard[] })
                         : ""}{" "}
                       · max.                       {formatCelsius(card.lastComplete.tmaxMean)}
                       {rain}
+                      {rainDays}
                       {warmDays}
                       {hotDays}
                       {veryHotDays}

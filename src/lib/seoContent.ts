@@ -1,4 +1,4 @@
-import { formatCelsius, formatDaysFrost, formatDaysGe25, formatDaysGe30, formatDaysGe35, formatDaysGe40, formatMm, formatTropicalNights, roundToPrecision } from "../../packages/weather-core/src/units";
+import { formatCelsius, formatDaysFrost, formatDaysGe25, formatDaysGe30, formatDaysGe35, formatDaysGe40, formatDaysRain, formatMm, formatTropicalNights, roundToPrecision } from "../../packages/weather-core/src/units";
 import { frenchLongDate } from "./birthDay";
 import { formatSignedCelsius, formatSignedMm } from "./compareClimate";
 import {
@@ -120,6 +120,7 @@ export type CommuneCopyClimate = {
   tmaxMean: number | null;
   precipitationSum: number | null;
   precipComplete: boolean;
+  daysRain?: number | null;
   daysGe25?: number | null;
   daysGe30?: number | null;
   daysGe35?: number | null;
@@ -159,6 +160,10 @@ export function communePageCopy(input: {
       const station =
         km != null ? `${input.climate.stationName} (${km} km)` : input.climate.stationName;
       const rainBit = rain ? `, pluie ${rain}` : "";
+      const rainDaysBit =
+        input.climate.precipComplete && input.climate.daysRain != null
+          ? `, ${formatDaysRain(input.climate.daysRain)}`
+          : "";
       const tminBit =
         input.climate.tminMean != null ? `minimale moyenne ${formatCelsius(input.climate.tminMean)}, ` : "";
       const warmDaysBit =
@@ -177,7 +182,7 @@ export function communePageCopy(input: {
           : "";
       return {
         title: `${input.placeName} — ${input.climate.year} · max. ${tmax} | Observatoire Planète`,
-        description: `Dernière année climatique complète observée pour ${input.placeName} (${input.department}) : ${input.climate.year}, ${tminBit}maximale moyenne ${tmax}${rainBit}${warmDaysBit}${hotDaysBit}${veryHotDaysBit}${extremeHotDaysBit}${frostBit}${tropicalBit}. Station ${station}. Ce n’est pas une prévision.`
+        description: `Dernière année climatique complète observée pour ${input.placeName} (${input.department}) : ${input.climate.year}, ${tminBit}maximale moyenne ${tmax}${rainBit}${rainDaysBit}${warmDaysBit}${hotDaysBit}${veryHotDaysBit}${extremeHotDaysBit}${frostBit}${tropicalBit}. Station ${station}. Ce n’est pas une prévision.`
       };
     }
     return { title: genericTitle, description: genericDescription };

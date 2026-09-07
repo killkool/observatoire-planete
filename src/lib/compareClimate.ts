@@ -3,6 +3,7 @@ export type YearClimatePoint = {
   tminMean: number | null;
   tmaxMean: number | null;
   precipitationSum: number | null;
+  daysRain?: number;
   daysGe25?: number;
   daysGe30: number;
   daysGe35?: number;

@@ -21,6 +21,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ slu
         tmaxMean: climate.tmaxMean,
         precipitationSum: climate.precipitationSum,
         precipComplete: climate.precipComplete,
+        daysRain: climate.daysRain,
         daysGe25: climate.daysGe25,
         daysGe30: climate.daysGe30,
         daysGe35: climate.daysGe35,
@@ -58,7 +59,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ slu
           <div style={{ fontSize: 28, color: "#88a0a8", marginTop: 8 }}>{`Année climatique ${card.year}`}</div>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <div style={{ display: "flex", gap: 28 }}>
+          <div style={{ display: "flex", gap: 18 }}>
             <div style={{ display: "flex", flexDirection: "column" }}>
               <div style={{ fontSize: 16, color: "#88a0a8" }}>Minimale moyenne</div>
               <div style={{ fontSize: 36, fontWeight: 700 }}>{card.tminDisplay ?? "non disponible"}</div>
@@ -70,6 +71,10 @@ export async function GET(_request: Request, { params }: { params: Promise<{ slu
             <div style={{ display: "flex", flexDirection: "column" }}>
               <div style={{ fontSize: 16, color: "#88a0a8" }}>Pluie</div>
               <div style={{ fontSize: 36, fontWeight: 700 }}>{card.precipDisplay ?? "non disponible"}</div>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <div style={{ fontSize: 16, color: "#88a0a8" }}>Jours de pluie</div>
+              <div style={{ fontSize: 36, fontWeight: 700 }}>{card.daysRainDisplay ?? "non disponible"}</div>
             </div>
           </div>
           <div style={{ display: "flex", gap: 18 }}>
