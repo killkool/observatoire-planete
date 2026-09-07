@@ -1,6 +1,6 @@
 # Avancement — Observatoire Planète
 
-**Date de revue :** 2026-09-07 (CI science : golden Grenoble seulement si SQLite importé)  
+**Date de revue :** 2026-09-07 (dépôt GitHub public)  
 **Constitution définitive :** [PROMPT_MAITRE_V2.md](./PROMPT_MAITRE_V2.md) — mot pour mot, sections 0–187.  
 **Livraison V1 :** [V1_FRANCE_REFOCUS.md](./V1_FRANCE_REFOCUS.md) + [ROADMAP.md](./ROADMAP.md).  
 **Stack cible :** [ARCHITECTURE_PRODUCTION.md](./ARCHITECTURE_PRODUCTION.md) — [ADR-0002](./adr/ADR-0002-production-stack-v1.md). Runtime encore SQLite.
@@ -88,3 +88,4 @@ Tests : `npm run test:science` (GHA sans sqlite gitignoré : pas de 6,6 °C inve
 | method_version normale mensuelle | month-normal-1991-2020-v1 |
 | method_version SEO | seo-content-v1 |
 | Normales 1991-2020 affichables | 16 postes (annuel et profil mensuel 12/12) |
+| Dépôt GitHub | **public** — https://github.com/killkool/observatoire-planete (sqlite et `raw/` hors git) |

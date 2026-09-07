@@ -9,7 +9,7 @@ Le dépôt contient encore un prototype local **ClimaFrance** (`/dashboard`). Ne
 
 ## Dépôt
 
-GitHub **privé** : https://github.com/killkool/observatoire-planete
+GitHub **public** : https://github.com/killkool/observatoire-planete
 
 Après un clone : `npm install`, puis **une fois** `npm run import:meteo -- --department=38 --from=1980 --to=2026`, `npm run import:communes`, `npm run stats:compute`, `npm run import:era5`. Ensuite tout est local (`data/meteo.sqlite` + `raw/`).
 

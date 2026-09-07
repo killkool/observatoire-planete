@@ -1,6 +1,6 @@
 # Cadre légal — V1 France
 
-**Date :** 2026-09-06  
+**Date :** 2026-09-07  
 **Ceci n’est pas un avis d’avocat.** Aucune offre payante avant revue juridique.
 
 Le registre exécutable et les textes d’attribution détaillés restent dans [DATA_LICENSES.md](./DATA_LICENSES.md) et `packages/licensing/registry/data-sources.yaml`.
@@ -43,4 +43,4 @@ ECMWF High Resolution catalogue : `REQUIRES_REVIEW` — hors V1.
 
 Obligatoire avant : offre payante, publicité, API commerciale, redistribution massive de fichiers source.
 
-Jusqu’à cette revue : usage interne / prototype, attributions déjà affichées sur le slice Grenoble.
+Jusqu’à cette revue : pas d’offre payante, pas de publicité, pas d’API commerciale. Le dépôt GitHub est **public** depuis 2026-09-07 (code + extraits ERA5 JSON CC-BY-4.0 + extraits UI IGN). Ce n’est pas une redistribution massive des fichiers bulk Météo-France (`raw/` et `data/meteo.sqlite` restent hors git). Attributions déjà affichées sur le slice Grenoble.
