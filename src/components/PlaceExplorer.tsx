@@ -170,6 +170,7 @@ type YearRow = {
   tmaxMean: number | null;
   precipitationSum: number | null;
   daysGe30: number;
+  daysGe35?: number;
   daysFrost?: number;
   tropicalNights?: number;
   yearComplete: boolean;
@@ -354,6 +355,7 @@ export default function PlaceExplorer({
     precipitationSum: number | null;
     precipComplete: boolean;
     daysGe30: number;
+    daysGe35?: number;
     daysFrost?: number;
     tropicalNights?: number;
     stationName: string;
@@ -418,6 +420,7 @@ export default function PlaceExplorer({
             precipitationSum: climateLead.precipitationSum,
             precipComplete: climateLead.precipComplete,
             daysGe30: climateLead.daysGe30,
+            daysGe35: climateLead.daysGe35,
             daysFrost: climateLead.daysFrost,
             tropicalNights: climateLead.tropicalNights,
             stationName: climateLead.stationName,
@@ -726,6 +729,12 @@ export default function PlaceExplorer({
                   <em>Jours ≥ 30 °C</em>
                   {climateLead.daysGe30}
                 </span>
+                {climateLead.daysGe35 != null ? (
+                  <span>
+                    <em>Jours ≥ 35 °C</em>
+                    {climateLead.daysGe35}
+                  </span>
+                ) : null}
                 {climateLead.daysFrost != null ? (
                   <span>
                     <em>Jours de gel</em>
@@ -1114,7 +1123,7 @@ export default function PlaceExplorer({
                 {(() => {
                   const last = [...yearly.years].reverse().find((row) => row.yearComplete && row.precipComplete);
                   return last
-                    ? `${last.year} · ${last.precipitationSum ?? "non disponible"} mm · ${last.daysGe30} jour${last.daysGe30 > 1 ? "s" : ""} ≥ 30 °C${last.daysFrost != null ? ` · ${last.daysFrost} jour${last.daysFrost > 1 ? "s" : ""} de gel` : ""}${last.tropicalNights != null ? ` · ${last.tropicalNights} nuit${last.tropicalNights > 1 ? "s" : ""} tropicale${last.tropicalNights > 1 ? "s" : ""}` : ""}`
+                    ? `${last.year} · ${last.precipitationSum ?? "non disponible"} mm · ${last.daysGe30} jour${last.daysGe30 > 1 ? "s" : ""} ≥ 30 °C${last.daysGe35 != null ? ` · ${last.daysGe35} jour${last.daysGe35 > 1 ? "s" : ""} ≥ 35 °C` : ""}${last.daysFrost != null ? ` · ${last.daysFrost} jour${last.daysFrost > 1 ? "s" : ""} de gel` : ""}${last.tropicalNights != null ? ` · ${last.tropicalNights} nuit${last.tropicalNights > 1 ? "s" : ""} tropicale${last.tropicalNights > 1 ? "s" : ""}` : ""}`
                     : "non disponible";
                 })()}
               </p>

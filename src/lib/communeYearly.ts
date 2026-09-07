@@ -188,6 +188,7 @@ export function getCommuneYearly(
       tmaxMean,
       precipitationSum: row.precip_complete ? roundToPrecision(row.precipitation_sum, 1) : null,
       daysGe30: row.days_ge_30,
+      daysGe35: row.days_ge_35,
       daysFrost: row.days_frost,
       tropicalNights: row.tropical_nights,
       yearComplete,
@@ -274,6 +275,7 @@ export function climateCopyFromYearly(yearly: CommuneYearlyPayload | null): {
   precipitationSum: number | null;
   precipComplete: boolean;
   daysGe30: number;
+  daysGe35?: number;
   daysFrost?: number;
   tropicalNights?: number;
   stationName: string;
@@ -289,6 +291,7 @@ export function climateCopyFromYearly(yearly: CommuneYearlyPayload | null): {
     precipitationSum: last.precipitationSum,
     precipComplete: last.precipComplete,
     daysGe30: last.daysGe30,
+    daysGe35: last.daysGe35,
     daysFrost: last.daysFrost,
     tropicalNights: last.tropicalNights,
     stationName: yearly.station.name,
@@ -307,6 +310,7 @@ export type FeaturedClimateCard = {
     precipitationSum: number | null;
     precipComplete: boolean;
     daysGe30: number;
+    daysGe35?: number;
     daysFrost?: number;
     tropicalNights?: number;
   } | null;
@@ -336,6 +340,7 @@ export function featuredClimateCards(places: PlaceRow[]): FeaturedClimateCard[] 
             precipitationSum: last.precipitationSum,
             precipComplete: last.precipComplete,
             daysGe30: last.daysGe30,
+            daysGe35: last.daysGe35,
             daysFrost: last.daysFrost,
             tropicalNights: last.tropicalNights
           }

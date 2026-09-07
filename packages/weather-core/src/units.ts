@@ -44,6 +44,12 @@ export function formatDaysGe30(count: number | null | undefined): string {
   return `${count} jour${count > 1 ? "s" : ""} ≥ 30 °C`;
 }
 
+/** Compte de jours à Tmax ≥ 35 °C. 0 est un vrai zéro, pas une valeur manquante. */
+export function formatDaysGe35(count: number | null | undefined): string {
+  if (count == null || !Number.isInteger(count) || count < 0) return "non disponible";
+  return `${count} jour${count > 1 ? "s" : ""} ≥ 35 °C`;
+}
+
 /** Compte de jours à Tmin < 0 °C. 0 est un vrai zéro, pas une valeur manquante. */
 export function formatDaysFrost(count: number | null | undefined): string {
   if (count == null || !Number.isInteger(count) || count < 0) return "non disponible";

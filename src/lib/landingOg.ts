@@ -43,6 +43,7 @@ export function buildHomeOgModel(): HomeOgModel | null {
     precipitationSum: climate.precipitationSum,
     precipComplete: climate.precipComplete,
     daysGe30: climate.daysGe30,
+    daysGe35: climate.daysGe35,
     daysFrost: climate.daysFrost,
     tropicalNights: climate.tropicalNights,
     stationName: climate.stationName,

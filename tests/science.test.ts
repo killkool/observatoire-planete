@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
-import { currentTowardsUv, formatCelsius, formatDaysFrost, formatDaysGe30, formatHpaFromPa, formatKmhFromMs, formatMjFromJm2, formatMmWaterFromM, formatTropicalNights, formatWindFromDeg, roundToPrecision, windFromUv } from "../packages/weather-core/src/units";
+import { currentTowardsUv, formatCelsius, formatDaysFrost, formatDaysGe30, formatDaysGe35, formatHpaFromPa, formatKmhFromMs, formatMjFromJm2, formatMmWaterFromM, formatTropicalNights, formatWindFromDeg, roundToPrecision, windFromUv } from "../packages/weather-core/src/units";
 import { ORIGIN_LABEL_PUBLIC_FR } from "../packages/weather-core/src/origin";
 import { warmerThanPercent, meanOfKnown, describeSameDayLead } from "../packages/weather-core/src/sameDayStats";
 import { scoreConfidence } from "../packages/confidence-engine/src/score";
@@ -69,6 +69,10 @@ assert.equal(formatDaysGe30(0), "0 jour ≥ 30 °C");
 assert.equal(formatDaysGe30(1), "1 jour ≥ 30 °C");
 assert.equal(formatDaysGe30(57), "57 jours ≥ 30 °C");
 assert.equal(formatDaysGe30(null), "non disponible");
+assert.equal(formatDaysGe35(0), "0 jour ≥ 35 °C");
+assert.equal(formatDaysGe35(1), "1 jour ≥ 35 °C");
+assert.equal(formatDaysGe35(15), "15 jours ≥ 35 °C");
+assert.equal(formatDaysGe35(null), "non disponible");
 assert.equal(formatDaysFrost(0), "0 jour de gel");
 assert.equal(formatDaysFrost(1), "1 jour de gel");
 assert.equal(formatDaysFrost(46), "46 jours de gel");
@@ -482,6 +486,7 @@ assert.ok(climateCopy.description.includes("GRENOBLE - LVD"));
 assert.ok(climateCopy.description.includes("10.2 km"));
 assert.equal(climateCopy.description.includes("8.2"), false, "fixture without tminMean must not invent a mean minimum");
 assert.equal(climateCopy.description.includes("57"), false, "fixture without daysGe30 must not invent hot days");
+assert.equal(climateCopy.description.includes("35 °C"), false, "fixture without daysGe35 must not invent very hot days");
 assert.equal(climateCopy.description.includes("gel"), false, "fixture without daysFrost must not invent frost days");
 assert.equal(climateCopy.description.includes("tropicale"), false, "fixture without tropicalNights must not invent tropical nights");
 assert.equal(climateCopy.description.includes("6.6"), false);
@@ -696,6 +701,7 @@ assert.ok(homeSrc.includes("lastComplete"), "home cards must show the last offic
 assert.ok(homeSrc.includes("tminMean"), "home cards show the official mean minimum when it exists");
 assert.ok(homeSrc.includes("formatCelsius"));
 assert.ok(homeSrc.includes("formatDaysGe30"), "home cards show official days at or above 30 °C");
+assert.ok(homeSrc.includes("formatDaysGe35"), "home cards show official days at or above 35 °C");
 assert.ok(homeSrc.includes("formatDaysFrost"), "home cards show official frost days when they exist");
 assert.ok(homeSrc.includes("formatTropicalNights"), "home cards show official tropical nights when they exist");
 assert.ok(homeSrc.includes("roundToPrecision"));
@@ -706,8 +712,8 @@ assert.ok(homePageSrc.includes("getFeaturedClimateCached"), "home first HTML mus
 assert.ok(homePageSrc.includes("shareHomeCardPath"), "home OG card is an official Grenoble climate example");
 assert.ok(homePageSrc.includes("buildHomeOgModel"));
 const homeCacheSrc = fs.readFileSync(path.join(process.cwd(), "src/lib/sqliteReadCache.ts"), "utf8");
-assert.ok(homeCacheSrc.includes("featured-climate-v6"));
-assert.ok(homeCacheSrc.includes("commune-yearly-page-v4"));
+assert.ok(homeCacheSrc.includes("featured-climate-v8"));
+assert.ok(homeCacheSrc.includes("commune-yearly-page-v5"));
 const birthExSrc = fs.readFileSync(path.join(process.cwd(), "src/components/BirthExamples.tsx"), "utf8");
 assert.ok(birthExSrc.includes("Aucune mesure officielle"));
 assert.ok(birthExSrc.includes("formatCelsius"));
@@ -738,6 +744,8 @@ assert.ok(
 assert.ok(explorerSrc.includes("Minimale moyenne"), "climate hero shows the official mean minimum, not a daily Tmin");
 assert.ok(explorerSrc.includes("Jours ≥ 30 °C"), "climate hero shows official days at or above 30 °C");
 assert.ok(explorerSrc.includes("daysGe30"));
+assert.ok(explorerSrc.includes("Jours ≥ 35 °C"), "climate hero shows official days at or above 35 °C");
+assert.ok(explorerSrc.includes("climateLead.daysGe35"));
 assert.ok(explorerSrc.includes("Jours de gel"), "climate hero shows official frost days");
 assert.ok(explorerSrc.includes("daysFrost"));
 assert.ok(explorerSrc.includes("Nuits tropicales"), "climate hero shows official tropical nights");
@@ -752,6 +760,8 @@ assert.ok(climateOgSrc.includes("buildClimateShareCardModel"));
 assert.ok(climateOgSrc.includes("tminMean"), "climate OG card includes the official mean minimum");
 assert.ok(climateOgSrc.includes("Minimale moyenne"));
 assert.ok(climateOgSrc.includes("daysGe30"), "climate OG card includes official days at or above 30 °C");
+assert.ok(climateOgSrc.includes("Jours à 35 °C ou plus"));
+assert.ok(climateOgSrc.includes("daysGe35"));
 assert.ok(climateOgSrc.includes("Jours de gel"));
 assert.ok(climateOgSrc.includes("daysFrost"));
 assert.ok(climateOgSrc.includes("Nuits tropicales"));
@@ -761,6 +771,7 @@ const homeOgSrc = fs.readFileSync(path.join(process.cwd(), "src/app/og/accueil/r
 assert.ok(homeOgSrc.includes("buildHomeOgModel"));
 assert.ok(homeOgSrc.includes("exampleLine"), "home OG must label Grenoble as an example, not France-wide climate");
 assert.ok(homeOgSrc.includes("Jours de gel"));
+assert.ok(homeOgSrc.includes("Jours à 35 °C ou plus"));
 assert.ok(homeOgSrc.includes("Nuits tropicales"));
 assert.equal(homeOgSrc.includes("ERA5"), false, "home OG card must not show reanalysis");
 const landingOgSrc = fs.readFileSync(path.join(process.cwd(), "src/lib/landingOg.ts"), "utf8");
@@ -1389,6 +1400,7 @@ const climateCard = buildClimateShareCardModel({
   precipitationSum: 901.1,
   precipComplete: true,
   daysGe30: 57,
+  daysGe35: 15,
   daysFrost: 46,
   tropicalNights: 5,
   stationName: "GRENOBLE - LVD",
@@ -1400,6 +1412,9 @@ assert.ok(climateCard.tminDisplay?.includes("8.2"));
 assert.ok(climateCard.tmaxDisplay.includes("19.6"));
 assert.equal(climateCard.precipDisplay, "901.1 mm");
 assert.equal(climateCard.daysGe30Display, "57 j");
+assert.equal(climateCard.daysGe35Display, "15 j");
+assert.equal(climateCard.daysGe35Display?.includes("18"), false, "climate OG 35 °C days are 2025, not the 2022 count");
+assert.equal(climateCard.daysGe35Display?.includes("22"), false, "climate OG 35 °C days are 2025, not the 2003 record");
 assert.equal(climateCard.daysFrostDisplay, "46 j");
 assert.equal(climateCard.tropicalNightsDisplay, "5 nuits");
 assert.equal(climateCard.tropicalNightsDisplay?.includes("7"), false, "climate OG tropical nights are 2025, not the 2024 record");
@@ -1418,6 +1433,7 @@ const climateShare = buildClimateShareText({
   precipitationSum: 901.1,
   precipComplete: true,
   daysGe30: 57,
+  daysGe35: 15,
   daysFrost: 46,
   tropicalNights: 5,
   stationName: "GRENOBLE - LVD",
@@ -1429,8 +1445,11 @@ assert.ok(climateShare.includes("8.2 °C"));
 assert.ok(climateShare.includes("19.6 °C"));
 assert.ok(climateShare.includes("901.1 mm"));
 assert.ok(climateShare.includes("57 jours ≥ 30 °C"));
+assert.ok(climateShare.includes("15 jours ≥ 35 °C"));
 assert.ok(climateShare.includes("46 jours de gel"));
 assert.ok(climateShare.includes("5 nuits tropicales"));
+assert.equal(climateShare.includes("18 jours ≥ 35"), false, "share text must not paste the 2022 35 °C count");
+assert.equal(climateShare.includes("22 jours ≥ 35"), false, "share text must not paste the 2003 35 °C record");
 assert.equal(climateShare.includes("7 nuits"), false, "share text must not paste the 2024 tropical-night record");
 assert.equal(climateShare.includes("94"), false, "share text must not paste the 2005 frost record");
 assert.equal(climateShare.includes("71"), false, "share text must not paste the 2022 hot-day record");
@@ -1453,6 +1472,7 @@ const climateShareNoMin = buildClimateShareText({
 assert.equal(climateShareNoMin.includes("minimale moyenne"), false, "missing tmin must not be invented in the share text");
 assert.equal(climateShareNoMin.includes("mm"), false, "incomplete precip must not invent millimetres in the share text");
 assert.equal(climateShareNoMin.includes("30 °C"), false, "omitted hot-day count must not be invented in the share text");
+assert.equal(climateShareNoMin.includes("35 °C"), false, "omitted 35 °C count must not be invented in the share text");
 assert.equal(climateShareNoMin.includes("gel"), false, "omitted frost count must not be invented in the share text");
 assert.equal(climateShareNoMin.includes("tropicale"), false, "omitted tropical-night count must not be invented in the share text");
 const climateCardNoRain = buildClimateShareCardModel({
@@ -1466,6 +1486,7 @@ const climateCardNoRain = buildClimateShareCardModel({
 });
 assert.equal(climateCardNoRain?.precipDisplay, null, "incomplete precip must not invent millimetres on the OG card");
 assert.equal(climateCardNoRain?.daysGe30Display, null, "omitted hot-day count must not be invented on the OG card");
+assert.equal(climateCardNoRain?.daysGe35Display, null, "omitted 35 °C count must not be invented on the OG card");
 assert.equal(climateCardNoRain?.daysFrostDisplay, null, "omitted frost count must not be invented on the OG card");
 assert.equal(climateCardNoRain?.tropicalNightsDisplay, null, "omitted tropical-night count must not be invented on the OG card");
 assert.equal(buildClimateShareCardModel({
@@ -2071,6 +2092,10 @@ if (obsCount === 0) {
   assert.equal(grenobleHome.lastComplete?.daysGe30, 57);
   assert.equal(grenobleHome.lastComplete?.daysGe30, yearly2025.daysGe30);
   assert.notEqual(grenobleHome.lastComplete?.daysGe30, 71, "home cards must not paste the 2022 hot-day record onto 2025");
+  assert.equal(grenobleHome.lastComplete?.daysGe35, 15);
+  assert.equal(grenobleHome.lastComplete?.daysGe35, yearly2025.daysGe35);
+  assert.notEqual(grenobleHome.lastComplete?.daysGe35, 18, "home cards must not paste the 2022 35 °C count onto 2025");
+  assert.notEqual(grenobleHome.lastComplete?.daysGe35, 22, "home cards must not paste the 2003 35 °C record onto 2025");
   assert.equal(grenobleHome.lastComplete?.daysFrost, 46);
   assert.equal(grenobleHome.lastComplete?.daysFrost, yearly2025.daysFrost);
   assert.notEqual(grenobleHome.lastComplete?.daysFrost, 94, "home cards must not paste the 2005 frost record onto 2025");
@@ -2093,6 +2118,7 @@ if (obsCount === 0) {
   assert.equal(crollesHome.lastComplete?.tmaxMean, grenobleHome.lastComplete?.tmaxMean);
   assert.equal(crollesHome.lastComplete?.precipitationSum, grenobleHome.lastComplete?.precipitationSum);
   assert.equal(crollesHome.lastComplete?.daysGe30, grenobleHome.lastComplete?.daysGe30);
+  assert.equal(crollesHome.lastComplete?.daysGe35, grenobleHome.lastComplete?.daysGe35);
   assert.equal(crollesHome.lastComplete?.daysFrost, grenobleHome.lastComplete?.daysFrost);
   assert.equal(crollesHome.lastComplete?.tropicalNights, grenobleHome.lastComplete?.tropicalNights);
   const grenobleClimate = climateCopyFromYearly(yearly);
@@ -2102,6 +2128,9 @@ if (obsCount === 0) {
   assert.equal(grenobleClimate?.precipitationSum, 901.1);
   assert.equal(grenobleClimate?.daysGe30, 57);
   assert.notEqual(grenobleClimate?.daysGe30, 71, "canonical climate is 2025 hot days, not the 2022 record");
+  assert.equal(grenobleClimate?.daysGe35, 15);
+  assert.notEqual(grenobleClimate?.daysGe35, 18, "canonical climate is 2025 35 °C days, not the 2022 count");
+  assert.notEqual(grenobleClimate?.daysGe35, 22, "canonical climate is 2025 35 °C days, not the 2003 record");
   assert.equal(grenobleClimate?.daysFrost, 46);
   assert.notEqual(grenobleClimate?.daysFrost, 94, "canonical climate is 2025 frost, not the 2005 record");
   assert.equal(grenobleClimate?.tropicalNights, 5);
@@ -2118,6 +2147,9 @@ if (obsCount === 0) {
   assert.ok(homeOg.tmaxDisplay.includes("19.6"));
   assert.equal(homeOg.precipDisplay, "901.1 mm");
   assert.equal(homeOg.daysGe30Display, "57 j");
+  assert.equal(homeOg.daysGe35Display, "15 j");
+  assert.equal(homeOg.daysGe35Display?.includes("18"), false);
+  assert.equal(homeOg.daysGe35Display?.includes("22"), false);
   assert.equal(homeOg.daysFrostDisplay, "46 j");
   assert.equal(homeOg.tropicalNightsDisplay, "5 nuits");
   assert.equal(homeOg.tropicalNightsDisplay?.includes("7"), false);
@@ -2158,12 +2190,15 @@ if (obsCount === 0) {
   assert.ok(grenobleClimateCopy.description.includes("8.2 °C"));
   assert.ok(grenobleClimateCopy.description.includes("901.1 mm"));
   assert.ok(grenobleClimateCopy.description.includes("57 jours ≥ 30 °C"));
+  assert.ok(grenobleClimateCopy.description.includes("15 jours ≥ 35 °C"));
   assert.ok(grenobleClimateCopy.description.includes("46 jours de gel"));
   assert.ok(grenobleClimateCopy.description.includes("5 nuits tropicales"));
   assert.equal(grenobleClimateCopy.description.includes("71"), false, "canonical description is not the 2022 hot-day record");
   assert.equal(grenobleClimateCopy.description.includes("94"), false, "canonical description is not the 2005 frost record");
   assert.equal(grenobleClimateCopy.description.includes("57 jours de gel"), false, "2022 frost must not replace 2025");
   assert.equal(grenobleClimateCopy.description.includes("7 nuits"), false, "canonical description is not the 2024 tropical-night record");
+  assert.equal(grenobleClimateCopy.description.includes("18 jours ≥ 35"), false, "canonical description is not the 2022 35 °C count");
+  assert.equal(grenobleClimateCopy.description.includes("22 jours ≥ 35"), false, "canonical description is not the 2003 35 °C record");
   assert.ok(grenobleClimateCopy.description.includes("10.2 km"));
   assert.equal(grenobleClimateCopy.description.includes("6.6"), false);
   assert.equal(grenobleClimateCopy.description.includes("6.2"), false, "canonical description is not the coldest-year record");
@@ -2174,6 +2209,7 @@ if (obsCount === 0) {
   assert.equal(crollesClimate?.tmaxMean, grenobleClimate?.tmaxMean);
   assert.equal(crollesClimate?.precipitationSum, grenobleClimate?.precipitationSum);
   assert.equal(crollesClimate?.daysGe30, grenobleClimate?.daysGe30);
+  assert.equal(crollesClimate?.daysGe35, grenobleClimate?.daysGe35);
   assert.equal(crollesClimate?.daysFrost, grenobleClimate?.daysFrost);
   assert.equal(crollesClimate?.tropicalNights, grenobleClimate?.tropicalNights);
   assert.equal(crollesClimate?.stationName, grenobleClimate?.stationName);
