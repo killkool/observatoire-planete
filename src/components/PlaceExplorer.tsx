@@ -364,9 +364,10 @@ export default function PlaceExplorer({
     histoire && initialChildhood ? initialChildhood : null
   );
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(
-    () => !(initialHistory && initialHistory.date === initialDate)
-  );
+  const [loading, setLoading] = useState(() => {
+    if (!dateInQuery && !histoire) return false;
+    return !(initialHistory && initialHistory.date === initialDate);
+  });
   const [copied, setCopied] = useState(false);
   const [shareFallback, setShareFallback] = useState("");
   const [yearA, setYearA] = useState<number | null>(null);
@@ -423,6 +424,11 @@ export default function PlaceExplorer({
   }
 
   useEffect(() => {
+    if (!dateInQuery && !histoire && date === initialDate) {
+      setData(null);
+      setLoading(false);
+      return;
+    }
     if (initialHistory && initialHistory.date === date) {
       setData(initialHistory);
       setLoading(false);
@@ -443,9 +449,9 @@ export default function PlaceExplorer({
       })
       .finally(() => setLoading(false));
     return () => controller.abort();
-  }, [slug, date, initialHistory]);
+  }, [slug, date, initialHistory, dateInQuery, histoire, initialDate]);
 
-  const insee = data?.place?.insee_code;
+  const insee = data?.place?.insee_code || yearly?.commune?.insee;
   useEffect(() => {
     if (initialYearly) setYearly(initialYearly);
   }, [initialYearly]);
@@ -644,6 +650,7 @@ export default function PlaceExplorer({
   }, [yearly, monthKind, monthYearA, monthYearB]);
 
   const place = data?.place;
+  const displayName = place?.name || yearly?.commune?.name || slug;
 
   return (
     <main className="placeVisual">
@@ -653,8 +660,8 @@ export default function PlaceExplorer({
             <Link href="/">Accueil</Link>
             <span>
               {" "}
-              / {place?.department_slug ? `${departmentLabel(place.department_slug)} / ` : ""}
-              {place?.name || slug}
+              /               {place?.department_slug ? `${departmentLabel(place.department_slug)} / ` : ""}
+              {displayName}
             </span>
           </p>
           <p className="eyebrow">
@@ -664,7 +671,7 @@ export default function PlaceExplorer({
                 ? "CLIMAT OBSERVÉ · ANNÉE COMPLÈTE"
                 : "HISTOIRE MÉTÉO · MESURE OFFICIELLE"}
           </p>
-          <h1>{place?.name || slug}</h1>
+          <h1>{displayName}</h1>
           {showClimateHero ? null : <p>{date.split("-").reverse().join("/")}</p>}
           {showClimateHero && climateLead ? (
             <>
@@ -717,9 +724,11 @@ export default function PlaceExplorer({
               <span>{histoire ? "Date de naissance" : "Quel temps faisait-il ?"}</span>
               <input type="date" value={date} onChange={(e) => goToDate(e.target.value)} />
             </label>
-            <button type="button" className="btnGhost shareBtn" onClick={copyShare}>
-              {copied ? "Souvenir copié" : "Partager ce jour"}
-            </button>
+            {showClimateHero ? null : (
+              <button type="button" className="btnGhost shareBtn" onClick={copyShare}>
+                {copied ? "Souvenir copié" : "Partager ce jour"}
+              </button>
+            )}
           </div>
           {shareFallback ? (
             <textarea className="shareFallback" readOnly value={shareFallback} rows={4} />
@@ -728,7 +737,7 @@ export default function PlaceExplorer({
       </section>
 
       {error && <div className="error">{error}</div>}
-      {loading && !ready && <p className="note loadingNote">Chargement des observations…</p>}
+      {loading && !ready && !showClimateHero && <p className="note loadingNote">Chargement des observations…</p>}
 
       {histoire && place && data && (
         <section className="panel birthPanel">
@@ -1001,7 +1010,7 @@ export default function PlaceExplorer({
           </div>
       ) : null}
 
-      {place ? (
+      {yearly || place ? (
           <div className="placeClimateFlow">
           <section className="panel chartPanel">
             <div className="panelTitle">
@@ -1274,9 +1283,11 @@ export default function PlaceExplorer({
                   <small>pluie annuelle complète seulement</small>
                 </div>
               </div>
-              {data.place.insee_code ? (
+              {data?.place?.insee_code || yearly?.commune?.insee ? (
                 <p className="note">
-                  <Link href={`/comparer?a=${data.place.insee_code}`}>Comparer avec une autre commune</Link>
+                  <Link href={`/comparer?a=${data?.place?.insee_code || yearly?.commune?.insee}`}>
+                    Comparer avec une autre commune
+                  </Link>
                 </p>
               ) : null}
             </section>

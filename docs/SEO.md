@@ -26,7 +26,7 @@ France : slugs stables + INSEE en donnée, pas comme seul URL si le nom change. 
 - JSON-LD : `WebSite` (accueil), `WebPage` + `City` (INSEE, geo) + `BreadcrumbList` sur la commune. `WeatherObservation` seulement si l’URL demande une date (`?date=` ou naissance) **et** qu’une mesure **OBSERVED** existe ; Tmin/Tmax/pluie omises si NULL, jamais inventées. Pas d’ERA5 dans le graphe. URL canonique sans query : pas la mesure du jour par défaut collée sur 2025.
 - `seo_content_score` (`seo-content-v1`) : 40 identité officielle + 20/40 années climatiques (1 / ≥ 10) + 20 historique distinctif (série annuelle ou jours observés). Seuil 50. Page sous le seuil : visitable, `noindex`. Ce n’est **pas** un scorer de volume de texte.
 - Pas encore : pages `en`, SearchAction (la recherche est un GET `/api/` non indexé).
-- Cartes de partage : `/og/{slug}/{date}` (PNG serveur). Températures seulement si une observation existe. Pas d’ERA5 sur la carte.
+- Cartes de partage : `/og/{slug}/{date}` (PNG serveur). Températures seulement si une observation existe. URL canonique sans `?date=` : `/og/climat/{slug}` = dernière année climatique officielle, pas le jour par défaut. Pas d’ERA5 sur la carte.
 
 ## Langues
 

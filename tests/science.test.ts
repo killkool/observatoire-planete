@@ -36,7 +36,7 @@ import {
 import { seoContentScore, frenchLanguageAlternates, publicAbsoluteUrl, seoFactsForPlace, listIndexablePlaces, SEO_CONTENT_METHOD, communePageCopy, officialCopyFromDay, comparePageCopy } from "../src/lib/seoContent";
 import { communeJsonLd, websiteJsonLd } from "../src/lib/seoJsonLd";
 import { coldestCompleteSeason, seasonPublicLabel } from "../src/lib/climateSeasons";
-import { buildShareCardModel, shareCardPath } from "../src/lib/shareCard";
+import { buildClimateShareCardModel, buildShareCardModel, shareCardPath, shareClimateCardPath } from "../src/lib/shareCard";
 import { heatEpisodesAt, stationHeatStreaks } from "../src/lib/climateHeatStreaks";
 import {
   formatSignedPerDecade,
@@ -333,6 +333,7 @@ assert.ok(heroChunk.includes("climateLead"), "canonical commune hero shows last 
 assert.ok(heroChunk.includes("formatCelsius"));
 assert.ok(heroChunk.includes("formatMm"));
 assert.ok(heroChunk.includes("Année climatique complète"));
+assert.ok(heroChunk.includes("showClimateHero"), "canonical landing must not paste the default day into the first screen");
 assert.ok(heroChunk.includes("buildBirthLead"), "naissance story must reuse official Tmin/Tmax/rain + station");
 assert.ok(!heroChunk.includes("era5"), "hero must not show ERA5 as the first answer");
 assert.ok(!heroChunk.includes("placePhotoSrc"), "hero must not load the IGN photo on the LCP path");
@@ -686,6 +687,21 @@ assert.ok(communePageSrc.includes("climateCopyFromYearly"), "commune metadata wi
 assert.ok(communePageSrc.includes("getCommuneYearlyPageCached"));
 assert.ok(communePageSrc.includes("climateLead"), "canonical commune first HTML must carry the last complete climate year");
 assert.ok(communePageSrc.includes("dateInQuery || histoire ? observed : null"), "JSON-LD WeatherObservation is only for a requested day");
+assert.ok(communePageSrc.includes("shareClimateCardPath"), "canonical OG card is the climate year, not the default day");
+assert.ok(
+  communePageSrc.includes("(dateInQuery || histoire) && isIsoDate(date)"),
+  "canonical commune page must not SSR the default day's history"
+);
+assert.ok(explorerSrc.includes("!dateInQuery && !histoire && date === initialDate"), "canonical landing must not fetch the default day");
+assert.ok(explorerSrc.includes("yearly || place"), "yearly climate must stay visible without a requested day");
+assert.ok(
+  explorerSrc.includes("data?.place?.insee_code || yearly?.commune?.insee"),
+  "climate landing must not crash when the default day is absent"
+);
+const climateOgSrc = fs.readFileSync(path.join(process.cwd(), "src/app/og/climat/[slug]/route.tsx"), "utf8");
+assert.ok(climateOgSrc.includes("climateCopyFromYearly"));
+assert.ok(climateOgSrc.includes("buildClimateShareCardModel"));
+assert.equal(climateOgSrc.includes("ERA5"), false, "climate OG card must not show reanalysis");
 
 assert.equal(warmerThanPercent(null, [1, 2, 3, 4, 5]), null);
 assert.equal(warmerThanPercent(21.6, [10, 12, 15, 18, 20, 21.6, 22]), 71);
@@ -1288,6 +1304,44 @@ assert.equal(winterCold?.year, 2017);
 assert.equal(seasonPublicLabel("DJF").eyebrow, "LES HIVERS");
 assert.equal(shareCardPath("grenoble", "1983-05-12"), "/og/grenoble/1983-05-12");
 assert.equal(shareCardPath("grenoble", "1983-13-40"), null);
+assert.equal(shareClimateCardPath("grenoble"), "/og/climat/grenoble");
+assert.equal(shareClimateCardPath("  "), null);
+const climateCard = buildClimateShareCardModel({
+  placeName: "Grenoble",
+  year: 2025,
+  tmaxMean: 19.6,
+  precipitationSum: 901.1,
+  precipComplete: true,
+  stationName: "GRENOBLE - LVD",
+  distanceKm: 10.2
+});
+assert.ok(climateCard);
+assert.equal(climateCard.year, 2025);
+assert.ok(climateCard.tmaxDisplay.includes("19.6"));
+assert.equal(climateCard.precipDisplay, "901.1 mm");
+assert.ok(climateCard.stationLine.includes("GRENOBLE - LVD"));
+assert.ok(climateCard.stationLine.includes("10.2 km"));
+assert.equal(climateCard.tmaxDisplay.includes("20.2"), false, "climate OG is last complete year, not the hottest-year record");
+assert.equal(climateCard.note.includes("ERA5"), false);
+const climateCardNoRain = buildClimateShareCardModel({
+  placeName: "Grenoble",
+  year: 2025,
+  tmaxMean: 19.6,
+  precipitationSum: null,
+  precipComplete: false,
+  stationName: "GRENOBLE - LVD",
+  distanceKm: 10.2
+});
+assert.equal(climateCardNoRain?.precipDisplay, null, "incomplete precip must not invent millimetres on the OG card");
+assert.equal(buildClimateShareCardModel({
+  placeName: "Grenoble",
+  year: 2025,
+  tmaxMean: null,
+  precipitationSum: null,
+  precipComplete: false,
+  stationName: "GRENOBLE - LVD",
+  distanceKm: 10.2
+}), null);
 const cardMissing = buildShareCardModel({
   placeName: "Grenoble",
   isoDate: "1900-01-01",

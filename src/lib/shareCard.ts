@@ -1,4 +1,5 @@
 import { frenchLongDate } from "./birthDay";
+import { formatCelsius, formatMm } from "../../packages/weather-core/src/units";
 
 export type ShareCardModel = {
   placeName: string;
@@ -15,6 +16,46 @@ export type ShareCardModel = {
 export function shareCardPath(slug: string, isoDate: string): string | null {
   if (!slug.trim() || !frenchLongDate(isoDate)) return null;
   return `/og/${encodeURIComponent(slug.trim())}/${isoDate}`;
+}
+
+/** Carte de partage de l’URL canonique : année climatique, pas le jour par défaut. */
+export function shareClimateCardPath(slug: string): string | null {
+  if (!slug.trim()) return null;
+  return `/og/climat/${encodeURIComponent(slug.trim())}`;
+}
+
+export type ClimateShareCardModel = {
+  placeName: string;
+  year: number;
+  tmaxDisplay: string;
+  precipDisplay: string | null;
+  stationLine: string;
+  attribution: string;
+  note: string;
+};
+
+export function buildClimateShareCardModel(input: {
+  placeName: string;
+  year: number;
+  tmaxMean: number | null;
+  precipitationSum: number | null;
+  precipComplete: boolean;
+  stationName: string;
+  distanceKm: number | null;
+}): ClimateShareCardModel | null {
+  if (input.tmaxMean == null) return null;
+  const km = input.distanceKm != null ? ` · ${input.distanceKm} km` : "";
+  return {
+    placeName: input.placeName,
+    year: input.year,
+    tmaxDisplay: formatCelsius(input.tmaxMean),
+    precipDisplay:
+      input.precipComplete && input.precipitationSum != null ? formatMm(input.precipitationSum) : null,
+    stationLine: `Année climatique complète · ${input.stationName}${km}`,
+    attribution:
+      "Source : Météo-France — Données climatologiques de base (quotidiennes), Licence Ouverte 2.0.",
+    note: "Ce n’est pas une prévision."
+  };
 }
 
 export function buildShareCardModel(input: {

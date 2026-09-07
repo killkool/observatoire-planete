@@ -21,7 +21,7 @@ export default async function CommunePage({
   const dateInQuery = Boolean(query.date && isIsoDate(query.date));
   const birthYear = isIsoDate(date) ? Number(date.slice(0, 4)) : NaN;
   const [history, yearly, childhood] = await Promise.all([
-    isIsoDate(date) ? getPlaceHistoryCached(commune, date) : Promise.resolve(null),
+    (dateInQuery || histoire) && isIsoDate(date) ? getPlaceHistoryCached(commune, date) : Promise.resolve(null),
     getCommuneYearlyPageCached(place.insee_code),
     histoire && Number.isInteger(birthYear)
       ? getCommuneChildhoodCached(place.insee_code, birthYear)

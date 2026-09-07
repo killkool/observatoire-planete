@@ -7,7 +7,7 @@ import { climateCopyFromYearly } from "@/lib/communeYearly";
 import { communePath, departmentLabel } from "@/lib/placeUrl";
 import { communePageCopy, frenchLanguageAlternates, officialCopyFromDay, seoFactsForPlace } from "@/lib/seoContent";
 import { communeJsonLd } from "@/lib/seoJsonLd";
-import { shareCardPath } from "@/lib/shareCard";
+import { shareCardPath, shareClimateCardPath } from "@/lib/shareCard";
 import { getCommuneChildhoodCached, getCommuneYearlyPageCached, getPlaceHistoryCached } from "@/lib/sqliteReadCache";
 import { notFound } from "next/navigation";
 
@@ -44,7 +44,13 @@ export async function generateMetadata({
     climate
   });
   const path = communePath(place);
-  const image = shareCardPath(place.slug, date);
+  const image =
+    dateInQuery || naissance
+      ? shareCardPath(place.slug, date)
+      : climate
+        ? shareClimateCardPath(place.slug)
+        : null;
+  const imageAlt = climate ? `${place.name}, ${climate.year}` : `${place.name}, ${date}`;
   const seo = seoFactsForPlace(place);
   return {
     title: copy.title,
@@ -56,7 +62,7 @@ export async function generateMetadata({
       description: copy.description,
       locale: "fr_FR",
       type: "website",
-      images: image ? [{ url: image, width: 1200, height: 630, alt: `${place.name}, ${date}` }] : undefined
+      images: image ? [{ url: image, width: 1200, height: 630, alt: imageAlt }] : undefined
     },
     twitter: {
       card: "summary_large_image",
@@ -85,7 +91,7 @@ export default async function CommunePage({
   const path = communePath(place);
   const birthYear = isIsoDate(date) ? Number(date.slice(0, 4)) : NaN;
   const [history, yearly, childhood] = await Promise.all([
-    isIsoDate(date) ? getPlaceHistoryCached(commune, date) : Promise.resolve(null),
+    (dateInQuery || histoire) && isIsoDate(date) ? getPlaceHistoryCached(commune, date) : Promise.resolve(null),
     getCommuneYearlyPageCached(place.insee_code),
     histoire && Number.isInteger(birthYear)
       ? getCommuneChildhoodCached(place.insee_code, birthYear)
