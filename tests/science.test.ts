@@ -741,7 +741,7 @@ assert.ok(homePageSrc.includes("shareHomeCardPath"), "home OG card is an officia
 assert.ok(homePageSrc.includes("buildHomeOgModel"));
 const homeCacheSrc = fs.readFileSync(path.join(process.cwd(), "src/lib/sqliteReadCache.ts"), "utf8");
 assert.ok(homeCacheSrc.includes("featured-climate-v12"));
-assert.ok(homeCacheSrc.includes("commune-yearly-page-v16"));
+assert.ok(homeCacheSrc.includes("commune-yearly-page-v17"));
 const birthExSrc = fs.readFileSync(path.join(process.cwd(), "src/components/BirthExamples.tsx"), "utf8");
 assert.ok(birthExSrc.includes("Aucune mesure officielle"));
 assert.ok(birthExSrc.includes("formatCelsius"));
@@ -790,6 +790,8 @@ assert.ok(explorerSrc.includes("Plus de jours de pluie"), "year records show the
 assert.ok(explorerSrc.includes("yearRecords.mostDaysRain"));
 assert.ok(explorerSrc.includes("Plus grand écart min-max"), "year records show the observed min-max gap maximum of the series");
 assert.ok(explorerSrc.includes("yearRecords.largestAmplitude"));
+assert.ok(explorerSrc.includes("Année la plus sèche"), "year records show the observed driest complete year of the series");
+assert.ok(explorerSrc.includes("yearRecords.driest"));
 assert.ok(explorerSrc.includes("Jours ≥ 35 °C"), "climate hero shows official days at or above 35 °C");
 assert.ok(explorerSrc.includes("climateLead.daysGe35"));
 assert.ok(explorerSrc.includes("Jours ≥ 40 °C"), "climate hero shows official days at or above 40 °C, including a true zero");
@@ -1314,6 +1316,8 @@ assert.notEqual(yearRecords.mostDaysGe30?.value, 80, "incomplete years must not 
 assert.equal(yearRecords.largestAmplitude?.year, 2003);
 assert.equal(yearRecords.largestAmplitude?.value, 16);
 assert.notEqual(yearRecords.largestAmplitude?.value, 40, "incomplete years must not set the amplitude year record");
+assert.equal(yearRecords.driest?.year, 2003);
+assert.equal(yearRecords.driest?.value, 400);
 assert.equal(yearRecords.mostFrost, null, "missing frost counts must not invent a frost year record");
 assert.equal(yearRecords.mostTropicalNights, null, "missing tropical-night counts must not invent a tropical-night year record");
 assert.equal(yearRecords.mostDaysGe35, null, "missing 35 °C counts must not invent a 35 °C year record");
@@ -1419,6 +1423,36 @@ const missingAmplitude = observedYearRecords([
   { year: 2001, tminMean: 8, tmaxMean: null, precipitationSum: 700, daysGe30: 6, yearComplete: true, precipComplete: true }
 ]);
 assert.equal(missingAmplitude.largestAmplitude, null, "missing Tmin or Tmax must not invent an amplitude year record");
+const driestRecords = observedYearRecords([
+  { year: 2026, tminMean: 9, tmaxMean: 22, precipitationSum: 10, daysGe30: 1, yearComplete: false, precipComplete: false },
+  { year: 1999, tminMean: 8, tmaxMean: 18, precipitationSum: 50, daysGe30: 8, yearComplete: true, precipComplete: false },
+  { year: 2009, tminMean: 8, tmaxMean: 18, precipitationSum: 700.6, daysGe30: 10, yearComplete: true, precipComplete: true },
+  { year: 2003, tminMean: 8, tmaxMean: 19, precipitationSum: 782.8, daysGe30: 20, yearComplete: true, precipComplete: true },
+  { year: 2025, tminMean: 8.2, tmaxMean: 19.6, precipitationSum: 901.1, daysGe30: 15, yearComplete: true, precipComplete: true }
+]);
+assert.equal(driestRecords.driest?.year, 2009);
+assert.equal(driestRecords.driest?.value, 700.6);
+assert.notEqual(driestRecords.driest?.value, 10, "incomplete 2026 precip must not set the driest year record");
+assert.notEqual(driestRecords.driest?.value, 50, "incomplete precip years must not set the driest year record");
+assert.notEqual(driestRecords.driest?.value, 782.8, "2003 precip is not the series minimum");
+assert.notEqual(driestRecords.driest?.value, 901.1, "2025 precip must not become the series minimum");
+const tiedDriest = observedYearRecords([
+  { year: 2009, tminMean: 8, tmaxMean: 18, precipitationSum: 700.6, daysGe30: 10, yearComplete: true, precipComplete: true },
+  { year: 2011, tminMean: 8, tmaxMean: 18, precipitationSum: 700.6, daysGe30: 12, yearComplete: true, precipComplete: true }
+]);
+assert.equal(tiedDriest.driest?.year, 2009, "a driest-year record tie keeps the earlier complete year");
+assert.equal(tiedDriest.driest?.value, 700.6);
+const missingDriest = observedYearRecords([
+  { year: 2000, tminMean: 8, tmaxMean: 18, precipitationSum: null, daysGe30: 5, yearComplete: true, precipComplete: false },
+  { year: 2001, tminMean: 8, tmaxMean: 18, precipitationSum: null, daysGe30: 6, yearComplete: true, precipComplete: true }
+]);
+assert.equal(missingDriest.driest, null, "missing annual precip must not invent a driest year record");
+const zeroDriest = observedYearRecords([
+  { year: 2009, tminMean: 8, tmaxMean: 18, precipitationSum: 0, daysGe30: 5, yearComplete: true, precipComplete: true },
+  { year: 2011, tminMean: 8, tmaxMean: 18, precipitationSum: 700.6, daysGe30: 6, yearComplete: true, precipComplete: true }
+]);
+assert.equal(zeroDriest.driest?.year, 2009);
+assert.equal(zeroDriest.driest?.value, 0, "0.0 mm is a true zero, not a missing year");
 const tiedHotDays = observedYearRecords([
   { year: 2001, tminMean: 8, tmaxMean: 18, precipitationSum: 500, daysGe30: 20, yearComplete: true, precipComplete: true },
   { year: 2003, tminMean: 8, tmaxMean: 18, precipitationSum: 500, daysGe30: 20, yearComplete: true, precipComplete: true }
@@ -2212,6 +2246,15 @@ if (obsCount === 0) {
   const largestAmpYear = yearly.years.find((row) => row.year === yearly.yearRecords.largestAmplitude?.year);
   assert.equal(largestAmpYear?.yearComplete, true);
   assert.equal(annualMeanAmplitudeC(largestAmpYear?.tminMean, largestAmpYear?.tmaxMean), 12.2);
+  assert.equal(yearly.yearRecords.driest?.year, 2009, "LVD driest year record is 2009, not 2003");
+  assert.equal(yearly.yearRecords.driest?.value, 700.6);
+  assert.notEqual(yearly.yearRecords.driest?.value, 901.1, "year records must not paste 2025 onto the driest year");
+  assert.notEqual(yearly.yearRecords.driest?.value, 782.8, "2003 precip is not the series minimum");
+  assert.notEqual(yearly.yearRecords.driest?.value, 1182.2, "the wettest year must not become the driest year");
+  const driestYear = yearly.years.find((row) => row.year === yearly.yearRecords.driest?.year);
+  assert.equal(driestYear?.yearComplete, true);
+  assert.equal(driestYear?.precipComplete, true);
+  assert.equal(driestYear?.precipitationSum, 700.6);
   if (yearly.normal.available && !yearly.normal.sameStation) {
     assert.ok(yearly.normal.station, "nearby 1991-2020 normal must name one station");
     assert.notEqual(yearly.normal.station?.id, yearly.station?.id);

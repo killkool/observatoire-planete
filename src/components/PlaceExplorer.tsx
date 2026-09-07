@@ -272,6 +272,7 @@ type YearlyPayload = {
     mostDaysGe25: { year: number; value: number } | null;
     mostDaysRain: { year: number; value: number } | null;
     largestAmplitude: { year: number; value: number } | null;
+    driest: { year: number; value: number } | null;
   };
   warming: {
     method: string;
@@ -1385,6 +1386,15 @@ export default function PlaceExplorer({
                   <strong>
                     {yearly.yearRecords.wettest
                       ? `${yearly.yearRecords.wettest.year} · ${formatMm(yearly.yearRecords.wettest.value)}`
+                      : "non disponible"}
+                  </strong>
+                  <small>pluie annuelle complète seulement</small>
+                </div>
+                <div>
+                  <span>Année la plus sèche</span>
+                  <strong>
+                    {yearly.yearRecords.driest
+                      ? `${yearly.yearRecords.driest.year} · ${formatMm(yearly.yearRecords.driest.value)}`
                       : "non disponible"}
                   </strong>
                   <small>pluie annuelle complète seulement</small>
