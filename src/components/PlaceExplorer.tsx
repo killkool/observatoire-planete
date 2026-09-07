@@ -10,6 +10,7 @@ import YearHeatmap from "./YearHeatmap";
 import OriginBadge from "./OriginBadge";
 import { departmentLabel } from "@/lib/placeUrl";
 import { buildBirthLead, buildShareText, communeHistoryHref, frenchLongDate, yearsElapsed } from "@/lib/birthDay";
+import { buildClimateShareText } from "@/lib/shareCard";
 import {
   compareCompleteSeasons,
   compareCompleteYears,
@@ -346,6 +347,7 @@ export default function PlaceExplorer({
   dateInQuery?: boolean;
   climateLead?: {
     year: number;
+    tminMean: number | null;
     tmaxMean: number | null;
     precipitationSum: number | null;
     precipComplete: boolean;
@@ -395,23 +397,39 @@ export default function PlaceExplorer({
   function goToDate(next: string) {
     if (!next) return;
     setDate(next);
+    setShareFallback("");
+    setCopied(false);
     router.push(communeHistoryHref(pathname, next, histoire ? "naissance" : undefined));
   }
 
   async function copyShare() {
-    if (!data?.place) return;
-    const url = `${window.location.origin}${pathname}?date=${date}${histoire ? "&histoire=naissance" : ""}`;
-    const text = buildShareText({
-      placeName: data.place.name,
-      isoDate: date,
-      hasObservation: Boolean(data.observation),
-      tminDisplay: data.observation?.tminDisplay,
-      tmaxDisplay: data.observation?.tmaxDisplay,
-      precipDisplay: data.observation?.precipDisplay,
-      stationName: data.preferredStation?.name,
-      distanceKm: data.preferredStation?.distanceKm,
-      url
-    });
+    const text =
+      showClimateHero && climateLead
+        ? buildClimateShareText({
+            placeName: yearly?.commune?.name || slug,
+            year: climateLead.year,
+            tminMean: climateLead.tminMean,
+            tmaxMean: climateLead.tmaxMean,
+            precipitationSum: climateLead.precipitationSum,
+            precipComplete: climateLead.precipComplete,
+            stationName: climateLead.stationName,
+            distanceKm: climateLead.distanceKm,
+            url: `${window.location.origin}${pathname}`
+          })
+        : data?.place
+          ? buildShareText({
+              placeName: data.place.name,
+              isoDate: date,
+              hasObservation: Boolean(data.observation),
+              tminDisplay: data.observation?.tminDisplay,
+              tmaxDisplay: data.observation?.tmaxDisplay,
+              precipDisplay: data.observation?.precipDisplay,
+              stationName: data.preferredStation?.name,
+              distanceKm: data.preferredStation?.distanceKm,
+              url: `${window.location.origin}${pathname}?date=${date}${histoire ? "&histoire=naissance" : ""}`
+            })
+          : null;
+    if (!text) return;
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);
@@ -680,8 +698,14 @@ export default function PlaceExplorer({
                   <em>Année</em>
                   {climateLead.year}
                 </span>
+                {climateLead.tminMean != null ? (
+                  <span>
+                    <em>Minimale moyenne</em>
+                    {formatCelsius(climateLead.tminMean)}
+                  </span>
+                ) : null}
                 <span>
-                  <em>Maximale</em>
+                  <em>Maximale moyenne</em>
                   {formatCelsius(climateLead.tmaxMean)}
                 </span>
                 {climateLead.precipComplete && climateLead.precipitationSum != null ? (
@@ -722,13 +746,21 @@ export default function PlaceExplorer({
           <div className="heroActions">
             <label className="datePick">
               <span>{histoire ? "Date de naissance" : "Quel temps faisait-il ?"}</span>
-              <input type="date" value={date} onChange={(e) => goToDate(e.target.value)} />
+              <input
+                type="date"
+                value={showClimateHero ? "" : date}
+                onChange={(e) => goToDate(e.target.value)}
+              />
             </label>
-            {showClimateHero ? null : (
-              <button type="button" className="btnGhost shareBtn" onClick={copyShare}>
-                {copied ? "Souvenir copié" : "Partager ce jour"}
-              </button>
-            )}
+            <button type="button" className="btnGhost shareBtn" onClick={copyShare}>
+              {copied
+                ? showClimateHero
+                  ? "Année copiée"
+                  : "Souvenir copié"
+                : showClimateHero
+                  ? "Partager cette année"
+                  : "Partager ce jour"}
+            </button>
           </div>
           {shareFallback ? (
             <textarea className="shareFallback" readOnly value={shareFallback} rows={4} />

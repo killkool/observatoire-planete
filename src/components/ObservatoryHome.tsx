@@ -83,7 +83,11 @@ export default function ObservatoryHome({ cards }: { cards: HomeClimateCard[] })
                 {card.lastComplete ? (
                   <p className="placeCardClimate">
                     <strong>
-                      {card.lastComplete.year} · max. {formatCelsius(card.lastComplete.tmaxMean)}
+                      {card.lastComplete.year}
+                      {card.lastComplete.tminMean != null
+                        ? ` · min. ${formatCelsius(card.lastComplete.tminMean)}`
+                        : ""}{" "}
+                      · max. {formatCelsius(card.lastComplete.tmaxMean)}
                       {rain}
                     </strong>
                     {card.station

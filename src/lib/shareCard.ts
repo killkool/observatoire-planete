@@ -27,6 +27,7 @@ export function shareClimateCardPath(slug: string): string | null {
 export type ClimateShareCardModel = {
   placeName: string;
   year: number;
+  tminDisplay: string | null;
   tmaxDisplay: string;
   precipDisplay: string | null;
   stationLine: string;
@@ -37,6 +38,7 @@ export type ClimateShareCardModel = {
 export function buildClimateShareCardModel(input: {
   placeName: string;
   year: number;
+  tminMean?: number | null;
   tmaxMean: number | null;
   precipitationSum: number | null;
   precipComplete: boolean;
@@ -48,6 +50,7 @@ export function buildClimateShareCardModel(input: {
   return {
     placeName: input.placeName,
     year: input.year,
+    tminDisplay: input.tminMean != null ? formatCelsius(input.tminMean) : null,
     tmaxDisplay: formatCelsius(input.tmaxMean),
     precipDisplay:
       input.precipComplete && input.precipitationSum != null ? formatMm(input.precipitationSum) : null,
@@ -56,6 +59,27 @@ export function buildClimateShareCardModel(input: {
       "Source : Météo-France — Données climatologiques de base (quotidiennes), Licence Ouverte 2.0.",
     note: "Ce n’est pas une prévision."
   };
+}
+
+export function buildClimateShareText(input: {
+  placeName: string;
+  year: number;
+  tminMean: number | null;
+  tmaxMean: number | null;
+  precipitationSum: number | null;
+  precipComplete: boolean;
+  stationName: string;
+  distanceKm: number | null;
+  url: string;
+}): string {
+  const tminBit = input.tminMean != null ? `minimale moyenne ${formatCelsius(input.tminMean)}, ` : "";
+  const tmax = formatCelsius(input.tmaxMean);
+  const rain =
+    input.precipComplete && input.precipitationSum != null
+      ? `, pluie ${formatMm(input.precipitationSum)}`
+      : "";
+  const km = input.distanceKm != null ? `, ${input.distanceKm} km` : "";
+  return `${input.placeName}, année climatique ${input.year} : ${tminBit}maximale moyenne ${tmax}${rain}. Station ${input.stationName}${km}. Ce n’est pas une prévision. ${input.url}`;
 }
 
 export function buildShareCardModel(input: {

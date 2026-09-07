@@ -267,6 +267,7 @@ export function lastCompleteClimateYear(years: YearClimatePoint[]): YearClimateP
 /** SEO page commune sans `?date=` : dernière année climatique, pas le record, pas un jour. */
 export function climateCopyFromYearly(yearly: CommuneYearlyPayload | null): {
   year: number;
+  tminMean: number | null;
   tmaxMean: number | null;
   precipitationSum: number | null;
   precipComplete: boolean;
@@ -278,6 +279,7 @@ export function climateCopyFromYearly(yearly: CommuneYearlyPayload | null): {
   if (!last || last.tmaxMean == null) return null;
   return {
     year: last.year,
+    tminMean: last.tminMean,
     tmaxMean: last.tmaxMean,
     precipitationSum: last.precipitationSum,
     precipComplete: last.precipComplete,

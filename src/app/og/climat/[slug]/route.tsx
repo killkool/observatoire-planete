@@ -17,6 +17,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ slu
     ? buildClimateShareCardModel({
         placeName: place.name,
         year: climate.year,
+        tminMean: climate.tminMean,
         tmaxMean: climate.tmaxMean,
         precipitationSum: climate.precipitationSum,
         precipComplete: climate.precipComplete,
@@ -52,7 +53,11 @@ export async function GET(_request: Request, { params }: { params: Promise<{ slu
         </div>
         <div style={{ display: "flex", gap: 36 }}>
           <div style={{ display: "flex", flexDirection: "column" }}>
-            <div style={{ fontSize: 18, color: "#88a0a8" }}>Maximale</div>
+            <div style={{ fontSize: 18, color: "#88a0a8" }}>Minimale moyenne</div>
+            <div style={{ fontSize: 48, fontWeight: 700 }}>{card.tminDisplay ?? "non disponible"}</div>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <div style={{ fontSize: 18, color: "#88a0a8" }}>Maximale moyenne</div>
             <div style={{ fontSize: 48, fontWeight: 700, color: "#ff7b36" }}>{card.tmaxDisplay}</div>
           </div>
           <div style={{ display: "flex", flexDirection: "column" }}>

@@ -11,7 +11,7 @@ Nom de travail. Les fournisseurs (Météo-France, Copernicus, NOAA, ECMWF, IGN) 
 **Priorité :** utilité → simplicité → fiabilité → rapidité → beauté → complexité technique.  
 Les cases `[x]` = livré **et** vérifié (preuve). Un fichier vide ne compte pas.
 
-Dernière mise à jour : 2026-09-07 (page commune canonique = climat, pas le jour par défaut). Tableau : [STATUS.md](./STATUS.md).
+Dernière mise à jour : 2026-09-07 (année climatique canonique = min./max. officielles + partage, pas le jour par défaut). Tableau : [STATUS.md](./STATUS.md).
 
 ---
 
@@ -60,7 +60,8 @@ Dernière mise à jour : 2026-09-07 (page commune canonique = climat, pas le jou
 41. [x] Phase R11 — titres commune sans `?date=` = dernière année climatique officielle (Grenoble 2025 · max. 19,6 °C · 901,1 mm, LVD 10,2 km ; pas le record 2022 ; pas le jour CORENC ; canonical inchangé)
 42. [x] Phase R11/R12 — héros commune sans query = dernière année climatique officielle (2025 · max. 19,6 °C · 901,1 mm, LVD 10,2 km) ; JSON-LD `WeatherObservation` seulement si `?date=` / naissance ; pas le jour par défaut collé sur 2025
 43. [x] Phase R11/R12 — URL canonique : pas d’historique du jour par défaut (heatmap 04/09, 12,8 / 35,4 °C) ; carte OG `/og/climat/grenoble` = 2025 · 19,6 °C · 901,1 mm, LVD 10,2 km, pas le record 2022
-44. Ne **pas** extraire ERA5 mondial. Ne **pas** activer océan / NOAA / API commerciale. Ne **pas** feindre Vercel/Supabase. Ne **pas** extraire massivement les tuiles IGN.
+44. [x] Phase R6/R11/R12 — année climatique canonique : minimale moyenne officielle (Grenoble 2025 · **8,2 °C**, pas le record 2005 6,2 °C) + maximale 19,6 °C + 901,1 mm ; sélecteur de date vide ; « Partager cette année » copie l’URL sans `?date=` ; OG `/og/climat/grenoble` = min. 8,2 / max. 19,6 °C ; accueil = min. 8,2 °C
+45. Ne **pas** extraire ERA5 mondial. Ne **pas** activer océan / NOAA / API commerciale. Ne **pas** feindre Vercel/Supabase. Ne **pas** extraire massivement les tuiles IGN.
 
 Héritage déjà vérifié (ne pas recommencer) : licences Phase 0, import Isère 1 208 439 obs, Grenoble 1983-05-12 (CORENC, 6,6 / 21,6 °C), matching station v1, carte IGN, provenance. Runtime encore SQLite. Cible prod : [ARCHITECTURE_PRODUCTION.md](./ARCHITECTURE_PRODUCTION.md).
 
@@ -155,7 +156,7 @@ Reste : France entière (autres départements) en R10. Isère : 512 communes imp
 - [x] ce jour dans l’histoire (heatmap en liens `?date=` + moyenne du jour-mois + percentile + records + courbe ; pas une normale)
 - [x] quand j’étais enfant (moyenne des années climatiques complètes, un seul poste, fenêtre récente = 10 dernières années civiles ; pas une T quotidienne)
 - [x] ma ville se réchauffe-t-elle ? (OLS `ols-complete-years-v1`, un poste, ≥ 15 années climatiques, série brute pas LSH)
-- [x] partage social (carte PNG `/og/{slug}/{date}`, mesures réelles seulement)
+- [x] partage social (carte PNG `/og/{slug}/{date}` + `/og/climat/{slug}` ; copie du texte année climatique sans `?date=` ; mesures réelles seulement)
 
 **État :** `/naissance` + page commune `?histoire=naissance` (récit = Tmin/Tmax/pluie officiels + station ; titres date = mesure officielle) + **exemples SSR** 1983 / 1986 / 1900 + carte de partage + « ce jour » (moyenne si ≥ 5 années, pas une normale). Pas de SDK Facebook/Twitter. Pas d’homogénéisation.
 
@@ -210,7 +211,7 @@ Reste : France entière (autres départements) en R10. Isère : 512 communes imp
 - [x] métadonnées / sitemap / canonical / carte OG PNG / hreflang `fr` + `x-default` / JSON-LD (City + mesure officielle si OBSERVED)
 - [x] `seo_content_score` — seuil 50 au sitemap et `noindex` si sous le seuil ; pas un scorer éditorial
 
-**État :** titres et descriptions issus du nom officiel ; page commune **sans query** = dernière année climatique officielle (Grenoble 2025 · 19,6 °C · 901,1 mm, LVD 10,2 km, pas le record 2022) dans le titre, le héros et la carte OG `/og/climat/grenoble` ; pas le jour par défaut dans le HTML ni le JSON-LD ; `?date=` et `histoire=naissance` = mesure officielle (pas ERA5) ; `/naissance` = exemples officiels 1983/1986/1900 dans le HTML ; `/comparer` = exemples officiels Voiron / Crolles dans le HTML, canonical `/comparer`. Sitemap = communes dont le score repose sur l’identité INSEE **et** des années climatiques ou des mesures OBSERVED. Hreflang français seulement. JSON-LD : lieu ; `WeatherObservation` seulement si `?date=` / naissance et mesure OBSERVED ; pas d’ERA5. Pas de millions de coquilles.
+**État :** titres et descriptions issus du nom officiel ; page commune **sans query** = dernière année climatique officielle (Grenoble 2025 · min. 8,2 °C · max. 19,6 °C · 901,1 mm, LVD 10,2 km, pas le record 2022) dans le titre (max.), le héros (min./max./pluie), la carte OG `/og/climat/grenoble` et le texte de partage (URL sans `?date=`) ; sélecteur de date vide ; pas le jour par défaut dans le HTML ni le JSON-LD ; `?date=` et `histoire=naissance` = mesure officielle (pas ERA5) ; `/naissance` = exemples officiels 1983/1986/1900 dans le HTML ; `/comparer` = exemples officiels Voiron / Crolles dans le HTML, canonical `/comparer`. Sitemap = communes dont le score repose sur l’identité INSEE **et** des années climatiques ou des mesures OBSERVED. Hreflang français seulement. JSON-LD : lieu ; `WeatherObservation` seulement si `?date=` / naissance et mesure OBSERVED ; pas d’ERA5. Pas de millions de coquilles.
 
 ---
 
@@ -231,8 +232,9 @@ Reste : France entière (autres départements) en R10. Isère : 512 communes imp
 - [x] HTML initial comparer sans query = exemples officiels (Voiron 18,5 → 18,2 °C ; Crolles même station)
 - [x] HTML initial commune sans query = dernière année climatique officielle dans le héros (Grenoble 2025 · 19,6 °C · 901,1 mm, LVD 10,2 km ; pas le jour par défaut, pas le record 2022)
 - [x] HTML initial commune sans query = pas l’historique du jour par défaut (pas de heatmap 04/09, pas de 12,8 / 35,4 °C collés sur 2025) ; OG `/og/climat/grenoble`
+- [x] HTML initial commune sans query = minimale moyenne officielle (Grenoble 2025 · 8,2 °C) + partage de l’année (URL canonique) + sélecteur de date vide
 
-**État :** premier HTML Grenoble **56 Ko** (`?date=`). Heatmap « ce jour » : liens `?date=`. Héros : sans query = année climatique LVD 2025, **sans** le jour par défaut ; avec `?date=` = Tmin/Tmax/pluie officiels + station à X km, pas d’ERA5 ni de JPEG IGN ; 1900 = « aucune mesure officielle » ; 1986 pluie héros **0,0 mm** ≠ ERA5 2,1 mm. Accueil : climat officiel LVD 2025 dans le premier HTML. Naissance : exemples officiels dans le premier HTML. Comparer : exemples Voiron / Crolles dans le premier HTML. Lighthouse lab 2026-09-07T00:45Z : perf 99, LCP **2178 ms**, CLS 0 — pas CrUX. Pas de bottom sheet GIS. Pas de CDN.
+**État :** premier HTML Grenoble **56 Ko** (`?date=`). Heatmap « ce jour » : liens `?date=`. Héros : sans query = année climatique LVD 2025 (min. **8,2 °C** · max. 19,6 °C · 901,1 mm), **sans** le jour par défaut, sélecteur de date vide, partage de l’année ; avec `?date=` = Tmin/Tmax/pluie officiels + station à X km, pas d’ERA5 ni de JPEG IGN ; 1900 = « aucune mesure officielle » ; 1986 pluie héros **0,0 mm** ≠ ERA5 2,1 mm. Accueil : climat officiel LVD 2025 (min. 8,2 °C) dans le premier HTML. Naissance : exemples officiels dans le premier HTML. Comparer : exemples Voiron / Crolles dans le premier HTML. Lighthouse lab 2026-09-07T00:45Z : perf 99, LCP **2178 ms**, CLS 0 — pas CrUX. Pas de bottom sheet GIS. Pas de CDN.
 
 ---
 

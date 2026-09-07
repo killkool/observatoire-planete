@@ -134,13 +134,13 @@ Source : sections 0 à 187 du prompt maître.
 | 119 | PHASE 20 — SCALE | [ ] |
 | 120 | MVP EXACT | [ ] *partiel* |
 | 121 | POURQUOI LA FRANCE EN PREMIER | [ ] |
-| 122 | UX ACCUEIL | [ ] *partiel* (recherche commune + CTAs 390 px + cartes climat officiel LVD 2025 ; pas France entière) |
+| 122 | UX ACCUEIL | [ ] *partiel* (recherche commune + CTAs 390 px + cartes climat officiel LVD 2025 min. 8,2 / max. 19,6 °C ; pas France entière) |
 | 123 | DESIGN | [ ] *partiel* |
 | 124 | HOME HERO | [ ] *partiel* (hero compact 390 px, JPEG, `decoding=sync`, `quality=70`, sizes ≤ 1480 px) |
-| 125 | PAGE MOBILE | [ ] *partiel* (390 px ; HTML page 56 Ko si `?date=` ; héros sans query = climat LVD 2025 sans jour par défaut ; héros `?date=` = Tmin/Tmax/pluie + station à X km ; accueil = climat officiel LVD ; naissance / comparer = exemples officiels ; Lighthouse lab LCP 2178 ms ; pas CrUX ; pas de bottom sheet GIS) |
-| 126 | SEO | [ ] *partiel* (titres, héros et OG commune sans query = dernière année climatique officielle ; pas le jour par défaut ; JSON-LD jour seulement si `?date=` ; titres `?date=` / naissance / comparer = mesure officielle ; comparer landing = exemples officiels ; sitemap filtré + hreflang fr + JSON-LD + score v1 ; pas de pages en) |
+| 125 | PAGE MOBILE | [ ] *partiel* (390 px ; HTML page 56 Ko si `?date=` ; héros sans query = climat LVD 2025 min. 8,2 / max. 19,6 °C, date vide, partage année ; héros `?date=` = Tmin/Tmax/pluie + station à X km ; accueil = climat officiel LVD ; naissance / comparer = exemples officiels ; Lighthouse lab LCP 2178 ms ; pas CrUX ; pas de bottom sheet GIS) |
+| 126 | SEO | [ ] *partiel* (titres, héros et OG commune sans query = dernière année climatique officielle min. 8,2 / max. 19,6 °C ; pas le jour par défaut ; JSON-LD jour seulement si `?date=` ; titres `?date=` / naissance / comparer = mesure officielle ; comparer landing = exemples officiels ; sitemap filtré + hreflang fr + JSON-LD + score v1 ; pas de pages en) |
 | 127 | INTERNATIONALISATION | [ ] *partiel* (html lang=fr, hreflang fr/x-default ; routage `en` = V2) |
-| 128 | PARTAGE SOCIAL | [ ] *partiel* (carte PNG + copie URL ; OG titre/description/image = climat annuel `/og/climat/{slug}` si URL canonique, mesure officielle si `?date=` ; pas de SDK) |
+| 128 | PARTAGE SOCIAL | [ ] *partiel* (carte PNG + copie URL ; OG titre/description/image = climat annuel `/og/climat/{slug}` si URL canonique, min. 8,2 / max. 19,6 °C ; « Partager cette année » sans `?date=` ; mesure officielle si `?date=` ; pas de SDK) |
 | 129 | BUSINESS MODEL | [ ] |
 | 130 | OCEAN BUSINESS | [ ] |
 | 131 | WEATHER BUSINESS | [ ] |

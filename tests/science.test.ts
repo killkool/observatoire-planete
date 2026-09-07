@@ -36,7 +36,7 @@ import {
 import { seoContentScore, frenchLanguageAlternates, publicAbsoluteUrl, seoFactsForPlace, listIndexablePlaces, SEO_CONTENT_METHOD, communePageCopy, officialCopyFromDay, comparePageCopy } from "../src/lib/seoContent";
 import { communeJsonLd, websiteJsonLd } from "../src/lib/seoJsonLd";
 import { coldestCompleteSeason, seasonPublicLabel } from "../src/lib/climateSeasons";
-import { buildClimateShareCardModel, buildShareCardModel, shareCardPath, shareClimateCardPath } from "../src/lib/shareCard";
+import { buildClimateShareCardModel, buildClimateShareText, buildShareCardModel, shareCardPath, shareClimateCardPath } from "../src/lib/shareCard";
 import { heatEpisodesAt, stationHeatStreaks } from "../src/lib/climateHeatStreaks";
 import {
   formatSignedPerDecade,
@@ -459,6 +459,7 @@ assert.equal(climateCopy.title.includes("6.6"), false, "canonical title must not
 assert.ok(climateCopy.description.includes("901.1 mm"));
 assert.ok(climateCopy.description.includes("GRENOBLE - LVD"));
 assert.ok(climateCopy.description.includes("10.2 km"));
+assert.equal(climateCopy.description.includes("8.2"), false, "fixture without tminMean must not invent a mean minimum");
 assert.equal(climateCopy.description.includes("6.6"), false);
 assert.equal(climateCopy.description.includes("ERA5"), false);
 assert.equal(climateCopy.description.includes("20.2"), false);
@@ -663,6 +664,7 @@ assert.equal(climateCopyFromYearly(null), null);
 
 const homeSrc = fs.readFileSync(path.join(process.cwd(), "src/components/ObservatoryHome.tsx"), "utf8");
 assert.ok(homeSrc.includes("lastComplete"), "home cards must show the last official climate year");
+assert.ok(homeSrc.includes("tminMean"), "home cards show the official mean minimum when it exists");
 assert.ok(homeSrc.includes("formatCelsius"));
 assert.ok(homeSrc.includes("formatMm"));
 assert.ok(homeSrc.includes("roundToPrecision"));
@@ -698,9 +700,16 @@ assert.ok(
   explorerSrc.includes("data?.place?.insee_code || yearly?.commune?.insee"),
   "climate landing must not crash when the default day is absent"
 );
+assert.ok(explorerSrc.includes("Minimale moyenne"), "climate hero shows the official mean minimum, not a daily Tmin");
+assert.ok(explorerSrc.includes("Partager cette année"), "canonical landing shares the climate year URL, not the default day");
+assert.ok(explorerSrc.includes('value={showClimateHero ? "" : date}'), "date picker stays empty on the climate landing");
+assert.ok(explorerSrc.includes("buildClimateShareText"));
+assert.ok(explorerSrc.includes("setShareFallback(\"\")"), "changing date must not keep the climate share fallback on the day view");
 const climateOgSrc = fs.readFileSync(path.join(process.cwd(), "src/app/og/climat/[slug]/route.tsx"), "utf8");
 assert.ok(climateOgSrc.includes("climateCopyFromYearly"));
 assert.ok(climateOgSrc.includes("buildClimateShareCardModel"));
+assert.ok(climateOgSrc.includes("tminMean"), "climate OG card includes the official mean minimum");
+assert.ok(climateOgSrc.includes("Minimale moyenne"));
 assert.equal(climateOgSrc.includes("ERA5"), false, "climate OG card must not show reanalysis");
 
 assert.equal(warmerThanPercent(null, [1, 2, 3, 4, 5]), null);
@@ -1309,6 +1318,7 @@ assert.equal(shareClimateCardPath("  "), null);
 const climateCard = buildClimateShareCardModel({
   placeName: "Grenoble",
   year: 2025,
+  tminMean: 8.2,
   tmaxMean: 19.6,
   precipitationSum: 901.1,
   precipComplete: true,
@@ -1317,12 +1327,47 @@ const climateCard = buildClimateShareCardModel({
 });
 assert.ok(climateCard);
 assert.equal(climateCard.year, 2025);
+assert.ok(climateCard.tminDisplay?.includes("8.2"));
 assert.ok(climateCard.tmaxDisplay.includes("19.6"));
 assert.equal(climateCard.precipDisplay, "901.1 mm");
 assert.ok(climateCard.stationLine.includes("GRENOBLE - LVD"));
 assert.ok(climateCard.stationLine.includes("10.2 km"));
+assert.equal(climateCard.tminDisplay?.includes("6.2"), false, "climate OG is last complete year, not the coldest-year record");
 assert.equal(climateCard.tmaxDisplay.includes("20.2"), false, "climate OG is last complete year, not the hottest-year record");
 assert.equal(climateCard.note.includes("ERA5"), false);
+const climateShare = buildClimateShareText({
+  placeName: "Grenoble",
+  year: 2025,
+  tminMean: 8.2,
+  tmaxMean: 19.6,
+  precipitationSum: 901.1,
+  precipComplete: true,
+  stationName: "GRENOBLE - LVD",
+  distanceKm: 10.2,
+  url: "http://localhost:3001/meteo/auvergne-rhone-alpes/isere/grenoble"
+});
+assert.ok(climateShare.includes("année climatique 2025"));
+assert.ok(climateShare.includes("8.2 °C"));
+assert.ok(climateShare.includes("19.6 °C"));
+assert.ok(climateShare.includes("901.1 mm"));
+assert.ok(climateShare.includes("GRENOBLE - LVD"));
+assert.equal(climateShare.includes("?date="), false, "climate share copies the canonical URL");
+assert.equal(climateShare.includes("20.2"), false);
+assert.equal(climateShare.includes("6.6"), false);
+assert.equal(climateShare.includes("ERA5"), false);
+const climateShareNoMin = buildClimateShareText({
+  placeName: "Grenoble",
+  year: 2025,
+  tminMean: null,
+  tmaxMean: 19.6,
+  precipitationSum: null,
+  precipComplete: false,
+  stationName: "GRENOBLE - LVD",
+  distanceKm: 10.2,
+  url: "http://localhost:3001/meteo/auvergne-rhone-alpes/isere/grenoble"
+});
+assert.equal(climateShareNoMin.includes("minimale moyenne"), false, "missing tmin must not be invented in the share text");
+assert.equal(climateShareNoMin.includes("mm"), false, "incomplete precip must not invent millimetres in the share text");
 const climateCardNoRain = buildClimateShareCardModel({
   placeName: "Grenoble",
   year: 2025,
@@ -1927,9 +1972,11 @@ if (obsCount === 0) {
   assert.equal(grenobleHome.lastComplete?.year, 2025);
   const yearly2025 = yearly.years.find((row) => row.year === 2025);
   assert.ok(yearly2025?.yearComplete && yearly2025.precipComplete);
+  assert.equal(grenobleHome.lastComplete?.tminMean, yearly2025.tminMean);
   assert.equal(grenobleHome.lastComplete?.tmaxMean, yearly2025.tmaxMean);
   assert.equal(grenobleHome.lastComplete?.precipitationSum, yearly2025.precipitationSum);
   assert.equal(grenobleHome.lastComplete?.precipitationSum, 901.1);
+  assert.equal(grenobleHome.lastComplete?.tminMean, 8.2);
   assert.equal(grenobleHome.lastComplete?.tmaxMean, 19.6);
   assert.equal(grenobleHome.station?.distanceKm, 10.2, "home distance stays 1 decimal like the day hero");
   if (yearly.yearRecords.hottest) {
@@ -1948,6 +1995,7 @@ if (obsCount === 0) {
   assert.equal(crollesHome.lastComplete?.precipitationSum, grenobleHome.lastComplete?.precipitationSum);
   const grenobleClimate = climateCopyFromYearly(yearly);
   assert.equal(grenobleClimate?.year, 2025);
+  assert.equal(grenobleClimate?.tminMean, 8.2);
   assert.equal(grenobleClimate?.tmaxMean, 19.6);
   assert.equal(grenobleClimate?.precipitationSum, 901.1);
   assert.equal(grenobleClimate?.precipComplete, true);
@@ -1965,12 +2013,15 @@ if (obsCount === 0) {
   assert.ok(grenobleClimateCopy.title.includes("2025"));
   assert.ok(grenobleClimateCopy.title.includes("19.6 °C"));
   assert.equal(grenobleClimateCopy.title.includes("20.2"), false);
+  assert.ok(grenobleClimateCopy.description.includes("8.2 °C"));
   assert.ok(grenobleClimateCopy.description.includes("901.1 mm"));
   assert.ok(grenobleClimateCopy.description.includes("10.2 km"));
   assert.equal(grenobleClimateCopy.description.includes("6.6"), false);
+  assert.equal(grenobleClimateCopy.description.includes("6.2"), false, "canonical description is not the coldest-year record");
   assert.equal(grenobleClimateCopy.description.includes("ERA5"), false);
   const crollesClimate = climateCopyFromYearly(getCommuneYearly("38140", { includeDetailRows: false }));
   assert.equal(crollesClimate?.year, grenobleClimate?.year);
+  assert.equal(crollesClimate?.tminMean, grenobleClimate?.tminMean);
   assert.equal(crollesClimate?.tmaxMean, grenobleClimate?.tmaxMean);
   assert.equal(crollesClimate?.precipitationSum, grenobleClimate?.precipitationSum);
   assert.equal(crollesClimate?.stationName, grenobleClimate?.stationName);

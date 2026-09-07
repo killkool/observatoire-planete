@@ -116,6 +116,7 @@ export function officialCopyFromDay(
 
 export type CommuneCopyClimate = {
   year: number;
+  tminMean?: number | null;
   tmaxMean: number | null;
   precipitationSum: number | null;
   precipComplete: boolean;
@@ -152,9 +153,11 @@ export function communePageCopy(input: {
       const station =
         km != null ? `${input.climate.stationName} (${km} km)` : input.climate.stationName;
       const rainBit = rain ? `, pluie ${rain}` : "";
+      const tminBit =
+        input.climate.tminMean != null ? `minimale moyenne ${formatCelsius(input.climate.tminMean)}, ` : "";
       return {
         title: `${input.placeName} — ${input.climate.year} · max. ${tmax} | Observatoire Planète`,
-        description: `Dernière année climatique complète observée pour ${input.placeName} (${input.department}) : ${input.climate.year}, maximale moyenne ${tmax}${rainBit}. Station ${station}. Ce n’est pas une prévision.`
+        description: `Dernière année climatique complète observée pour ${input.placeName} (${input.department}) : ${input.climate.year}, ${tminBit}maximale moyenne ${tmax}${rainBit}. Station ${station}. Ce n’est pas une prévision.`
       };
     }
     return { title: genericTitle, description: genericDescription };
