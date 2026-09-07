@@ -32,26 +32,34 @@ export async function GET() {
           </div>
           <div style={{ fontSize: 28, color: "#88a0a8", marginTop: 8 }}>{card.exampleLine}</div>
         </div>
-        <div style={{ display: "flex", gap: 20 }}>
-          <div style={{ display: "flex", flexDirection: "column" }}>
-            <div style={{ fontSize: 16, color: "#88a0a8" }}>Minimale moyenne</div>
-            <div style={{ fontSize: 36, fontWeight: 700 }}>{card.tminDisplay ?? "non disponible"}</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+          <div style={{ display: "flex", gap: 28 }}>
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <div style={{ fontSize: 16, color: "#88a0a8" }}>Minimale moyenne</div>
+              <div style={{ fontSize: 36, fontWeight: 700 }}>{card.tminDisplay ?? "non disponible"}</div>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <div style={{ fontSize: 16, color: "#88a0a8" }}>Maximale moyenne</div>
+              <div style={{ fontSize: 36, fontWeight: 700, color: "#ff7b36" }}>{card.tmaxDisplay}</div>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <div style={{ fontSize: 16, color: "#88a0a8" }}>Pluie</div>
+              <div style={{ fontSize: 36, fontWeight: 700 }}>{card.precipDisplay ?? "non disponible"}</div>
+            </div>
           </div>
-          <div style={{ display: "flex", flexDirection: "column" }}>
-            <div style={{ fontSize: 16, color: "#88a0a8" }}>Maximale moyenne</div>
-            <div style={{ fontSize: 36, fontWeight: 700, color: "#ff7b36" }}>{card.tmaxDisplay}</div>
-          </div>
-          <div style={{ display: "flex", flexDirection: "column" }}>
-            <div style={{ fontSize: 16, color: "#88a0a8" }}>Pluie</div>
-            <div style={{ fontSize: 36, fontWeight: 700 }}>{card.precipDisplay ?? "non disponible"}</div>
-          </div>
-          <div style={{ display: "flex", flexDirection: "column" }}>
-            <div style={{ fontSize: 16, color: "#88a0a8" }}>Jours à 30 °C ou plus</div>
-            <div style={{ fontSize: 36, fontWeight: 700 }}>{card.daysGe30Display ?? "non disponible"}</div>
-          </div>
-          <div style={{ display: "flex", flexDirection: "column" }}>
-            <div style={{ fontSize: 16, color: "#88a0a8" }}>Jours de gel</div>
-            <div style={{ fontSize: 36, fontWeight: 700 }}>{card.daysFrostDisplay ?? "non disponible"}</div>
+          <div style={{ display: "flex", gap: 28 }}>
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <div style={{ fontSize: 16, color: "#88a0a8" }}>Jours à 30 °C ou plus</div>
+              <div style={{ fontSize: 36, fontWeight: 700 }}>{card.daysGe30Display ?? "non disponible"}</div>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <div style={{ fontSize: 16, color: "#88a0a8" }}>Jours de gel</div>
+              <div style={{ fontSize: 36, fontWeight: 700 }}>{card.daysFrostDisplay ?? "non disponible"}</div>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column" }}>
+              <div style={{ fontSize: 16, color: "#88a0a8" }}>Nuits tropicales</div>
+              <div style={{ fontSize: 36, fontWeight: 700 }}>{card.tropicalNightsDisplay ?? "non disponible"}</div>
+            </div>
           </div>
         </div>
         <div style={{ display: "flex", flexDirection: "column", color: "#88a0a8", fontSize: 20 }}>

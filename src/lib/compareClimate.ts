@@ -5,6 +5,7 @@ export type YearClimatePoint = {
   precipitationSum: number | null;
   daysGe30: number;
   daysFrost?: number;
+  tropicalNights?: number;
   yearComplete: boolean;
   precipComplete: boolean;
   tminAnomaly?: number | null;

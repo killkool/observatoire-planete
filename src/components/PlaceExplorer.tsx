@@ -170,6 +170,8 @@ type YearRow = {
   tmaxMean: number | null;
   precipitationSum: number | null;
   daysGe30: number;
+  daysFrost?: number;
+  tropicalNights?: number;
   yearComplete: boolean;
   precipComplete: boolean;
   tminAnomaly?: number | null;
@@ -353,6 +355,7 @@ export default function PlaceExplorer({
     precipComplete: boolean;
     daysGe30: number;
     daysFrost?: number;
+    tropicalNights?: number;
     stationName: string;
     distanceKm: number | null;
   } | null;
@@ -416,6 +419,7 @@ export default function PlaceExplorer({
             precipComplete: climateLead.precipComplete,
             daysGe30: climateLead.daysGe30,
             daysFrost: climateLead.daysFrost,
+            tropicalNights: climateLead.tropicalNights,
             stationName: climateLead.stationName,
             distanceKm: climateLead.distanceKm,
             url: `${window.location.origin}${pathname}`
@@ -726,6 +730,12 @@ export default function PlaceExplorer({
                   <span>
                     <em>Jours de gel</em>
                     {climateLead.daysFrost}
+                  </span>
+                ) : null}
+                {climateLead.tropicalNights != null ? (
+                  <span>
+                    <em>Nuits tropicales</em>
+                    {climateLead.tropicalNights}
                   </span>
                 ) : null}
               </p>
@@ -1104,7 +1114,7 @@ export default function PlaceExplorer({
                 {(() => {
                   const last = [...yearly.years].reverse().find((row) => row.yearComplete && row.precipComplete);
                   return last
-                    ? `${last.year} · ${last.precipitationSum ?? "non disponible"} mm · ${last.daysGe30} jour${last.daysGe30 > 1 ? "s" : ""} ≥ 30 °C${last.daysFrost != null ? ` · ${last.daysFrost} jour${last.daysFrost > 1 ? "s" : ""} de gel` : ""}`
+                    ? `${last.year} · ${last.precipitationSum ?? "non disponible"} mm · ${last.daysGe30} jour${last.daysGe30 > 1 ? "s" : ""} ≥ 30 °C${last.daysFrost != null ? ` · ${last.daysFrost} jour${last.daysFrost > 1 ? "s" : ""} de gel` : ""}${last.tropicalNights != null ? ` · ${last.tropicalNights} nuit${last.tropicalNights > 1 ? "s" : ""} tropicale${last.tropicalNights > 1 ? "s" : ""}` : ""}`
                     : "non disponible";
                 })()}
               </p>

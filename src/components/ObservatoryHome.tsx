@@ -4,7 +4,7 @@ import OriginKinds from "./OriginKinds";
 import PlaceSearch from "./PlaceSearch";
 import { IGN_PHOTO_CREDIT, HERO_IMAGE_SIZES, placePhotoSrc } from "@/lib/placeMedia";
 import { departmentLabel } from "@/lib/placeUrl";
-import { formatCelsius, formatDaysFrost, formatDaysGe30, formatMm, roundToPrecision } from "../../packages/weather-core/src/units";
+import { formatCelsius, formatDaysFrost, formatDaysGe30, formatMm, formatTropicalNights, roundToPrecision } from "../../packages/weather-core/src/units";
 
 type HomeClimateCard = {
   place: {
@@ -23,6 +23,7 @@ type HomeClimateCard = {
     precipComplete: boolean;
     daysGe30: number;
     daysFrost?: number;
+    tropicalNights?: number;
   } | null;
 };
 
@@ -69,6 +70,10 @@ export default function ObservatoryHome({ cards }: { cards: HomeClimateCard[] })
             card.lastComplete != null ? ` · ${formatDaysGe30(card.lastComplete.daysGe30)}` : "";
           const frost =
             card.lastComplete?.daysFrost != null ? ` · ${formatDaysFrost(card.lastComplete.daysFrost)}` : "";
+          const tropical =
+            card.lastComplete?.tropicalNights != null
+              ? ` · ${formatTropicalNights(card.lastComplete.tropicalNights)}`
+              : "";
           const stationKm =
             card.station?.distanceKm != null ? ` · ${roundToPrecision(card.station.distanceKm, 1)} km` : "";
           return (
@@ -98,6 +103,7 @@ export default function ObservatoryHome({ cards }: { cards: HomeClimateCard[] })
                       {rain}
                       {hotDays}
                       {frost}
+                      {tropical}
                     </strong>
                     {card.station
                       ? `Station ${card.station.name}${stationKm}. Année climatique complète, pas une prévision.`

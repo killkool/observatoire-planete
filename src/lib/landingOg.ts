@@ -44,6 +44,7 @@ export function buildHomeOgModel(): HomeOgModel | null {
     precipComplete: climate.precipComplete,
     daysGe30: climate.daysGe30,
     daysFrost: climate.daysFrost,
+    tropicalNights: climate.tropicalNights,
     stationName: climate.stationName,
     distanceKm: climate.distanceKm
   });
