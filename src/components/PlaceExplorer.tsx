@@ -17,7 +17,7 @@ import {
   formatSignedCelsius,
   formatSignedMm
 } from "@/lib/compareClimate";
-import { formatCelsius, formatDaysFrost, formatDaysGe25, formatDaysGe30, formatDaysGe35, formatMeanAmplitudeC, formatMm, formatTropicalNights } from "../../packages/weather-core/src/units";
+import { formatCelsius, formatDaysFrost, formatDaysGe25, formatDaysGe30, formatDaysGe35, formatDaysRain, formatMeanAmplitudeC, formatMm, formatTropicalNights } from "../../packages/weather-core/src/units";
 import { ERA5_FRANCE_DAILY_2T_CELLS, ERA5_FRANCE_DAILY_2T_DATES, ERA5_POINT_DATES } from "@/lib/era5France";
 import { formatSignedPerDecade } from "@/lib/climateTrend";
 import {
@@ -270,6 +270,7 @@ type YearlyPayload = {
     mostTropicalNights: { year: number; value: number } | null;
     mostDaysGe35: { year: number; value: number } | null;
     mostDaysGe25: { year: number; value: number } | null;
+    mostDaysRain: { year: number; value: number } | null;
   };
   warming: {
     method: string;
@@ -1431,6 +1432,15 @@ export default function PlaceExplorer({
                       : "non disponible"}
                   </strong>
                   <small>Tmax ≥ 25 °C, années climatiques seulement</small>
+                </div>
+                <div>
+                  <span>Plus de jours de pluie</span>
+                  <strong>
+                    {yearly.yearRecords.mostDaysRain
+                      ? `${yearly.yearRecords.mostDaysRain.year} · ${formatDaysRain(yearly.yearRecords.mostDaysRain.value)}`
+                      : "non disponible"}
+                  </strong>
+                  <small>précipitation &gt; 0 mm, années à pluie complète seulement</small>
                 </div>
               </div>
               {data?.place?.insee_code || yearly?.commune?.insee ? (
