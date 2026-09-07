@@ -12,7 +12,7 @@ import { isInFranceEra5Bbox, ERA5_FRANCE_DAILY_2T_CELLS, ERA5_FRANCE_DAILY_2T_DA
 import { communePath } from "../src/lib/placeUrl";
 import { searchPlaces, getPlaceHistory, getPlaceByInsee, getPlaceDayObservation, listFeaturedPlaces, listPlaces } from "../src/lib/placeHistory";
 import { computeStationStatistics, isMonthComplete, isPrecipComplete, isSeasonComplete, isYearComplete } from "../src/lib/computeStatistics";
-import { featuredClimateCards, getCommuneYearCompare, getCommuneChildhood, getCommuneCityCompare, getCommuneYearly, lastCompleteClimateYear } from "../src/lib/communeYearly";
+import { climateCopyFromYearly, featuredClimateCards, getCommuneYearCompare, getCommuneChildhood, getCommuneCityCompare, getCommuneYearly, lastCompleteClimateYear } from "../src/lib/communeYearly";
 import {
   childhoodVsRecent,
   compareCityClimate,
@@ -424,7 +424,57 @@ const genericCopy = communePageCopy({
   }
 });
 assert.equal(genericCopy.title, "Grenoble — histoire météo | Observatoire Planète");
-assert.equal(genericCopy.description.includes("6.6"), false, "canonical commune title stays generic");
+assert.equal(genericCopy.description.includes("6.6"), false, "without climate, canonical title stays generic — not the day");
+const climateCopy = communePageCopy({
+  placeName: "Grenoble",
+  department: "Isère",
+  isoDate: "1983-05-12",
+  dateInQuery: false,
+  naissance: false,
+  observation: {
+    tmin: 6.6,
+    tmax: 21.6,
+    precipitationMm: 0.1,
+    stationName: "CORENC LA REVIREE",
+    distanceKm: 4.7
+  },
+  climate: {
+    year: 2025,
+    tmaxMean: 19.6,
+    precipitationSum: 901.1,
+    precipComplete: true,
+    stationName: "GRENOBLE - LVD",
+    distanceKm: 10.2
+  }
+});
+assert.ok(climateCopy.title.includes("2025"));
+assert.ok(climateCopy.title.includes("19.6 °C"));
+assert.equal(climateCopy.title.includes("20.2"), false, "canonical title is last complete year, not the hottest-year record");
+assert.equal(climateCopy.title.includes("6.6"), false, "canonical title must not paste the day observation");
+assert.ok(climateCopy.description.includes("901.1 mm"));
+assert.ok(climateCopy.description.includes("GRENOBLE - LVD"));
+assert.ok(climateCopy.description.includes("10.2 km"));
+assert.equal(climateCopy.description.includes("6.6"), false);
+assert.equal(climateCopy.description.includes("ERA5"), false);
+assert.equal(climateCopy.description.includes("20.2"), false);
+const climateNoPrecip = communePageCopy({
+  placeName: "Grenoble",
+  department: "Isère",
+  isoDate: "1983-05-12",
+  dateInQuery: false,
+  naissance: false,
+  observation: null,
+  climate: {
+    year: 2025,
+    tmaxMean: 19.6,
+    precipitationSum: null,
+    precipComplete: false,
+    stationName: "GRENOBLE - LVD",
+    distanceKm: 10.2
+  }
+});
+assert.ok(climateNoPrecip.title.includes("19.6 °C"));
+assert.equal(climateNoPrecip.description.includes("mm"), false, "incomplete precip must not invent millimetres");
 const datedCopy = communePageCopy({
   placeName: "Grenoble",
   department: "Isère",
@@ -437,10 +487,19 @@ const datedCopy = communePageCopy({
     precipitationMm: 0.1,
     stationName: "CORENC LA REVIREE",
     distanceKm: 4.7
+  },
+  climate: {
+    year: 2025,
+    tmaxMean: 19.6,
+    precipitationSum: 901.1,
+    precipComplete: true,
+    stationName: "GRENOBLE - LVD",
+    distanceKm: 10.2
   }
 });
 assert.ok(datedCopy.title.includes("6.6 °C"));
 assert.ok(datedCopy.title.includes("21.6 °C"));
+assert.equal(datedCopy.title.includes("19.6"), false, "?date= title stays the day, not the climate year");
 assert.ok(datedCopy.description.includes("0.1 mm"));
 assert.ok(datedCopy.description.includes("CORENC LA REVIREE"));
 assert.ok(datedCopy.description.includes("4.7 km"));
@@ -595,6 +654,7 @@ const lastCompleteOnlyTemps: Parameters<typeof lastCompleteClimateYear>[0] = [
 assert.equal(lastCompleteClimateYear([]), null);
 assert.equal(lastCompleteClimateYear(lastCompleteOnlyTemps)?.year, 2024, "incomplete last calendar year is not a climate year");
 assert.notEqual(lastCompleteClimateYear(lastCompleteOnlyTemps)?.tmaxMean, 20.2, "hottest incomplete year must not replace the last complete year");
+assert.equal(climateCopyFromYearly(null), null);
 
 const homeSrc = fs.readFileSync(path.join(process.cwd(), "src/components/ObservatoryHome.tsx"), "utf8");
 assert.ok(homeSrc.includes("lastComplete"), "home cards must show the last official climate year");
@@ -614,6 +674,12 @@ assert.equal(birthExSrc.includes("ERA5"), false, "naissance examples must not sh
 const naissancePageSrc = fs.readFileSync(path.join(process.cwd(), "src/app/naissance/page.tsx"), "utf8");
 assert.ok(naissancePageSrc.includes("getBirthExamplesCached"), "naissance first HTML must carry official example days");
 assert.ok(homeCacheSrc.includes("birth-examples-v1"));
+const communePageSrc = fs.readFileSync(
+  path.join(process.cwd(), "src/app/meteo/[region]/[department]/[commune]/page.tsx"),
+  "utf8"
+);
+assert.ok(communePageSrc.includes("climateCopyFromYearly"), "commune metadata without query must use last complete climate year");
+assert.ok(communePageSrc.includes("getCommuneYearlyPageCached"));
 
 assert.equal(warmerThanPercent(null, [1, 2, 3, 4, 5]), null);
 assert.equal(warmerThanPercent(21.6, [10, 12, 15, 18, 20, 21.6, 22]), 71);
@@ -1820,6 +1886,35 @@ if (obsCount === 0) {
   assert.equal(crollesHome.lastComplete?.year, grenobleHome.lastComplete?.year);
   assert.equal(crollesHome.lastComplete?.tmaxMean, grenobleHome.lastComplete?.tmaxMean);
   assert.equal(crollesHome.lastComplete?.precipitationSum, grenobleHome.lastComplete?.precipitationSum);
+  const grenobleClimate = climateCopyFromYearly(yearly);
+  assert.equal(grenobleClimate?.year, 2025);
+  assert.equal(grenobleClimate?.tmaxMean, 19.6);
+  assert.equal(grenobleClimate?.precipitationSum, 901.1);
+  assert.equal(grenobleClimate?.precipComplete, true);
+  assert.ok(grenobleClimate?.stationName.includes("LVD"));
+  assert.equal(grenobleClimate?.distanceKm, 10.2);
+  const grenobleClimateCopy = communePageCopy({
+    placeName: "Grenoble",
+    department: "Isère",
+    isoDate: "1983-05-12",
+    dateInQuery: false,
+    naissance: false,
+    observation: null,
+    climate: grenobleClimate
+  });
+  assert.ok(grenobleClimateCopy.title.includes("2025"));
+  assert.ok(grenobleClimateCopy.title.includes("19.6 °C"));
+  assert.equal(grenobleClimateCopy.title.includes("20.2"), false);
+  assert.ok(grenobleClimateCopy.description.includes("901.1 mm"));
+  assert.ok(grenobleClimateCopy.description.includes("10.2 km"));
+  assert.equal(grenobleClimateCopy.description.includes("6.6"), false);
+  assert.equal(grenobleClimateCopy.description.includes("ERA5"), false);
+  const crollesClimate = climateCopyFromYearly(getCommuneYearly("38140", { includeDetailRows: false }));
+  assert.equal(crollesClimate?.year, grenobleClimate?.year);
+  assert.equal(crollesClimate?.tmaxMean, grenobleClimate?.tmaxMean);
+  assert.equal(crollesClimate?.precipitationSum, grenobleClimate?.precipitationSum);
+  assert.equal(crollesClimate?.stationName, grenobleClimate?.stationName);
+  assert.equal(crollesClimate?.distanceKm, 8.1);
   const incompleteSql = db.prepare(
     `SELECT precipitation_sum, precip_complete, year_complete FROM annual_statistics WHERE precip_complete = 0 LIMIT 1`
   ).get() as { precipitation_sum: number | null; precip_complete: number; year_complete: number } | undefined;

@@ -3,6 +3,7 @@ import JsonLd from "@/components/JsonLd";
 import PlaceExplorer from "@/components/PlaceExplorer";
 import { isIsoDate } from "@/lib/birthDay";
 import { defaultDateForPlace, getPlaceByPath, getPlaceDayObservation } from "@/lib/placeHistory";
+import { climateCopyFromYearly } from "@/lib/communeYearly";
 import { communePath, departmentLabel } from "@/lib/placeUrl";
 import { communePageCopy, frenchLanguageAlternates, officialCopyFromDay, seoFactsForPlace } from "@/lib/seoContent";
 import { communeJsonLd } from "@/lib/seoJsonLd";
@@ -29,13 +30,18 @@ export async function generateMetadata({
   const dateInQuery = Boolean(query.date && isIsoDate(query.date));
   const naissance = query.histoire === "naissance";
   const date = dateInQuery ? (query.date as string) : defaultDateForPlace(commune);
+  const climate =
+    !dateInQuery && !naissance
+      ? climateCopyFromYearly(await getCommuneYearlyPageCached(place.insee_code))
+      : null;
   const copy = communePageCopy({
     placeName: place.name,
     department: dept,
     isoDate: date,
     dateInQuery,
     naissance,
-    observation: dateInQuery || naissance ? officialCopyFromDay(getPlaceDayObservation(commune, date)) : null
+    observation: dateInQuery || naissance ? officialCopyFromDay(getPlaceDayObservation(commune, date)) : null,
+    climate
   });
   const path = communePath(place);
   const image = shareCardPath(place.slug, date);
@@ -77,14 +83,6 @@ export default async function CommunePage({
   const dateInQuery = Boolean(query.date && isIsoDate(query.date));
   const isoDate = isIsoDate(date) ? date : defaultDateForPlace(commune);
   const path = communePath(place);
-  const copy = communePageCopy({
-    placeName: place.name,
-    department: departmentLabel(place.department_slug),
-    isoDate,
-    dateInQuery,
-    naissance: histoire,
-    observation: dateInQuery || histoire ? officialCopyFromDay(getPlaceDayObservation(commune, isoDate)) : null
-  });
   const birthYear = isIsoDate(date) ? Number(date.slice(0, 4)) : NaN;
   const [history, yearly, childhood] = await Promise.all([
     isIsoDate(date) ? getPlaceHistoryCached(commune, date) : Promise.resolve(null),
@@ -93,6 +91,15 @@ export default async function CommunePage({
       ? getCommuneChildhoodCached(place.insee_code, birthYear)
       : Promise.resolve(null)
   ]);
+  const copy = communePageCopy({
+    placeName: place.name,
+    department: departmentLabel(place.department_slug),
+    isoDate,
+    dateInQuery,
+    naissance: histoire,
+    observation: dateInQuery || histoire ? officialCopyFromDay(getPlaceDayObservation(commune, isoDate)) : null,
+    climate: !dateInQuery && !histoire ? climateCopyFromYearly(yearly) : null
+  });
   const observed =
     history?.observation?.originType === "OBSERVED" && history.preferredStation
       ? {

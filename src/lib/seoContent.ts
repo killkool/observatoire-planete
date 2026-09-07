@@ -114,6 +114,15 @@ export function officialCopyFromDay(
   };
 }
 
+export type CommuneCopyClimate = {
+  year: number;
+  tmaxMean: number | null;
+  precipitationSum: number | null;
+  precipComplete: boolean;
+  stationName: string;
+  distanceKm: number | null;
+};
+
 function isoSlashDate(isoDate: string): string {
   const [y, m, d] = isoDate.split("-");
   return `${d}/${m}/${y}`;
@@ -127,10 +136,27 @@ export function communePageCopy(input: {
   dateInQuery: boolean;
   naissance: boolean;
   observation: CommuneCopyObservation | null;
+  climate?: CommuneCopyClimate | null;
 }): { title: string; description: string } {
   const genericTitle = `${input.placeName} — histoire météo | Observatoire Planète`;
   const genericDescription = `Températures, pluie et records observés à ${input.placeName} (${input.department}). La station et la source sont indiquées. Ce n’est pas une prévision.`;
   if (!input.dateInQuery && !input.naissance) {
+    if (input.climate && input.climate.tmaxMean != null) {
+      const tmax = formatCelsius(input.climate.tmaxMean);
+      const rain =
+        input.climate.precipComplete && input.climate.precipitationSum != null
+          ? formatMm(input.climate.precipitationSum)
+          : null;
+      const km =
+        input.climate.distanceKm != null ? roundToPrecision(input.climate.distanceKm, 1) : null;
+      const station =
+        km != null ? `${input.climate.stationName} (${km} km)` : input.climate.stationName;
+      const rainBit = rain ? `, pluie ${rain}` : "";
+      return {
+        title: `${input.placeName} — ${input.climate.year} · max. ${tmax} | Observatoire Planète`,
+        description: `Dernière année climatique complète observée pour ${input.placeName} (${input.department}) : ${input.climate.year}, maximale moyenne ${tmax}${rainBit}. Station ${station}. Ce n’est pas une prévision.`
+      };
+    }
     return { title: genericTitle, description: genericDescription };
   }
   const when = frenchLongDate(input.isoDate) || input.isoDate;

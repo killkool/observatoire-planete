@@ -264,6 +264,28 @@ export function lastCompleteClimateYear(years: YearClimatePoint[]): YearClimateP
   return last;
 }
 
+/** SEO page commune sans `?date=` : dernière année climatique, pas le record, pas un jour. */
+export function climateCopyFromYearly(yearly: CommuneYearlyPayload | null): {
+  year: number;
+  tmaxMean: number | null;
+  precipitationSum: number | null;
+  precipComplete: boolean;
+  stationName: string;
+  distanceKm: number | null;
+} | null {
+  if (!yearly?.station) return null;
+  const last = lastCompleteClimateYear(yearly.years);
+  if (!last || last.tmaxMean == null) return null;
+  return {
+    year: last.year,
+    tmaxMean: last.tmaxMean,
+    precipitationSum: last.precipitationSum,
+    precipComplete: last.precipComplete,
+    stationName: yearly.station.name,
+    distanceKm: yearly.station.distanceKm != null ? roundToPrecision(yearly.station.distanceKm, 1) : null
+  };
+}
+
 export type FeaturedClimateCard = {
   place: PlaceRow;
   path: string;
