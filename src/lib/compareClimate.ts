@@ -4,6 +4,7 @@ export type YearClimatePoint = {
   tmaxMean: number | null;
   precipitationSum: number | null;
   daysGe30: number;
+  daysFrost?: number;
   yearComplete: boolean;
   precipComplete: boolean;
   tminAnomaly?: number | null;

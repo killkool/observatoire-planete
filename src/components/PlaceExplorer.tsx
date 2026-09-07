@@ -352,6 +352,7 @@ export default function PlaceExplorer({
     precipitationSum: number | null;
     precipComplete: boolean;
     daysGe30: number;
+    daysFrost?: number;
     stationName: string;
     distanceKm: number | null;
   } | null;
@@ -414,6 +415,7 @@ export default function PlaceExplorer({
             precipitationSum: climateLead.precipitationSum,
             precipComplete: climateLead.precipComplete,
             daysGe30: climateLead.daysGe30,
+            daysFrost: climateLead.daysFrost,
             stationName: climateLead.stationName,
             distanceKm: climateLead.distanceKm,
             url: `${window.location.origin}${pathname}`
@@ -720,6 +722,12 @@ export default function PlaceExplorer({
                   <em>Jours ≥ 30 °C</em>
                   {climateLead.daysGe30}
                 </span>
+                {climateLead.daysFrost != null ? (
+                  <span>
+                    <em>Jours de gel</em>
+                    {climateLead.daysFrost}
+                  </span>
+                ) : null}
               </p>
               <p className="heroStation">
                 Station {climateLead.stationName}
@@ -1096,7 +1104,7 @@ export default function PlaceExplorer({
                 {(() => {
                   const last = [...yearly.years].reverse().find((row) => row.yearComplete && row.precipComplete);
                   return last
-                    ? `${last.year} · ${last.precipitationSum ?? "non disponible"} mm · ${last.daysGe30} jour${last.daysGe30 > 1 ? "s" : ""} ≥ 30 °C`
+                    ? `${last.year} · ${last.precipitationSum ?? "non disponible"} mm · ${last.daysGe30} jour${last.daysGe30 > 1 ? "s" : ""} ≥ 30 °C${last.daysFrost != null ? ` · ${last.daysFrost} jour${last.daysFrost > 1 ? "s" : ""} de gel` : ""}`
                     : "non disponible";
                 })()}
               </p>

@@ -1,5 +1,5 @@
 import { frenchLongDate } from "./birthDay";
-import { formatCelsius, formatDaysGe30, formatMm } from "../../packages/weather-core/src/units";
+import { formatCelsius, formatDaysFrost, formatDaysGe30, formatMm } from "../../packages/weather-core/src/units";
 
 export type ShareCardModel = {
   placeName: string;
@@ -31,6 +31,7 @@ export type ClimateShareCardModel = {
   tmaxDisplay: string;
   precipDisplay: string | null;
   daysGe30Display: string | null;
+  daysFrostDisplay: string | null;
   stationLine: string;
   attribution: string;
   note: string;
@@ -44,6 +45,7 @@ export function buildClimateShareCardModel(input: {
   precipitationSum: number | null;
   precipComplete: boolean;
   daysGe30?: number | null;
+  daysFrost?: number | null;
   stationName: string;
   distanceKm: number | null;
 }): ClimateShareCardModel | null {
@@ -57,6 +59,7 @@ export function buildClimateShareCardModel(input: {
     precipDisplay:
       input.precipComplete && input.precipitationSum != null ? formatMm(input.precipitationSum) : null,
     daysGe30Display: input.daysGe30 != null ? `${input.daysGe30} j` : null,
+    daysFrostDisplay: input.daysFrost != null ? `${input.daysFrost} j` : null,
     stationLine: `Année climatique complète · ${input.stationName}${km}`,
     attribution:
       "Source : Météo-France — Données climatologiques de base (quotidiennes), Licence Ouverte 2.0.",
@@ -72,6 +75,7 @@ export function buildClimateShareText(input: {
   precipitationSum: number | null;
   precipComplete: boolean;
   daysGe30?: number | null;
+  daysFrost?: number | null;
   stationName: string;
   distanceKm: number | null;
   url: string;
@@ -83,8 +87,9 @@ export function buildClimateShareText(input: {
       ? `, pluie ${formatMm(input.precipitationSum)}`
       : "";
   const hotDays = input.daysGe30 != null ? `, ${formatDaysGe30(input.daysGe30)}` : "";
+  const frost = input.daysFrost != null ? `, ${formatDaysFrost(input.daysFrost)}` : "";
   const km = input.distanceKm != null ? `, ${input.distanceKm} km` : "";
-  return `${input.placeName}, année climatique ${input.year} : ${tminBit}maximale moyenne ${tmax}${rain}${hotDays}. Station ${input.stationName}${km}. Ce n’est pas une prévision. ${input.url}`;
+  return `${input.placeName}, année climatique ${input.year} : ${tminBit}maximale moyenne ${tmax}${rain}${hotDays}${frost}. Station ${input.stationName}${km}. Ce n’est pas une prévision. ${input.url}`;
 }
 
 export function buildShareCardModel(input: {

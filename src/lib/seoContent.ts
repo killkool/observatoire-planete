@@ -1,4 +1,4 @@
-import { formatCelsius, formatDaysGe30, formatMm, roundToPrecision } from "../../packages/weather-core/src/units";
+import { formatCelsius, formatDaysFrost, formatDaysGe30, formatMm, roundToPrecision } from "../../packages/weather-core/src/units";
 import { frenchLongDate } from "./birthDay";
 import { formatSignedCelsius, formatSignedMm } from "./compareClimate";
 import {
@@ -121,6 +121,7 @@ export type CommuneCopyClimate = {
   precipitationSum: number | null;
   precipComplete: boolean;
   daysGe30?: number | null;
+  daysFrost?: number | null;
   stationName: string;
   distanceKm: number | null;
 };
@@ -158,9 +159,11 @@ export function communePageCopy(input: {
         input.climate.tminMean != null ? `minimale moyenne ${formatCelsius(input.climate.tminMean)}, ` : "";
       const hotDaysBit =
         input.climate.daysGe30 != null ? `, ${formatDaysGe30(input.climate.daysGe30)}` : "";
+      const frostBit =
+        input.climate.daysFrost != null ? `, ${formatDaysFrost(input.climate.daysFrost)}` : "";
       return {
         title: `${input.placeName} — ${input.climate.year} · max. ${tmax} | Observatoire Planète`,
-        description: `Dernière année climatique complète observée pour ${input.placeName} (${input.department}) : ${input.climate.year}, ${tminBit}maximale moyenne ${tmax}${rainBit}${hotDaysBit}. Station ${station}. Ce n’est pas une prévision.`
+        description: `Dernière année climatique complète observée pour ${input.placeName} (${input.department}) : ${input.climate.year}, ${tminBit}maximale moyenne ${tmax}${rainBit}${hotDaysBit}${frostBit}. Station ${station}. Ce n’est pas une prévision.`
       };
     }
     return { title: genericTitle, description: genericDescription };
