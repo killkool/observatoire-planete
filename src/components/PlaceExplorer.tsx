@@ -351,6 +351,7 @@ export default function PlaceExplorer({
     tmaxMean: number | null;
     precipitationSum: number | null;
     precipComplete: boolean;
+    daysGe30: number;
     stationName: string;
     distanceKm: number | null;
   } | null;
@@ -412,6 +413,7 @@ export default function PlaceExplorer({
             tmaxMean: climateLead.tmaxMean,
             precipitationSum: climateLead.precipitationSum,
             precipComplete: climateLead.precipComplete,
+            daysGe30: climateLead.daysGe30,
             stationName: climateLead.stationName,
             distanceKm: climateLead.distanceKm,
             url: `${window.location.origin}${pathname}`
@@ -714,6 +716,10 @@ export default function PlaceExplorer({
                     {formatMm(climateLead.precipitationSum)}
                   </span>
                 ) : null}
+                <span>
+                  <em>Jours ≥ 30 °C</em>
+                  {climateLead.daysGe30}
+                </span>
               </p>
               <p className="heroStation">
                 Station {climateLead.stationName}

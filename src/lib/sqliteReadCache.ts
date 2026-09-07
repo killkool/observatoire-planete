@@ -14,7 +14,7 @@ export const getFeaturedPlacesCached = unstable_cache(
 
 export const getFeaturedClimateCached = unstable_cache(
   async () => featuredClimateCards(listFeaturedPlaces()),
-  ["featured-climate-v2"],
+  ["featured-climate-v3"],
   { revalidate: 3600 }
 );
 

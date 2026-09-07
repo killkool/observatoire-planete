@@ -32,18 +32,22 @@ export async function GET() {
           </div>
           <div style={{ fontSize: 28, color: "#88a0a8", marginTop: 8 }}>{card.exampleLine}</div>
         </div>
-        <div style={{ display: "flex", gap: 36 }}>
+        <div style={{ display: "flex", gap: 28 }}>
           <div style={{ display: "flex", flexDirection: "column" }}>
             <div style={{ fontSize: 18, color: "#88a0a8" }}>Minimale moyenne</div>
-            <div style={{ fontSize: 48, fontWeight: 700 }}>{card.tminDisplay ?? "non disponible"}</div>
+            <div style={{ fontSize: 42, fontWeight: 700 }}>{card.tminDisplay ?? "non disponible"}</div>
           </div>
           <div style={{ display: "flex", flexDirection: "column" }}>
             <div style={{ fontSize: 18, color: "#88a0a8" }}>Maximale moyenne</div>
-            <div style={{ fontSize: 48, fontWeight: 700, color: "#ff7b36" }}>{card.tmaxDisplay}</div>
+            <div style={{ fontSize: 42, fontWeight: 700, color: "#ff7b36" }}>{card.tmaxDisplay}</div>
           </div>
           <div style={{ display: "flex", flexDirection: "column" }}>
             <div style={{ fontSize: 18, color: "#88a0a8" }}>Pluie</div>
-            <div style={{ fontSize: 48, fontWeight: 700 }}>{card.precipDisplay ?? "non disponible"}</div>
+            <div style={{ fontSize: 42, fontWeight: 700 }}>{card.precipDisplay ?? "non disponible"}</div>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <div style={{ fontSize: 18, color: "#88a0a8" }}>Jours à 30 °C ou plus</div>
+            <div style={{ fontSize: 42, fontWeight: 700 }}>{card.daysGe30Display ?? "non disponible"}</div>
           </div>
         </div>
         <div style={{ display: "flex", flexDirection: "column", color: "#88a0a8", fontSize: 20 }}>

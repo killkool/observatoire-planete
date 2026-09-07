@@ -38,6 +38,12 @@ export function formatMm(valueMm: number | null | undefined): string {
   return n == null ? "non disponible" : `${n.toFixed(1)} mm`;
 }
 
+/** Compte de jours à Tmax ≥ 30 °C. 0 est un vrai zéro, pas une valeur manquante. */
+export function formatDaysGe30(count: number | null | undefined): string {
+  if (count == null || !Number.isInteger(count) || count < 0) return "non disponible";
+  return `${count} jour${count > 1 ? "s" : ""} ≥ 30 °C`;
+}
+
 export function formatKmhFromMs(valueMs: number | null | undefined): string {
   if (valueMs == null || !Number.isFinite(valueMs)) return "non disponible";
   const n = roundToPrecision(valueMs * 3.6, DISPLAY_PRECISION.wind_speed);

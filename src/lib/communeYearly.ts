@@ -271,6 +271,7 @@ export function climateCopyFromYearly(yearly: CommuneYearlyPayload | null): {
   tmaxMean: number | null;
   precipitationSum: number | null;
   precipComplete: boolean;
+  daysGe30: number;
   stationName: string;
   distanceKm: number | null;
 } | null {
@@ -283,6 +284,7 @@ export function climateCopyFromYearly(yearly: CommuneYearlyPayload | null): {
     tmaxMean: last.tmaxMean,
     precipitationSum: last.precipitationSum,
     precipComplete: last.precipComplete,
+    daysGe30: last.daysGe30,
     stationName: yearly.station.name,
     distanceKm: yearly.station.distanceKm != null ? roundToPrecision(yearly.station.distanceKm, 1) : null
   };
@@ -298,6 +300,7 @@ export type FeaturedClimateCard = {
     tmaxMean: number | null;
     precipitationSum: number | null;
     precipComplete: boolean;
+    daysGe30: number;
   } | null;
 };
 
@@ -323,7 +326,8 @@ export function featuredClimateCards(places: PlaceRow[]): FeaturedClimateCard[] 
             tminMean: last.tminMean,
             tmaxMean: last.tmaxMean,
             precipitationSum: last.precipitationSum,
-            precipComplete: last.precipComplete
+            precipComplete: last.precipComplete,
+            daysGe30: last.daysGe30
           }
         : null
     };

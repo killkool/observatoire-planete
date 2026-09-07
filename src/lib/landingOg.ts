@@ -42,6 +42,7 @@ export function buildHomeOgModel(): HomeOgModel | null {
     tmaxMean: climate.tmaxMean,
     precipitationSum: climate.precipitationSum,
     precipComplete: climate.precipComplete,
+    daysGe30: climate.daysGe30,
     stationName: climate.stationName,
     distanceKm: climate.distanceKm
   });

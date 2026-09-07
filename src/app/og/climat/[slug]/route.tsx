@@ -21,6 +21,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ slu
         tmaxMean: climate.tmaxMean,
         precipitationSum: climate.precipitationSum,
         precipComplete: climate.precipComplete,
+        daysGe30: climate.daysGe30,
         stationName: climate.stationName,
         distanceKm: climate.distanceKm
       })
@@ -51,18 +52,22 @@ export async function GET(_request: Request, { params }: { params: Promise<{ slu
           <div style={{ fontSize: 64, fontWeight: 700, marginTop: 18, letterSpacing: -2 }}>{card.placeName}</div>
           <div style={{ fontSize: 28, color: "#88a0a8", marginTop: 8 }}>{`Année climatique ${card.year}`}</div>
         </div>
-        <div style={{ display: "flex", gap: 36 }}>
+        <div style={{ display: "flex", gap: 28 }}>
           <div style={{ display: "flex", flexDirection: "column" }}>
             <div style={{ fontSize: 18, color: "#88a0a8" }}>Minimale moyenne</div>
-            <div style={{ fontSize: 48, fontWeight: 700 }}>{card.tminDisplay ?? "non disponible"}</div>
+            <div style={{ fontSize: 42, fontWeight: 700 }}>{card.tminDisplay ?? "non disponible"}</div>
           </div>
           <div style={{ display: "flex", flexDirection: "column" }}>
             <div style={{ fontSize: 18, color: "#88a0a8" }}>Maximale moyenne</div>
-            <div style={{ fontSize: 48, fontWeight: 700, color: "#ff7b36" }}>{card.tmaxDisplay}</div>
+            <div style={{ fontSize: 42, fontWeight: 700, color: "#ff7b36" }}>{card.tmaxDisplay}</div>
           </div>
           <div style={{ display: "flex", flexDirection: "column" }}>
             <div style={{ fontSize: 18, color: "#88a0a8" }}>Pluie</div>
-            <div style={{ fontSize: 48, fontWeight: 700 }}>{card.precipDisplay ?? "non disponible"}</div>
+            <div style={{ fontSize: 42, fontWeight: 700 }}>{card.precipDisplay ?? "non disponible"}</div>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <div style={{ fontSize: 18, color: "#88a0a8" }}>Jours à 30 °C ou plus</div>
+            <div style={{ fontSize: 42, fontWeight: 700 }}>{card.daysGe30Display ?? "non disponible"}</div>
           </div>
         </div>
         <div style={{ display: "flex", flexDirection: "column", color: "#88a0a8", fontSize: 20 }}>

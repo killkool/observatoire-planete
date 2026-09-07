@@ -4,7 +4,7 @@ import OriginKinds from "./OriginKinds";
 import PlaceSearch from "./PlaceSearch";
 import { IGN_PHOTO_CREDIT, HERO_IMAGE_SIZES, placePhotoSrc } from "@/lib/placeMedia";
 import { departmentLabel } from "@/lib/placeUrl";
-import { formatCelsius, formatMm, roundToPrecision } from "../../packages/weather-core/src/units";
+import { formatCelsius, formatDaysGe30, formatMm, roundToPrecision } from "../../packages/weather-core/src/units";
 
 type HomeClimateCard = {
   place: {
@@ -17,9 +17,11 @@ type HomeClimateCard = {
   station: { id: string; name: string; distanceKm: number | null } | null;
   lastComplete: {
     year: number;
+    tminMean: number | null;
     tmaxMean: number | null;
     precipitationSum: number | null;
     precipComplete: boolean;
+    daysGe30: number;
   } | null;
 };
 
@@ -62,6 +64,8 @@ export default function ObservatoryHome({ cards }: { cards: HomeClimateCard[] })
             card.lastComplete?.precipComplete && card.lastComplete.precipitationSum != null
               ? ` · ${formatMm(card.lastComplete.precipitationSum)}`
               : "";
+          const hotDays =
+            card.lastComplete != null ? ` · ${formatDaysGe30(card.lastComplete.daysGe30)}` : "";
           const stationKm =
             card.station?.distanceKm != null ? ` · ${roundToPrecision(card.station.distanceKm, 1)} km` : "";
           return (
@@ -87,8 +91,9 @@ export default function ObservatoryHome({ cards }: { cards: HomeClimateCard[] })
                       {card.lastComplete.tminMean != null
                         ? ` · min. ${formatCelsius(card.lastComplete.tminMean)}`
                         : ""}{" "}
-                      · max. {formatCelsius(card.lastComplete.tmaxMean)}
+                      · max.                       {formatCelsius(card.lastComplete.tmaxMean)}
                       {rain}
+                      {hotDays}
                     </strong>
                     {card.station
                       ? `Station ${card.station.name}${stationKm}. Année climatique complète, pas une prévision.`
